@@ -130,13 +130,12 @@ function drawRoute() {
   }).addTo(map);
 }
 
-// 検索コントロール（住所・番地・施設名に幅広く対応）
+// 検索コントロール（住所・番地・施設名対応 ＋ ルートバグ修正版）
 L.Control.geocoder({
-  // ★ Nominatimをベースにし、日本語のクエリが通りやすいように設定
   geocoder: L.Control.Geocoder.nominatim({
     geocodingQueryParams: {
-      "accept-language": "ja", // 日本語の結果を最優先
-      "countrycodes": "jp",     // 日本国内のみに検索を限定して精度アップ
+      "accept-language": "ja",
+      "countrycodes": "jp",
       "addressdetails": 1
     }
   }),
@@ -145,12 +144,18 @@ L.Control.geocoder({
   collapsed: false
 })
 .on("markgeocode", e => {
-  destination = e.geocode.center;
+  // ★修正ポイント：検索結果の緯度経度を、Leafletが正しく認識できる形式にカプセル化します
+  const lat = e.geocode.center.lat;
+  const lng = e.geocode.center.lng;
+  destination = L.latLng(lat, lng); 
+
   if (destMarker) map.removeLayer(destMarker);
   
   // 検索結果のポップアップ表示
   destMarker = L.marker(destination).addTo(map).bindPopup(e.geocode.name).openPopup();
-  map.setView(destination, 17); // 番地や施設が見やすいズーム率
+  map.setView(destination, 17); 
+  
+  // ルートを描画
   drawRoute();
 }).addTo(map);
 
