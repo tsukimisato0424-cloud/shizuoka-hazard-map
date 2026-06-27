@@ -50,8 +50,39 @@ const map = L.map('map').setView([34.9756,138.3828],8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© OpenStreetMap'
 }).addTo(map);
+// 洪水
+const flood = L.tileLayer(
+  'https://disaportal.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png',
+  {
+    opacity: 0.6,
+    attribution: '国土地理院'
+  }
+);
 
-document.getElementById("locationBtn").onclick=function(){
+// 土砂災害
+const landslide = L.tileLayer(
+  'https://disaportal.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png',
+  {
+    opacity: 0.7,
+    attribution: '国土地理院'
+  }
+);
+
+// 津波
+const tsunami = L.tileLayer(
+  'https://disaportal.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png',
+  {
+    opacity: 0.6,
+    attribution: '国土地理院'
+  }
+);
+
+// レイヤー切替
+L.control.layers(null, {
+  "洪水": flood,
+  "土砂災害": landslide,
+  "津波": tsunami
+}).addTo(map);document.getElementById("locationBtn").onclick=function(){
 
 navigator.geolocation.getCurrentPosition(function(pos){
 
