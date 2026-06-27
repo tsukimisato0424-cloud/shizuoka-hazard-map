@@ -1,0 +1,2 @@
+# shizuoka-hazard-map
+Public
