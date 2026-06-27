@@ -18,7 +18,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   width: 100%;
   padding: 0 !important;
   box-sizing: border-box;
-  z-index: 1100 !important; 
 }
 .leaflet-control-geocoder {
   margin: 10px !important;
@@ -47,24 +46,16 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .leaflet-control-geocoder-icon { display: none !important; }
 
-.leaflet-control-geocoder-suggestions {
-  z-index: 9999 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important;
-  border: none !important;
-  margin-top: 8px !important;
-  overflow: hidden;
-}
-
+/* 既存の地味なレイヤーコントロールは非表示にし、自作のリッチUIに置き換える */
 .leaflet-control-layers { display: none !important; }
 
-/* 2. 自作ハザード操作カード */
+/* 2. 【自作】リッチで立体的なハザード操作カード */
 #hazardMenuCard {
   position: absolute;
   top: 75px;
   left: 10px;
   right: 10px;
-  z-index: 1000; 
+  z-index: 1000;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -72,16 +63,16 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 6px 20px rgba(0,0,0,0.12);
   display: flex;
   justify-content: space-between;
-  gap: 6px;
+  gap: 10px;
 }
 .hazard-btn {
   flex: 1;
   border: none;
   border-radius: 12px;
-  padding: 10px 2px;
+  padding: 10px 6px;
   background: #fff;
   color: #5f6368;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -91,8 +82,9 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 3px 6px rgba(0,0,0,0.06), inset 0 -2px 0 rgba(0,0,0,0.1);
   transition: all 0.2s ease;
 }
-.hazard-btn .material-icons-round { font-size: 22px; }
+.hazard-btn .material-icons-round { font-size: 24px; }
 
+/* 各ボタンがON（アクティブ）になったときの鮮やかな立体グラデーション */
 .hazard-btn.active[data-type="flood"] {
   background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff;
   box-shadow: 0 4px 12px rgba(47, 128, 237, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
@@ -105,71 +97,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff;
   box-shadow: 0 4px 12px rgba(0, 198, 255, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
 }
-.hazard-btn.active[data-type="shelter"] {
-  background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff;
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
+.hazard-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* 徒歩・車ルート＆所要時間表示パネル */
-#routingTimePanel {
-  position: absolute;
-  bottom: 110px;
-  left: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 12px 16px;
-  box-shadow: 0 6px 25px rgba(0,0,0,0.15);
-  display: none; 
-  flex-direction: column;
-  gap: 10px;
-}
-.mode-selector {
-  display: flex;
-  background: #f1f3f4;
-  border-radius: 10px;
-  padding: 2px;
-}
-.mode-btn {
-  flex: 1;
-  border: none;
-  background: transparent;
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: bold;
-  color: #5f6368;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-.mode-btn.active {
-  background: #fff;
-  color: #1a73e8;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-.time-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2px 4px;
-}
-.time-result {
-  font-size: 22px;
-  font-weight: 900;
-  color: #202124;
-}
-.distance-result {
-  font-size: 14px;
-  color: #70757a;
-  font-weight: bold;
-}
-
-/* 3. フローティング現在地ボタン */
+/* 3. フローティング現在地ボタンも立体球体風に */
 #locationBtn {
   position: absolute; right: 20px; bottom: 30px; z-index: 1000;
   width: 60px; height: 60px; border: none; border-radius: 50%;
@@ -177,10 +110,16 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0,0,0,0.2), inset 0 -3px 0 rgba(0,0,0,0.1);
   display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
 }
 #locationBtn .material-icons-round { font-size: 28px; }
+#locationBtn:hover { transform: scale(1.05); }
+#locationBtn:active {
+  transform: scale(0.95) translateY(3px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
 
-/* デフォルトのルート案内パネルを非表示にする（自作パネルを使うため） */
+/* ルートテキスト案内は非表示 */
 .leaflet-routing-container { display: none !important; }
 </style>
 </head>
@@ -198,186 +137,152 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <button class="hazard-btn" data-type="tsunami">
     <span class="material-icons-round">tsunami</span>津波浸水
   </button>
-  <button class="hazard-btn" data-type="shelter">
-    <span class="material-icons-round">gite</span>避難場所
-  </button>
 </div>
 
-<div id="routingTimePanel">
-  <div class="mode-selector">
-    <button class="mode-btn active" id="modeCar" onclick="changeRouteMode('car')">
-      <span class="material-icons-round">directions_car</span>車
-    </button>
-    <button class="mode-btn" id="modeWalk" onclick="changeRouteMode('foot')">
-      <span class="material-icons-round">directions_walk</span>徒歩
-    </button>
-  </div>
-  <div class="time-info">
-    <div class="time-result" id="timeValue">-- 分</div>
-    <div class="distance-result" id="distanceValue">-- km</div>
-  </div>
-</div>
-
-<button id="locationBtn">
-  <span class="material-icons-round">my_location</span>
-</button>
+<button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// 1. 地図の初期化（初期位置は東京駅、後ほど自動で現在地に移動）
-const map = L.map('map').setView([35.681236, 139.767125], 14);
+// マップ初期化
+const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 8);
 
-// 2. 背景地図：国土地理院 淡色地図
+// ズームボタンを右下に配置
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// ベースマップ（国土地理院 淡色地図）
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
+  attribution: '© 国土地理院'
 }).addTo(map);
 
-// 3. 国土地理院ハザードマップ用タイルレイヤーの定義
-const hazardLayers = {
-  flood: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/shinsuishitsunami_shinsuikaishi_kuni_data/{z}/{x}/{y}.png', {
-    opacity: 0.6,
-    attribution: '国土地理院 洪水浸水想定区域'
-  }),
-  landslide: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/doshasaigai_keikai_data/{z}/{x}/{y}.png', {
-    opacity: 0.7,
-    attribution: '国土地理院 土砂災害警戒区域'
-  }),
-  tsunami: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/tsunami_shinsuikaishi_data/{z}/{x}/{y}.png', {
-    opacity: 0.6,
-    attribution: '国土地理院 津波浸水想定'
-  }),
-  // 避難場所はサンプルとしてレイヤーグループを用意
-  shelter: L.layerGroup()
+// 国土地理院 ハザードマップポータル（最新URL）
+// ※土砂災害は「土石流」「急傾斜地」「地すべり」を配列でまとめて管理できるように修正
+const layers = {
+  flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
+  landslide: [
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), // 土石流
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), // 急傾斜地の崩壊
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })  // 地すべり
+  ],
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// サンプルの避難所ピンを東京駅・新宿駅付近（仮）に生成（ポップアップ付き）
-L.marker([35.681236, 139.767125]).bindPopup("<b>中央区防災センター（指定緊急避難場所）</b><br>洪水・土砂：対応").addTo(hazardLayers.shelter);
-L.marker([35.690921, 139.700258]).bindPopup("<b>新宿避難所</b><br>全災害対応").addTo(hazardLayers.shelter);
-
-
-// 4. 検索バーの追加と連動設定
-const geocoder = L.Control.geocoder({
-  defaultMarkGeocode: false,
-  placeholder: "住所や場所を検索...",
-  collapsed: false
-}).on('markgeocode', function(e) {
-  const center = e.geocode.center;
-  map.setView(center, 15);
-  // 検索先へのルートを引く
-  calculateRoute(center);
-}).addTo(map);
-
-
-// 5. 現在地取得（共通関数）
-let userLocation = null;
-let userMarker = null;
-
-function locateUser(isFirstLoad = false) {
-  if (!navigator.geolocation) {
-    if(!isFirstLoad) alert("お使いのブラウザは位置情報に対応していません。");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    function(position) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      userLocation = L.latLng(lat, lng);
-
-      if (userMarker) map.removeLayer(userMarker);
-      
-      userMarker = L.marker(userLocation).addTo(map).bindPopup("現在地").openPopup();
-      map.setView(userLocation, 15);
-
-      // 開いた直後の場合、近くのサンプル避難所を自動配置（現在地周辺用）
-      if(isFirstLoad) {
-        L.marker([lat + 0.003, lng + 0.003]).bindPopup("<b>地域指定避難所（第1小学校）</b><br>洪水：〇 土砂：〇").addTo(hazardLayers.shelter);
-      }
-    },
-    function(error) {
-      if(!isFirstLoad) alert("位置情報の取得に失敗しました。設定を確認してください。");
-    },
-    { enableHighAccuracy: true, timeout: 8000 }
-  );
-}
-
-// 画面を開いた時に自動で現在地を取得
-locateUser(true);
-
-// 現在地ボタンを押した時
-document.getElementById('locationBtn').addEventListener('click', () => locateUser(false));
-
-
-// 6. ハザード操作ボタンの連動
-document.querySelectorAll('.hazard-btn').forEach(button => {
-  button.addEventListener('click', function() {
-    this.classList.toggle('active');
+// ⚡ 自作ボタンメニューのクリックイベント連動（配列に対応）
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.onclick = function() {
     const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
     
     if (this.classList.contains('active')) {
-      map.addLayer(hazardLayers[type]);
+      // 配列内のすべてのレイヤーをマップに追加
+      layers[type].forEach(layer => layer.addTo(map));
     } else {
-      map.removeLayer(hazardLayers[type]);
+      // 配列内のすべてのレイヤーをマップから削除
+      layers[type].forEach(layer => map.removeLayer(layer));
     }
-  });
+  };
 });
 
+let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
-// 7. ルート検索（Routing Machine）の実装
-let routingControl = null;
-let currentTargetLatLng = null;
-
-function calculateRoute(targetLatLng, mode = 'car') {
-  if (!userLocation) {
-    alert("現在地が取得できていないため、ルート検索ができません。");
-    return;
-  }
-  currentTargetLatLng = targetLatLng;
-
-  // 既存のルートを消去
-  if (routingControl) map.removeControl(routingControl);
-
-  // 徒歩(foot)か車(car)でプロファイル（URL）を切り替え
-  const profile = mode === 'foot' ? 'route/v1/foot' : 'route/v1/driving';
-
-  routingControl = L.Routing.control({
-    waypoints: [userLocation, targetLatLng],
-    router: L.Routing.osrmv1({
-      serviceUrl: `https://router.project-osrm.org/${profile}`
-    }),
-    createMarker: function() { return null; }, // 余計なデフォルトピンを非表示
-    lineOptions: {
-      styles: [{ color: mode === 'foot' ? '#27ae60' : '#1a73e8', opacity: 0.8, weight: 6 }]
-    }
-  }).on('routesfound', function(e) {
-    const routes = e.routes;
-    const summary = routes[0].summary;
+// 現在地を取得する共通関数
+function updateCurrentLocation(isInitial = false) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
     
-    // パネルを表示して時間と距離を代入
-    document.getElementById('routingTimePanel').style.display = 'flex';
-    document.getElementById('timeValue').innerText = Math.round(summary.totalTime / 60) + " 分";
-    document.getElementById('distanceValue').innerText = (summary.totalDistance / 1000).toFixed(1) + " km";
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    
+    if (isInitial || !destination) {
+      map.setView(currentLocation, 15);
+    }
+    
+    if (destination) drawRoute();
+    
+  }, err => {
+    console.error("現在地取得失敗: " + err.code);
+    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
+  }, { enableHighAccuracy: true });
+}
+
+// ページを開いた瞬間に自動で現在地を取得
+updateCurrentLocation(true);
+
+// ルート描画関数
+function drawRoute() {
+  if (!currentLocation || !destination) return;
+  if (routingControl) map.removeControl(routingControl);
+  
+  routingControl = L.Routing.control({
+    waypoints: [currentLocation, destination],
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    lineOptions: {
+      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
+    }
   }).addTo(map);
 }
 
-// ルートモード（徒歩・車）の切り替え
-function changeRouteMode(mode) {
-  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-  if(mode === 'car') document.getElementById('modeCar').classList.add('active');
-  if(mode === 'foot') document.getElementById('modeWalk').classList.add('active');
+// 2つの異なる検索エンジン（施設用・番地用）を用意
+const nominatimGeocoder = L.Control.Geocoder.nominatim();
+const arcgisGeocoder = L.Control.Geocoder.arcgis();
+
+const geocoderControl = L.Control.geocoder({
+  geocoder: nominatimGeocoder,
+  defaultMarkGeocode: false,
+  placeholder: " 🔍 番地、住所、施設名を入力...",
+  collapsed: false
+}).addTo(map);
+
+geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
+
+// ハイブリッド検索処理
+const searchInput = geocoderControl._input;
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const query = searchInput.value;
+    if (!query) return;
+
+    nominatimGeocoder.geocode(query, function(results) {
+      if (results && results.length > 0) {
+        processSearchResult(results[0]);
+      } else {
+        arcgisGeocoder.geocode(query, function(arcResults) {
+          if (arcResults && arcResults.length > 0) {
+            processSearchResult(arcResults[0]);
+          } else {
+            alert("場所が見つかりませんでした。別のキーワードを試してください。");
+          }
+        });
+      }
+    });
+  }
+});
+
+function processSearchResult(geocodeTarget) {
+  const lat = geocodeTarget.center.lat;
+  const lng = geocodeTarget.center.lng;
+  destination = L.latLng(lat, lng); 
+
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
   
-  if (currentTargetLatLng) {
-    calculateRoute(currentTargetLatLng, mode);
+  if (currentLocation) {
+    drawRoute();
+    const bounds = L.latLngBounds([currentLocation, destination]);
+    map.fitBounds(bounds, { padding: [60, 120] }); // メニューと被らないよう下部に余白
+  } else {
+    map.setView(destination, 17);
   }
 }
 
-// 地図上をクリックするか、避難所のポップアップ内などからルートを引けるように設定
-map.on('click', function(e) {
-  calculateRoute(e.latlng, document.getElementById('modeCar').classList.contains('active') ? 'car' : 'foot');
-});
+// 右下のボタンを押したときも現在地を更新
+document.getElementById("locationBtn").onclick = () => {
+  updateCurrentLocation(false);
+};
 </script>
-
 </body>
 </html>
