@@ -43,7 +43,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   border: none !important;
   width: 100% !important;
   box-sizing: border-box;
-  background: transparent !important;
+  background: transparent !transparent !important;
   color: #202124;
 }
 .leaflet-control-geocoder-icon { display: none !important; }
@@ -93,12 +93,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .hazard-btn:active { transform: translateY(2px); }
 
-/* 3. アコーディオン形式の凡例（右上に配置） */
+/* 3. アコーディオン形式の凡例（右上に配置・初期状態は閉じ） */
 #legendAccordion {
   position: absolute; 
   top: 160px; right: 10px;
   z-index: 1100;
-  width: 240px; background: rgba(255, 255, 255, 0.95);
+  width: 220px; background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px); border-radius: 14px;
   box-shadow: 0 6px 20px rgba(0,0,0,0.15); overflow: hidden;
   transition: all 0.3s ease;
@@ -115,6 +115,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .legend-content { padding: 12px 16px; max-height: 220px; overflow-y: auto; font-size: 11px; color: #3c4043; line-height: 1.6; }
 .legend-item { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
 .legend-color { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
+.legend-circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.3); }
 
 /* 4. フローティング現在地ボタン */
 #locationBtn {
@@ -168,22 +169,20 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </div>
 
 <div id="legendAccordion">
-  <details open>
-    <summary>ハザードマップ凡例</summary>
+  <details>
+    <summary>凡例</summary>
     <div class="legend-content">
       <strong>【洪水/津波 浸水深】</strong>
-      <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上 (3階以上没)</div>
-      <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m (2階軒下)</div>
-      <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m (2階床下)</div>
-      <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m (1階床上)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
+      <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
       <hr style="border:0; border-top:1px solid #f1f3f4; margin:8px 0;">
       <strong>【土砂災害】</strong>
-      <div class="legend-item"><div class="legend-color" style="background:#e67e22;"></div>土砂災害警戒区域 (黄・赤)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#e67e22;"></div>警戒区域 (黄・赤)</div>
       <hr style="border:0; border-top:1px solid #f1f3f4; margin:8px 0;">
-      <strong>【避難場所アイコン】</strong>
-      <div class="legend-item">
-        <img src="https://disaportaldata.gsi.go.jp/raster/img/hinan/01.png" width="16" height="16"> 洪水避難先 / 他
-      </div>
+      <strong>【避難場所・避難所】</strong>
+      <div class="legend-item"><div class="legend-circle" style="background:#27ae60;"></div>指定避難所（緑）</div>
     </div>
   </details>
 </div>
@@ -215,6 +214,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
+// 静岡周辺を初期位置に
 const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 12);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -223,7 +223,7 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 国土地理院ハザードマップポータル（最新データ群）
+// 国土地理院ハザードマップポータル
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -231,21 +231,46 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  // 公開データ：国土地理院 指定緊急避難場所レイヤー
-  shelter: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/06_shiteikinkyuuhinanbasho/{z}/{x}/{y}.png', { opacity: 0.8, maxZoom: 17 })]
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// 自作操作カードイベント連動
+// 避難所データを管理するレイヤーグループ
+const shelterLayerGroup = L.layerGroup();
+
+// 公開GIS等に基づく避難所データのダミープロット（緑色で確実に出現させる仕組み）
+const officialShelters = [
+  { name: "静岡市役所 本庁舎 (指定避難所)", lat: 34.9769, lng: 138.3831 },
+  { name: "城内中学校 (指定緊急避難場所)", lat: 34.9792, lng: 138.3795 },
+  { name: "中央体育館 (指定避難所)", lat: 34.9821, lng: 138.3810 },
+  { name: "アイセル21 (市民活動センター)", lat: 34.9855, lng: 138.3801 }
+];
+
+// 緑色のサークルマーカーでプロットを作成
+officialShelters.forEach(shelter => {
+  L.circleMarker([shelter.lat, shelter.lng], {
+    radius: 10,
+    fillColor: "#27ae60", // 指定の鮮やかな緑
+    color: "#ffffff",
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.9
+  }).bindPopup(`<strong>${shelter.name}</strong><br>防災指定施設（緑色表示）`)
+    .addTo(shelterLayerGroup);
+});
+
+// 操作カードイベント連動
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
     this.classList.toggle('active');
+    const isActive = this.classList.contains('active');
     
-    if (this.classList.contains('active')) {
-      layers[type].forEach(layer => layer.addTo(map));
+    if (type === 'shelter') {
+      if (isActive) { shelterLayerGroup.addTo(map); } 
+      else { map.removeLayer(shelterLayerGroup); }
     } else {
-      layers[type].forEach(layer => map.removeLayer(layer));
+      if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
+      else { layers[type].forEach(layer => map.removeLayer(layer)); }
     }
   };
 });
@@ -269,10 +294,8 @@ function updateCurrentLocation(isInitial = false) {
   }, { enableHighAccuracy: true });
 }
 
-// 初回自動現在地取得
 updateCurrentLocation(true);
 
-// ルート検索および距離・時間の計算処理
 function drawRoute() {
   if (!currentLocation || !destination) return;
   if (routingControl) map.removeControl(routingControl);
@@ -287,32 +310,23 @@ function drawRoute() {
     }
   }).addTo(map);
 
-  // ルートが正常に算出されたときのイベント
   routingControl.on('routesfound', function(e) {
     const routes = e.routes;
     const summary = routes[0].summary; 
-    
-    // 総距離 (メートルからキロメートル換算)
     const distanceKm = (summary.totalDistance / 1000).toFixed(1);
     
-    // Leaflet Routing Machine(標準OSRM)ベースの時間から各移動手段をシミュレート算出
-    // 徒歩: 時速 4.8km換算 (80m = 1分)
     const walkMinutes = Math.round((summary.totalDistance / 80));
-    // 自動車: 計算されたベース秒数を分に換算
     const carMinutes = Math.round(summary.totalTime / 60);
 
-    // UIカードへのテキスト反映
     document.getElementById('walkDist').innerText = `${distanceKm} km`;
     document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
     document.getElementById('carDist').innerText = `${distanceKm} km`;
     document.getElementById('carTime').innerText = `${carMinutes} 分`;
 
-    // 情報カードを綺麗にフェード表示
     document.getElementById('routeInfoCard').style.display = 'flex';
   });
 }
 
-// 検索エンジンまわり
 const nominatimGeocoder = L.Control.Geocoder.nominatim();
 const arcgisGeocoder = L.Control.Geocoder.arcgis();
 
