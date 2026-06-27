@@ -47,7 +47,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .leaflet-control-geocoder-icon { display: none !important; }
 
-/* 検索の候補リストを最前面に出す設定 */
 .leaflet-control-geocoder-suggestions {
   z-index: 9999 !important;
   border-radius: 12px !important;
@@ -170,51 +169,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-weight: bold;
 }
 
-/* 右側に配置する開閉式の凡例コンテナ */
-#legendWrapper {
-  position: absolute;
-  top: 175px;
-  right: 10px;
-  z-index: 1000;
-  display: none; 
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-}
-#legendToggleBtn {
-  border: none;
-  border-radius: 20px;
-  padding: 8px 14px;
-  background: #fff;
-  color: #1a73e8;
-  font-size: 11px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-}
-
-#legendCard {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  width: 170px;
-  max-height: 200px;
-  overflow-y: auto;
-  display: none; 
-  font-size: 11px;
-  color: #333;
-}
-.legend-group { margin-bottom: 12px; }
-.legend-group:last-child { margin-bottom: 0; }
-.legend-group h4 { margin: 0 0 6px 0; font-size: 12px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 3px; }
-.legend-item { display: flex; align-items: center; margin-bottom: 4px; font-weight: 500; }
-.legend-color { width: 22px; height: 12px; margin-right: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
-
 /* 3. フローティング現在地ボタン */
 #locationBtn {
   position: absolute; right: 20px; bottom: 30px; z-index: 1000;
@@ -226,6 +180,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 #locationBtn .material-icons-round { font-size: 28px; }
 
+/* デフォルトのルート案内パネルを非表示にする（自作パネルを使うため） */
 .leaflet-routing-container { display: none !important; }
 </style>
 </head>
@@ -272,84 +227,156 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// 1. 地図の初期化
-const map = L.map('map').setView([35.681236, 139.767125], 13);
+// 1. 地図の初期化（初期位置は東京駅、後ほど自動で現在地に移動）
+const map = L.map('map').setView([35.681236, 139.767125], 14);
 
-// 2. 背景地図を「国土地理院 淡色地図」に変更
+// 2. 背景地図：国土地理院 淡色地図
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
 }).addTo(map);
 
-// 3. 検索バーの追加
+// 3. 国土地理院ハザードマップ用タイルレイヤーの定義
+const hazardLayers = {
+  flood: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/shinsuishitsunami_shinsuikaishi_kuni_data/{z}/{x}/{y}.png', {
+    opacity: 0.6,
+    attribution: '国土地理院 洪水浸水想定区域'
+  }),
+  landslide: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/doshasaigai_keikai_data/{z}/{x}/{y}.png', {
+    opacity: 0.7,
+    attribution: '国土地理院 土砂災害警戒区域'
+  }),
+  tsunami: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/tsunami_shinsuikaishi_data/{z}/{x}/{y}.png', {
+    opacity: 0.6,
+    attribution: '国土地理院 津波浸水想定'
+  }),
+  // 避難場所はサンプルとしてレイヤーグループを用意
+  shelter: L.layerGroup()
+};
+
+// サンプルの避難所ピンを東京駅・新宿駅付近（仮）に生成（ポップアップ付き）
+L.marker([35.681236, 139.767125]).bindPopup("<b>中央区防災センター（指定緊急避難場所）</b><br>洪水・土砂：対応").addTo(hazardLayers.shelter);
+L.marker([35.690921, 139.700258]).bindPopup("<b>新宿避難所</b><br>全災害対応").addTo(hazardLayers.shelter);
+
+
+// 4. 検索バーの追加と連動設定
 const geocoder = L.Control.geocoder({
-  defaultMarkGeocode: true,
+  defaultMarkGeocode: false,
   placeholder: "住所や場所を検索...",
   collapsed: false
+}).on('markgeocode', function(e) {
+  const center = e.geocode.center;
+  map.setView(center, 15);
+  // 検索先へのルートを引く
+  calculateRoute(center);
 }).addTo(map);
 
-// 4. 現在地取得機能の実装
-let currentLocationMarker = null;
 
-document.getElementById('locationBtn').addEventListener('click', function() {
+// 5. 現在地取得（共通関数）
+let userLocation = null;
+let userMarker = null;
+
+function locateUser(isFirstLoad = false) {
   if (!navigator.geolocation) {
-    alert("お使いのブラウザは位置情報（GPS）に対応していません。");
+    if(!isFirstLoad) alert("お使いのブラウザは位置情報に対応していません。");
     return;
   }
-
-  // 位置情報の取得を開始
   navigator.geolocation.getCurrentPosition(
     function(position) {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
+      userLocation = L.latLng(lat, lng);
 
-      // すでに現在地マーカーがある場合は削除して再作成
-      if (currentLocationMarker) {
-        map.removeLayer(currentLocationMarker);
-      }
-
-      // 現在地にマーカーを設置し、地図の中心を移動
-      currentLocationMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup("現在の位置").openPopup();
+      if (userMarker) map.removeLayer(userMarker);
       
-      map.setView([lat, lng], 15); // 少しズームインする
+      userMarker = L.marker(userLocation).addTo(map).bindPopup("現在地").openPopup();
+      map.setView(userLocation, 15);
+
+      // 開いた直後の場合、近くのサンプル避難所を自動配置（現在地周辺用）
+      if(isFirstLoad) {
+        L.marker([lat + 0.003, lng + 0.003]).bindPopup("<b>地域指定避難所（第1小学校）</b><br>洪水：〇 土砂：〇").addTo(hazardLayers.shelter);
+      }
     },
     function(error) {
-      switch(error.code) {
-        case error.PERMISSION_DENIED:
-          alert("位置情報の利用が許可されていません。ブラウザや端末の設定を確認してください。");
-          break;
-        case error.POSITION_UNAVAILABLE:
-          alert("位置情報が取得できませんでした（電波状況など）。");
-          break;
-        case error.TIMEOUT:
-          alert("位置情報の取得がタイムアウトしました。");
-          break;
-        default:
-          alert("位置情報の取得中にエラーが発生しました。");
-          break;
-      }
+      if(!isFirstLoad) alert("位置情報の取得に失敗しました。設定を確認してください。");
     },
-    {
-      enableHighAccuracy: true, // 高精度な位置情報を要求
-      timeout: 10000,
-      maximumAge: 0
-    }
+    { enableHighAccuracy: true, timeout: 8000 }
   );
-});
+}
 
-// ハザードメニュー切り替え（枠組み）
+// 画面を開いた時に自動で現在地を取得
+locateUser(true);
+
+// 現在地ボタンを押した時
+document.getElementById('locationBtn').addEventListener('click', () => locateUser(false));
+
+
+// 6. ハザード操作ボタンの連動
 document.querySelectorAll('.hazard-btn').forEach(button => {
   button.addEventListener('click', function() {
     this.classList.toggle('active');
+    const type = this.getAttribute('data-type');
+    
+    if (this.classList.contains('active')) {
+      map.addLayer(hazardLayers[type]);
+    } else {
+      map.removeLayer(hazardLayers[type]);
+    }
   });
 });
 
-// ルート変更関数のダミー
+
+// 7. ルート検索（Routing Machine）の実装
+let routingControl = null;
+let currentTargetLatLng = null;
+
+function calculateRoute(targetLatLng, mode = 'car') {
+  if (!userLocation) {
+    alert("現在地が取得できていないため、ルート検索ができません。");
+    return;
+  }
+  currentTargetLatLng = targetLatLng;
+
+  // 既存のルートを消去
+  if (routingControl) map.removeControl(routingControl);
+
+  // 徒歩(foot)か車(car)でプロファイル（URL）を切り替え
+  const profile = mode === 'foot' ? 'route/v1/foot' : 'route/v1/driving';
+
+  routingControl = L.Routing.control({
+    waypoints: [userLocation, targetLatLng],
+    router: L.Routing.osrmv1({
+      serviceUrl: `https://router.project-osrm.org/${profile}`
+    }),
+    createMarker: function() { return null; }, // 余計なデフォルトピンを非表示
+    lineOptions: {
+      styles: [{ color: mode === 'foot' ? '#27ae60' : '#1a73e8', opacity: 0.8, weight: 6 }]
+    }
+  }).on('routesfound', function(e) {
+    const routes = e.routes;
+    const summary = routes[0].summary;
+    
+    // パネルを表示して時間と距離を代入
+    document.getElementById('routingTimePanel').style.display = 'flex';
+    document.getElementById('timeValue').innerText = Math.round(summary.totalTime / 60) + " 分";
+    document.getElementById('distanceValue').innerText = (summary.totalDistance / 1000).toFixed(1) + " km";
+  }).addTo(map);
+}
+
+// ルートモード（徒歩・車）の切り替え
 function changeRouteMode(mode) {
   document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
   if(mode === 'car') document.getElementById('modeCar').classList.add('active');
   if(mode === 'foot') document.getElementById('modeWalk').classList.add('active');
+  
+  if (currentTargetLatLng) {
+    calculateRoute(currentTargetLatLng, mode);
+  }
 }
+
+// 地図上をクリックするか、避難所のポップアップ内などからルートを引けるように設定
+map.on('click', function(e) {
+  calculateRoute(e.latlng, document.getElementById('modeCar').classList.contains('active') ? 'car' : 'foot');
+});
 </script>
 
 </body>
