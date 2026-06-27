@@ -50,6 +50,7 @@ html, body {
 <script>
 
 const map = L.map('map').setView([34.9756,138.3828],8);
+let routingControl = null;
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© OpenStreetMap'
@@ -112,7 +113,21 @@ map.setView([lat,lng],15);
 L.marker([lat,lng]).addTo(map)
 .bindPopup("現在地")
 .openPopup();
+map.on("click", function(e) {
 
+    if (routingControl) {
+        map.removeControl(routingControl);
+    }
+
+    routingControl = L.Routing.control({
+        waypoints: [
+            L.latLng(lat, lng),
+            e.latlng
+        ],
+        routeWhileDragging: false
+    }).addTo(map);
+
+});
 },
 function(err){
     alert("現在地を取得できませんでした。\nエラーコード:"+err.code);
