@@ -88,10 +88,10 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 🔄 国土地理院（ハザードマップポータル）の確実なデータソースに戻しました
-const flood = L.tileLayer('https://disaportal.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6 });
-const landslide = L.tileLayer('https://disaportal.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7 });
-const tsunami = L.tileLayer('https://disaportal.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6 });
+// 🔄 【ここを修正】国土地理院の最新URL「disaportaldata.gsi.go.jp」に差し替えました
+const flood = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 });
+const landslide = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 });
+const tsunami = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 });
 
 // レイヤーコントロールを左上に配置（チェックを入れると重なる、初期はすべてオフ）
 L.control.layers(null, { 
@@ -113,14 +113,68 @@ function updateCurrentLocation(isInitial = false) {
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
-    // 初回読み込み時、または目的地がまだない場合は現在地にズーム
     if (isInitial || !destination) {
       map.setView(currentLocation, 15);
     }
     
-    // すでに目的地が検索されていればルートを再描画
     if (destination) drawRoute();
     
   }, err => {
     console.error("現在地取得失敗: " + err.code);
-    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービス
+    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
+  }, { enableHighAccuracy: true });
+}
+
+// 💻 ページを開いた瞬間に自動で現在地を取得
+updateCurrentLocation(true);
+
+// ルート描画関数
+function drawRoute() {
+  if (!currentLocation || !destination) return;
+  if (routingControl) map.removeControl(routingControl);
+  
+  routingControl = L.Routing.control({
+    waypoints: [currentLocation, destination],
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    lineOptions: {
+      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
+    }
+  }).addTo(map);
+}
+
+// 検索コントロール（住所・番地・施設名対応）
+L.Control.geocoder({
+  geocoder: L.Control.Geocoder.nominatim({
+    geocodingQueryParams: { "accept-language": "ja", "countrycodes": "jp", "addressdetails": 1 }
+  }),
+  defaultMarkGeocode: false,
+  placeholder: " 🔍 番地、住所、施設名を入力...",
+  collapsed: false
+})
+.on("markgeocode", e => {
+  const lat = e.geocode.center.lat;
+  const lng = e.geocode.center.lng;
+  destination = L.latLng(lat, lng); 
+
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker(destination).addTo(map).bindPopup(e.geocode.name).openPopup();
+  
+  if (currentLocation) {
+    drawRoute();
+    const bounds = L.latLngBounds([currentLocation, destination]);
+    map.fitBounds(bounds, { padding: [60, 60] });
+  } else {
+    map.setView(destination, 17);
+    alert("現在地を読み込み中です。位置情報が許可されると自動でルートが繋がります。");
+  }
+}).addTo(map);
+
+// 右下のボタンを押したときも現在地を更新
+document.getElementById("locationBtn").onclick = () => {
+  updateCurrentLocation(false);
+};
+</script>
+</body>
+</html>
