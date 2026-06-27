@@ -81,19 +81,18 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 .hazard-btn:active { transform: translateY(1px); }
 
-/* 3. Google風スタイリッシュミニマル凡例（閉じている時は極小） */
+/* 3. Google風スタイリッシュミニマル凡例 */
 #legendAccordion {
   position: absolute; 
   top: 155px; right: 10px;
   z-index: 1100;
-  width: 90px; /* 閉じている時はかなりコンパクト */
+  width: 90px;
   background: #ffffff;
   border-radius: 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
   overflow: hidden;
   transition: width 0.2s ease, border-radius 0.2s ease;
 }
-/* 展開したときは幅を自然に広げる */
 #legendAccordion[open-state="true"] {
   width: 210px;
   border-radius: 12px;
@@ -105,7 +104,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   user-select: none; list-style: none;
 }
 #legendAccordion summary::-webkit-details-marker { display: none; }
-/* Googleマップ風のレイヤー風アイコンを左に配置 */
 #legendAccordion summary::before {
   content: 'layers'; font-family: 'Material Icons Round'; font-size: 18px; color: #1a73e8; margin-right: 2px;
 }
@@ -149,6 +147,9 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .route-dist { font-size: 11px; color: #5f6368; }
 
 .leaflet-routing-container { display: none !important; }
+
+/* 避難所表示用のPaneレイヤー（最前面に固定するハック） */
+.leaflet-shelter-pane { z-index: 650 !important; }
 </style>
 </head>
 <body>
@@ -217,7 +218,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// 静岡周辺を初期位置に設定
 const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 13);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -226,7 +226,7 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 国土地理院ハザードマップポータル レイヤー定義
+// 国土地理院ハザードマップポータル レイヤー
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -237,10 +237,13 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// 🌟 【バグ修正】避難所専用の独立レイヤーグループ（初期状態でマップに配置しておく）
+// 🌟避難所レイヤーを最前面に配置するためのカスタムPane（ペイン）の生成
+const shelterPane = map.createPane('shelterPane');
+shelterPane.style.zIndex = 650; 
+shelterPane.style.pointerEvents = 'none';
+
 const shelterLayerGroup = L.layerGroup().addTo(map);
 
-// 避難所のダミーデータ（静岡駅周辺）
 const officialShelters = [
   { name: "静岡市役所 本庁舎 (指定避難所)", lat: 34.9769, lng: 138.3831 },
   { name: "城内中学校 (指定緊急避難場所)", lat: 34.9792, lng: 138.3795 },
@@ -248,18 +251,17 @@ const officialShelters = [
   { name: "アイセル21 (市民活動センター)", lat: 34.9855, lng: 138.3801 }
 ];
 
-// 避難所ボタンの状態フラグ
 let shelterActive = false;
 
-// 避難所を描画・消去する実関数
 function renderShelters() {
-  shelterLayerGroup.clearLayers(); // 一旦クリア
+  shelterLayerGroup.clearLayers();
   if (!shelterActive) return;
 
   officialShelters.forEach(shelter => {
     L.circleMarker([shelter.lat, shelter.lng], {
+      pane: 'shelterPane', // 確実な最前面化
       radius: 9,
-      fillColor: "#27ae60", // 指定の美しい緑色
+      fillColor: "#27ae60",
       color: "#ffffff",
       weight: 2,
       opacity: 1,
@@ -269,7 +271,7 @@ function renderShelters() {
   });
 }
 
-// ハザード・避難所操作ボタンのイベント
+// ハザード・避難所操作ボタン
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
@@ -278,7 +280,7 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
     
     if (type === 'shelter') {
       shelterActive = isActive;
-      renderShelters(); // 避難所レイヤーグループの更新
+      renderShelters();
     } else {
       if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
       else { layers[type].forEach(layer => map.removeLayer(layer)); }
@@ -286,14 +288,10 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
   };
 });
 
-// 凡例のアコーディオン開閉デザイン連動用JS
+// 凡例のアコーディオン連動
 const legendCard = document.getElementById('legendAccordion');
 document.getElementById('legendDetails').addEventListener('toggle', function(e) {
-  if (this.open) {
-    legendCard.setAttribute('open-state', 'true');
-  } else {
-    legendCard.setAttribute('open-state', 'false');
-  }
+  legendCard.setAttribute('open-state', this.open ? 'true' : 'false');
 });
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
@@ -301,21 +299,14 @@ let currentLocation = null, destination = null, routingControl = null, currentMa
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
-    
-    if (isInitial || !destination) {
-      map.setView(currentLocation, 14);
-    }
+    if (isInitial || !destination) map.setView(currentLocation, 14);
     if (destination) drawRoute();
   }, err => {
     console.error("現在地取得失敗", err);
-    if (!isInitial) alert("現在地を取得できませんでした。");
   }, { enableHighAccuracy: true });
 }
-
-// 初期起動時の自動現在地取得
 updateCurrentLocation(true);
 
 function drawRoute() {
@@ -327,16 +318,12 @@ function drawRoute() {
     routeWhileDragging: false,
     addWaypoints: false,
     draggableWaypoints: false,
-    lineOptions: {
-      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 5 }]
-    }
+    lineOptions: { styles: [{ color: '#1a73e8', opacity: 0.8, weight: 5 }] }
   }).addTo(map);
 
   routingControl.on('routesfound', function(e) {
-    const routes = e.routes;
-    const summary = routes[0].summary; 
+    const summary = e.routes[0].summary; 
     const distanceKm = (summary.totalDistance / 1000).toFixed(1);
-    
     const walkMinutes = Math.round((summary.totalDistance / 80));
     const carMinutes = Math.round(summary.totalTime / 60);
 
@@ -344,44 +331,50 @@ function drawRoute() {
     document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
     document.getElementById('carDist').innerText = `${distanceKm} km`;
     document.getElementById('carTime').innerText = `${carMinutes} 分`;
-
     document.getElementById('routeInfoCard').style.display = 'flex';
   });
 }
 
+// 🌟 【改良】施設名・住所地番のハイブリッド対応ジオコーディング処理
 const nominatimGeocoder = L.Control.Geocoder.nominatim();
 const arcgisGeocoder = L.Control.Geocoder.arcgis();
 
+// 標準コントロールを設置（UIバインド用）
 const geocoderControl = L.Control.geocoder({
   geocoder: nominatimGeocoder,
   defaultMarkGeocode: false,
-  placeholder: " 🔍 番地、住所、施設名を入力...",
+  placeholder: " 🔍 施設名、または住所・地番を入力...",
   collapsed: false
 }).addTo(map);
 
-geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
-
+// 入力時のEnterキー割り込みによるハイブリッド複合検索ロジック
 const searchInput = geocoderControl._input;
 searchInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
+    e.preventDefault();
     const query = searchInput.value;
     if (!query) return;
 
+    // 第一検索: 日本国内の施設・ランドマークに強いNominatim
     nominatimGeocoder.geocode(query, function(results) {
       if (results && results.length > 0) {
         processSearchResult(results[0]);
       } else {
+        // 第二検索（フォールバック）: 数字の「◯番地◯号」「地番」の空間判定解像度が高いArcGIS GISエンジンへシフト
         arcgisGeocoder.geocode(query, function(arcResults) {
           if (arcResults && arcResults.length > 0) {
             processSearchResult(arcResults[0]);
           } else {
-            alert("場所が見つかりませんでした。");
+            alert("該当する施設または住所番地が見つかりませんでした。");
           }
         });
       }
     });
   }
 });
+
+// コントロール上のサジェスト項目をクリックした際の連動
+geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
 
 function processSearchResult(geocodeTarget) {
   const lat = geocodeTarget.center.lat;
@@ -393,16 +386,13 @@ function processSearchResult(geocodeTarget) {
   
   if (currentLocation) {
     drawRoute();
-    const bounds = L.latLngBounds([currentLocation, destination]);
-    map.fitBounds(bounds, { padding: [80, 160] });
+    map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding: [80, 160] });
   } else {
     map.setView(destination, 16);
   }
 }
 
-document.getElementById("locationBtn").onclick = () => {
-  updateCurrentLocation(false);
-};
+document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
 </script>
 </body>
 </html>
