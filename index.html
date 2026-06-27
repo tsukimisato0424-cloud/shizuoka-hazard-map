@@ -13,28 +13,24 @@
 <style>
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
-/* 1. 検索バー（最上段） */
+/* 1. 検索バー（最上段）- 重なり順を最上位に設定 */
 .leaflet-top.leaflet-left {
   width: 100%;
   padding: 0 !important;
   box-sizing: border-box;
-  z-index: 1200 !important;
+  z-index: 9999 !important; /* ハザードカードより上に */
 }
 .leaflet-control-geocoder {
   margin: 10px !important;
   width: calc(100% - 20px) !important;
   max-width: none !important;
   border: none !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
   border-radius: 14px !important;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
-  transition: all 0.3s ease;
-  z-index: 1200 !important;
-}
-.leaflet-control-geocoder:focus-within {
-  box-shadow: 0 4px 20px rgba(26, 115, 232, 0.25) !important;
-  background: #fff;
+  position: relative;
+  z-index: 9999 !important;
 }
 .leaflet-control-geocoder-form { width: 100%; display: flex; align-items: center; }
 .leaflet-control-geocoder-form input {
@@ -47,7 +43,28 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   color: #202124;
 }
 .leaflet-control-geocoder-icon { display: none !important; }
-.leaflet-control-geocoder-suggestions { z-index: 1300 !important; border-radius: 0 0 14px 14px; }
+
+/* 🌟 検索候補（サジェストリスト）をハザードカードより手前に強制表示 */
+.leaflet-control-geocoder-suggestions {
+  z-index: 100000 !important; 
+  position: absolute !important;
+  width: 100% !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
+  border-radius: 0 0 14px 14px !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+}
+.leaflet-control-geocoder-suggestion {
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  color: #3c4043 !important;
+  cursor: pointer;
+  border-top: 1px solid #f1f3f4;
+}
+.leaflet-control-geocoder-suggestion:hover {
+  background-color: #f8f9fa !important;
+}
 
 .leaflet-control-layers { display: none !important; }
 
@@ -55,7 +72,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 #hazardMenuCard {
   position: absolute;
   top: 70px; left: 10px; right: 10px;
-  z-index: 1100;
+  z-index: 2000; /* 検索サジェスト(100000)より下に配置して被りを防ぐ */
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -85,7 +102,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 #legendAccordion {
   position: absolute; 
   top: 155px; right: 10px;
-  z-index: 1100;
+  z-index: 1500;
   width: 90px;
   background: #ffffff;
   border-radius: 20px;
@@ -118,7 +135,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 /* 4. フローティング現在地ボタン */
 #locationBtn {
-  position: absolute; right: 16px; bottom: 180px; z-index: 1100;
+  position: absolute; right: 16px; bottom: 180px; z-index: 1500;
   width: 50px; height: 50px; border: none; border-radius: 50%;
   background: #ffffff; color: #1a73e8; cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
@@ -127,7 +144,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 /* 5. ルート結果情報カード */
 #routeInfoCard {
-  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1100;
+  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: #ffffff; border-radius: 16px; padding: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   display: none; flex-direction: column; gap: 10px;
@@ -148,7 +165,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 .leaflet-routing-container { display: none !important; }
 
-/* 避難所表示用のPaneレイヤー（最前面に固定するハック） */
+/* 避難所を確実にハザードカラーの上層に置く設定 */
 .leaflet-shelter-pane { z-index: 650 !important; }
 </style>
 </head>
@@ -226,7 +243,6 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 国土地理院ハザードマップポータル レイヤー
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -237,13 +253,13 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// 🌟避難所レイヤーを最前面に配置するためのカスタムPane（ペイン）の生成
-const shelterPane = map.createPane('shelterPane');
-shelterPane.style.zIndex = 650; 
-shelterPane.style.pointerEvents = 'none';
+// 最前面に避難所を置くためのPaneレイヤーを生成
+map.createPane('shelterPane');
+map.getPane('shelterPane').style.zIndex = 650;
 
 const shelterLayerGroup = L.layerGroup().addTo(map);
 
+// 静岡周辺のダミー避難所データ
 const officialShelters = [
   { name: "静岡市役所 本庁舎 (指定避難所)", lat: 34.9769, lng: 138.3831 },
   { name: "城内中学校 (指定緊急避難場所)", lat: 34.9792, lng: 138.3795 },
@@ -259,7 +275,7 @@ function renderShelters() {
 
   officialShelters.forEach(shelter => {
     L.circleMarker([shelter.lat, shelter.lng], {
-      pane: 'shelterPane', // 確実な最前面化
+      pane: 'shelterPane', 
       radius: 9,
       fillColor: "#27ae60",
       color: "#ffffff",
@@ -271,7 +287,6 @@ function renderShelters() {
   });
 }
 
-// ハザード・避難所操作ボタン
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
@@ -288,7 +303,6 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
   };
 });
 
-// 凡例のアコーディオン連動
 const legendCard = document.getElementById('legendAccordion');
 document.getElementById('legendDetails').addEventListener('toggle', function(e) {
   legendCard.setAttribute('open-state', this.open ? 'true' : 'false');
@@ -335,11 +349,10 @@ function drawRoute() {
   });
 }
 
-// 🌟 【改良】施設名・住所地番のハイブリッド対応ジオコーディング処理
+// 🌟 【完全改修】ハイブリッド自動フォールバック検索コアロジック
 const nominatimGeocoder = L.Control.Geocoder.nominatim();
 const arcgisGeocoder = L.Control.Geocoder.arcgis();
 
-// 標準コントロールを設置（UIバインド用）
 const geocoderControl = L.Control.geocoder({
   geocoder: nominatimGeocoder,
   defaultMarkGeocode: false,
@@ -347,42 +360,43 @@ const geocoderControl = L.Control.geocoder({
   collapsed: false
 }).addTo(map);
 
-// 入力時のEnterキー割り込みによるハイブリッド複合検索ロジック
-const searchInput = geocoderControl._input;
-searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    const query = searchInput.value;
-    if (!query) return;
-
-    // 第一検索: 日本国内の施設・ランドマークに強いNominatim
+// プラグイン標準の onSubmit 処理がフォームリロードやバグを引き起こすため、JavaScript側で完全に上書き
+geocoderControl.options.geocoder = {
+  geocode: function(query, callback) {
+    // ステップ1: まずは施設名・ランドマークに強いNominatimで検索
     nominatimGeocoder.geocode(query, function(results) {
       if (results && results.length > 0) {
-        processSearchResult(results[0]);
+        callback(results);
       } else {
-        // 第二検索（フォールバック）: 数字の「◯番地◯号」「地番」の空間判定解像度が高いArcGIS GISエンジンへシフト
+        // ステップ2: 住所・番地・地番のパースに強いArcGISでフォールバック検索を実行
         arcgisGeocoder.geocode(query, function(arcResults) {
           if (arcResults && arcResults.length > 0) {
-            processSearchResult(arcResults[0]);
+            callback(arcResults);
           } else {
-            alert("該当する施設または住所番地が見つかりませんでした。");
+            callback([]);
           }
         });
       }
     });
   }
+};
+
+// 検索候補のクリック、または確定時の共通トリガー
+geocoderControl.on("markgeocode", e => { 
+  if (e.geocode) {
+    processSearchResult(e.geocode); 
+  }
 });
 
-// コントロール上のサジェスト項目をクリックした際の連動
-geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
-
 function processSearchResult(geocodeTarget) {
+  if (!geocodeTarget || !geocodeTarget.center) return;
+  
   const lat = geocodeTarget.center.lat;
   const lng = geocodeTarget.center.lng;
   destination = L.latLng(lat, lng); 
 
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
+  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name || "検索結果地点").openPopup();
   
   if (currentLocation) {
     drawRoute();
