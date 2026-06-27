@@ -94,46 +94,22 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// ==========================================
-// 🔄 リアルタイムで最新データ（WMS / ArcGIS API）を取得する設定
-// ==========================================
+// ハザードマップレイヤーの定義
+const flood = L.tileLayer('https://disaportal.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6 });
+const landslide = L.tileLayer('https://disaportal.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7 });
+const tsunami = L.tileLayer('https://disaportal.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6 });
 
-// 1. 洪水浸水想定区域（国交省・最新WMSデータ）
-const flood = L.tileLayer.wms('https://disaportaldata.gsi.go.jp/wms/shinsuishin?', {
-  layers: '01_flood_l2_shinsuishin', // 想定最大規模の洪水
-  format: 'image/png',
-  transparent: true,
-  opacity: 0.6,
-  attribution: '© ハザードマップポータルサイト'
-});
+// ★ 変更点： `flood.addTo(map);` を削除しました。
+// これにより、起動時は真っ白（通常の地図）になり、チェックを入れた時だけ重なるようになります。
 
-// 2. 土砂災害警戒区域（国交省・最新WMSデータ）
-const landslide = L.tileLayer.wms('https://disaportaldata.gsi.go.jp/wms/dosakukeikai?', {
-  layers: '05_dosekiryukeikaikuiki,05_kyushunkyushachikukeikaikuiki,05_jisubirikeikaikuiki', // 土石流・急傾斜・地すべりすべて
-  format: 'image/png',
-  transparent: true,
-  opacity: 0.7,
-  attribution: '© ハザードマップポータルサイト'
-});
-
-// 3. 静岡県 第4次地震被害想定：津波浸水想定（静岡県GIS直結データ）
-// 💡 静岡県の公式GISサーバーから直接最新のタイル画像を引っ張ってきます
-const tsunami = L.tileLayer('https://pref-shizuoka.geocloud.jp/public/wms/tile/tsunami_shinsui/{z}/{x}/{y}.png', {
-  opacity: 0.6,
-  attribution: '© 静岡県地理情報システム'
-});
-
-
-// ==========================================
-// 📋 メニュー（レイヤーコントロール）への登録
-// ==========================================
+// レイヤーコントロールを左上（検索窓の下）に配置し、最初から展開
 L.control.layers(null, { 
-  "【最新】洪水（想定最大規模）": flood, 
-  "【最新】土砂災害警戒区域": landslide, 
-  "【静岡県公式】津波浸水想定": tsunami 
+  "洪水（想定最大規模）": flood, 
+  "土砂災害警戒区域": landslide, 
+  "津波浸水想定": tsunami 
 }, { 
   position: "topleft",
-  collapsed: false 
+  collapsed: false // 最初からメニューを開いた状態
 }).addTo(map);
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
@@ -195,4 +171,3 @@ document.getElementById("locationBtn").onclick = () => {
 };
 </script>
 </body>
-</html>
