@@ -95,6 +95,13 @@ position:"topleft"
  }
  ).addTo(map);document.getElementById("locationBtn").onclick=function(){
 
+document.getElementById("locationBtn").onclick = function () {
+
+    if (!navigator.geolocation) {
+        alert("この端末では位置情報が利用できません。");
+        return;
+    }
+    
 navigator.geolocation.getCurrentPosition(function(pos){
 
 const lat=pos.coords.latitude;
@@ -106,7 +113,11 @@ L.marker([lat,lng]).addTo(map)
 .bindPopup("現在地")
 .openPopup();
 
-});
+},
+function(err){
+    alert("現在地を取得できませんでした。\nエラーコード:"+err.code);
+}
+);
 
 };
 
