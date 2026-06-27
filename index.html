@@ -190,4 +190,245 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 <div id="legendWrapper">
   <button id="legendToggleBtn">
-    <span class="material-icons-round" id="toggleIcon">info</span><span id="toggleText">凡
+    <span class="material-icons-round" id="toggleIcon">info</span><span id="toggleText">凡例を表示</span>
+  </button>
+  <div id="legendCard"></div>
+</div>
+
+<button id="locationBtn"><span class="material-icons-round">my_location</span></button>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+// マップ初期化
+const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 8);
+
+// ズームボタンを右下に配置
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// ベースマップ（国土地理院 淡色地図）
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+  attribution: '© 国土地理院'
+}).addTo(map);
+
+// 国土地理院 ハザードマップポータル
+const layers = {
+  flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
+  landslide: [
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), 
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), 
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })  
+  ],
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
+};
+
+// 各ハザードの公式凡例データ
+const legendData = {
+  flood: {
+    title: "洪水浸水深",
+    items: [
+      { color: "#74006A", text: "20m以上" },
+      { color: "#B800D6", text: "10m 〜 20m" },
+      { color: "#FF55FF", text: "5.0m 〜 10m" },
+      { color: "#FF9999", text: "3.0m 〜 5.0m" },
+      { color: "#FFFF73", text: "0.5m 〜 3.0m" },
+      { color: "#E6F2FF", text: "0.5m未満" }
+    ]
+  },
+  landslide: {
+    title: "土砂災害区分",
+    items: [
+      { color: "#FF0000", text: "特別警戒 (レッド)" },
+      { color: "#FFCC00", text: "警戒区域 (イエロー)" }
+    ]
+  },
+  tsunami: {
+    title: "津波浸水深",
+    items: [
+      { color: "#B800D6", text: "10m以上" },
+      { color: "#FF55FF", text: "5.0m 〜 10m" },
+      { color: "#FF9999", text: "3.0m 〜 5.0m" },
+      { color: "#FFFF73", text: "1.0m 〜 3.0m" },
+      { color: "#A3FF73", text: "0.3m 〜 1.0m" },
+      { color: "#CCFFFF", text: "0.3m未満" }
+    ]
+  }
+};
+
+// 凡例の表示を更新する関数
+function updateLegend() {
+  const legendWrapper = document.getElementById('legendWrapper');
+  const legendCard = document.getElementById('legendCard');
+  const activeBtns = document.querySelectorAll('.hazard-btn.active');
+  
+  if (activeBtns.length === 0) {
+    legendWrapper.style.display = 'none';
+    legendCard.style.display = 'none';
+    resetToggleButton();
+    return;
+  }
+  
+  let html = '';
+  activeBtns.forEach(btn => {
+    const type = btn.getAttribute('data-type');
+    const data = legendData[type];
+    
+    html += `<div class="legend-group"><h4>${data.title}</h4>`;
+    data.items.forEach(item => {
+      html += `
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: ${item.color};"></div>
+          <span>${item.text}</span>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+  
+  legendCard.innerHTML = html;
+  legendWrapper.style.display = 'flex'; 
+}
+
+function resetToggleButton() {
+  document.getElementById('toggleText').innerText = "凡例を表示";
+  document.getElementById('toggleIcon').innerText = "info";
+}
+
+// 凡例開閉ボタンのクリックイベント
+document.getElementById('legendToggleBtn').onclick = function() {
+  const legendCard = document.getElementById('legendCard');
+  const toggleText = document.getElementById('toggleText');
+  const toggleIcon = document.getElementById('toggleIcon');
+  
+  if (legendCard.style.display === 'none' || legendCard.style.display === '') {
+    legendCard.style.display = 'block';
+    toggleText.innerText = "凡例を閉じる";
+    toggleIcon.innerText = "close";
+  } else {
+    legendCard.style.display = 'none';
+    toggleText.innerText = "凡例を表示";
+    toggleIcon.innerText = "info";
+  }
+};
+
+// 自作ボタンメニューのクリックイベント連動
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.onclick = function() {
+    const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
+    
+    if (this.classList.contains('active')) {
+      layers[type].forEach(layer => layer.addTo(map));
+    } else {
+      layers[type].forEach(layer => map.removeLayer(layer));
+    }
+    
+    updateLegend();
+  };
+});
+
+let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
+
+// 現在地を取得する共通関数
+function updateCurrentLocation(isInitial = false) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    
+    if (isInitial || !destination) {
+      map.setView(currentLocation, 15);
+    }
+    
+    if (destination) drawRoute();
+    
+  }, err => {
+    console.error("現在地取得失敗: " + err.code);
+    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
+  }, { enableHighAccuracy: true });
+}
+
+updateCurrentLocation(true);
+
+// ルート描画関数（※バグ修正を適用）
+function drawRoute() {
+  if (!currentLocation || !destination) return;
+  
+  // コントロール削除のエラーを回避する正しい記述法
+  if (routingControl) {
+    map.removeControl(routingControl);
+    routingControl = null;
+  }
+  
+  routingControl = L.Routing.control({
+    waypoints: [currentLocation, destination],
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    lineOptions: {
+      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
+    }
+  }).addTo(map);
+}
+
+// 検索エンジン設定
+const nominatimGeocoder = L.Control.Geocoder.nominatim();
+const arcgisGeocoder = L.Control.Geocoder.arcgis();
+
+const geocoderControl = L.Control.geocoder({
+  geocoder: nominatimGeocoder,
+  defaultMarkGeocode: false,
+  placeholder: " 🔍 番地、住所、施設名を入力...",
+  collapsed: false
+}).addTo(map);
+
+geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
+
+// ハイブリッド検索処理
+const searchInput = geocoderControl._input;
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const query = searchInput.value;
+    if (!query) return;
+
+    nominatimGeocoder.geocode(query, function(results) {
+      if (results && results.length > 0) {
+        processSearchResult(results[0]);
+      } else {
+        arcgisGeocoder.geocode(query, function(arcResults) {
+          if (arcResults && arcResults.length > 0) {
+            processSearchResult(arcResults[0]);
+          } else {
+            alert("場所が見つかりませんでした。別のキーワードを試してください。");
+          }
+        });
+      }
+    });
+  }
+});
+
+function processSearchResult(geocodeTarget) {
+  const lat = geocodeTarget.center.lat;
+  const lng = geocodeTarget.center.lng;
+  destination = L.latLng(lat, lng); 
+
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
+  
+  if (currentLocation) {
+    drawRoute();
+    const bounds = L.latLngBounds([currentLocation, destination]);
+    map.fitBounds(bounds, { padding: [60, 120] }); 
+  } else {
+    map.setView(destination, 17);
+  }
+}
+
+document.getElementById("locationBtn").onclick = () => {
+  updateCurrentLocation(false);
+};
+</script>
+</body>
+</html>
