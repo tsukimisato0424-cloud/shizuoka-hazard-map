@@ -13,7 +13,7 @@
 <style>
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
-/* 1. 検索バーを最上段に目一杯長く・スタイリッシュに */
+/* 1. 検索バー（最上段） */
 .leaflet-top.leaflet-left {
   width: 100%;
   padding: 0 !important;
@@ -25,7 +25,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   width: calc(100% - 20px) !important;
   max-width: none !important;
   border: none !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
   border-radius: 14px !important;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
@@ -33,17 +33,17 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   z-index: 1200 !important;
 }
 .leaflet-control-geocoder:focus-within {
-  box-shadow: 0 4px 25px rgba(26, 115, 232, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(26, 115, 232, 0.25) !important;
   background: #fff;
 }
 .leaflet-control-geocoder-form { width: 100%; display: flex; align-items: center; }
 .leaflet-control-geocoder-form input {
   font-size: 16px !important;
-  padding: 16px 20px !important;
+  padding: 14px 20px !important;
   border: none !important;
   width: 100% !important;
   box-sizing: border-box;
-  background: transparent !transparent !important;
+  background: transparent !important;
   color: #202124;
 }
 .leaflet-control-geocoder-icon { display: none !important; }
@@ -54,96 +54,98 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 /* 2. リッチで立体的なハザード操作カード */
 #hazardMenuCard {
   position: absolute;
-  top: 75px; left: 10px; right: 10px;
+  top: 70px; left: 10px; right: 10px;
   z-index: 1100;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  padding: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  padding: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 .hazard-btn {
-  flex: 1; border: none; border-radius: 12px; padding: 10px 4px;
+  flex: 1; border: none; border-radius: 12px; padding: 8px 2px;
   background: #fff; color: #5f6368; font-size: 11px; font-weight: bold;
-  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.06), inset 0 -2px 0 rgba(0,0,0,0.1);
+  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1);
   transition: all 0.2s ease;
 }
-.hazard-btn .material-icons-round { font-size: 22px; }
+.hazard-btn .material-icons-round { font-size: 20px; }
 
 /* 各ボタンのアクティブグラデーション */
-.hazard-btn.active[data-type="flood"] {
-  background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff;
-  box-shadow: 0 4px 12px rgba(47, 128, 237, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.hazard-btn.active[data-type="landslide"] {
-  background: linear-gradient(135deg, #f2994a, #d35400); color: #fff;
-  box-shadow: 0 4px 12px rgba(242, 153, 74, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.hazard-btn.active[data-type="tsunami"] {
-  background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 198, 255, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.hazard-btn.active[data-type="shelter"] {
-  background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff;
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.hazard-btn:active { transform: translateY(2px); }
+.hazard-btn.active[data-type="flood"] { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
+.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
+.hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+.hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
+.hazard-btn:active { transform: translateY(1px); }
 
-/* 3. アコーディオン形式の凡例（右上に配置・初期状態は閉じ） */
+/* 3. Google風スタイリッシュミニマル凡例（閉じている時は極小） */
 #legendAccordion {
   position: absolute; 
-  top: 160px; right: 10px;
+  top: 155px; right: 10px;
   z-index: 1100;
-  width: 220px; background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px); border-radius: 14px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15); overflow: hidden;
-  transition: all 0.3s ease;
+  width: 90px; /* 閉じている時はかなりコンパクト */
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
+  overflow: hidden;
+  transition: width 0.2s ease, border-radius 0.2s ease;
+}
+/* 展開したときは幅を自然に広げる */
+#legendAccordion[open-state="true"] {
+  width: 210px;
+  border-radius: 12px;
 }
 #legendAccordion details { border: none; }
 #legendAccordion summary {
-  padding: 12px 16px; font-size: 13px; font-weight: bold; color: #202124;
+  padding: 8px 12px; font-size: 12px; font-weight: 500; color: #3c4043;
   cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-  user-select: none; background: #f8f9fa;
+  user-select: none; list-style: none;
 }
 #legendAccordion summary::-webkit-details-marker { display: none; }
-#legendAccordion summary::after { content: 'expand_more'; font-family: 'Material Icons Round'; font-size: 18px; color: #5f6368; }
+/* Googleマップ風のレイヤー風アイコンを左に配置 */
+#legendAccordion summary::before {
+  content: 'layers'; font-family: 'Material Icons Round'; font-size: 18px; color: #1a73e8; margin-right: 2px;
+}
+#legendAccordion summary::after { content: 'expand_more'; font-family: 'Material Icons Round'; font-size: 16px; color: #70757a; }
 #legendAccordion details[open] summary::after { content: 'expand_less'; }
-.legend-content { padding: 12px 16px; max-height: 220px; overflow-y: auto; font-size: 11px; color: #3c4043; line-height: 1.6; }
-.legend-item { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; }
-.legend-color { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
-.legend-circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,0.3); }
+
+.legend-content { padding: 4px 12px 12px 12px; max-height: 240px; overflow-y: auto; font-size: 11px; color: #3c4043; line-height: 1.5; }
+.legend-section-title { font-weight: bold; color: #202124; margin: 6px 0 4px 0; display: block; }
+.legend-item { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; color: #5f6368; }
+.legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+.legend-circle { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.4); flex-shrink: 0; }
 
 /* 4. フローティング現在地ボタン */
 #locationBtn {
-  position: absolute; right: 20px; bottom: 180px; z-index: 1100;
-  width: 56px; height: 56px; border: none; border-radius: 50%;
-  background: linear-gradient(135deg, #ffffff, #f1f3f4); color: #1a73e8; cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
+  position: absolute; right: 16px; bottom: 180px; z-index: 1100;
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  background: #ffffff; color: #1a73e8; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
 }
+#locationBtn .material-icons-round { font-size: 24px; }
 
-/* 5. ルート結果情報カード（徒歩・車別） */
+/* 5. ルート結果情報カード */
 #routeInfoCard {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1100;
   background: #ffffff; border-radius: 16px; padding: 14px;
-  box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   display: none; flex-direction: column; gap: 10px;
 }
 .route-title { font-size: 13px; font-weight: bold; color: #202124; border-bottom: 1px solid #f1f3f4; padding-bottom: 6px; }
 .route-modes { display: flex; gap: 10px; }
 .route-mode-box {
   flex: 1; background: #f8f9fa; border-radius: 10px; padding: 10px;
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 8px;
 }
 .route-icon-circle {
-  width: 36px; height: 36px; border-radius: 50%; background: #e8f0fe; color: #1a73e8;
+  width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; color: #1a73e8;
   display: flex; align-items: center; justify-content: center;
 }
 .route-text-data { display: flex; flex-direction: column; }
-.route-time { font-size: 16px; font-weight: bold; color: #1a73e8; }
+.route-time { font-size: 15px; font-weight: bold; color: #1a73e8; }
 .route-dist { font-size: 11px; color: #5f6368; }
 
 .leaflet-routing-container { display: none !important; }
@@ -168,21 +170,22 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
 </div>
 
-<div id="legendAccordion">
-  <details>
+<div id="legendAccordion" open-state="false">
+  <details id="legendDetails">
     <summary>凡例</summary>
     <div class="legend-content">
-      <strong>【洪水/津波 浸水深】</strong>
+      <span class="legend-section-title">【洪水/津波 浸水深】</span>
       <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
       <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
       <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
       <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
-      <hr style="border:0; border-top:1px solid #f1f3f4; margin:8px 0;">
-      <strong>【土砂災害】</strong>
-      <div class="legend-item"><div class="legend-color" style="background:#e67e22;"></div>警戒区域 (黄・赤)</div>
-      <hr style="border:0; border-top:1px solid #f1f3f4; margin:8px 0;">
-      <strong>【避難場所・避難所】</strong>
-      <div class="legend-item"><div class="legend-circle" style="background:#27ae60;"></div>指定避難所（緑）</div>
+      
+      <span class="legend-section-title">【土砂災害】</span>
+      <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
+      
+      <span class="legend-section-title">【避難所】</span>
+      <div class="legend-item"><div class="legend-circle" style="background:#27ae60;"></div>指定避難所 (緑色)</div>
     </div>
   </details>
 </div>
@@ -214,8 +217,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// 静岡周辺を初期位置に
-const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 12);
+// 静岡周辺を初期位置に設定
+const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 13);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -223,7 +226,7 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 国土地理院ハザードマップポータル
+// 国土地理院ハザードマップポータル レイヤー定義
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -234,10 +237,10 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// 避難所データを管理するレイヤーグループ
-const shelterLayerGroup = L.layerGroup();
+// 🌟 【バグ修正】避難所専用の独立レイヤーグループ（初期状態でマップに配置しておく）
+const shelterLayerGroup = L.layerGroup().addTo(map);
 
-// 公開GIS等に基づく避難所データのダミープロット（緑色で確実に出現させる仕組み）
+// 避難所のダミーデータ（静岡駅周辺）
 const officialShelters = [
   { name: "静岡市役所 本庁舎 (指定避難所)", lat: 34.9769, lng: 138.3831 },
   { name: "城内中学校 (指定緊急避難場所)", lat: 34.9792, lng: 138.3795 },
@@ -245,20 +248,28 @@ const officialShelters = [
   { name: "アイセル21 (市民活動センター)", lat: 34.9855, lng: 138.3801 }
 ];
 
-// 緑色のサークルマーカーでプロットを作成
-officialShelters.forEach(shelter => {
-  L.circleMarker([shelter.lat, shelter.lng], {
-    radius: 10,
-    fillColor: "#27ae60", // 指定の鮮やかな緑
-    color: "#ffffff",
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.9
-  }).bindPopup(`<strong>${shelter.name}</strong><br>防災指定施設（緑色表示）`)
-    .addTo(shelterLayerGroup);
-});
+// 避難所ボタンの状態フラグ
+let shelterActive = false;
 
-// 操作カードイベント連動
+// 避難所を描画・消去する実関数
+function renderShelters() {
+  shelterLayerGroup.clearLayers(); // 一旦クリア
+  if (!shelterActive) return;
+
+  officialShelters.forEach(shelter => {
+    L.circleMarker([shelter.lat, shelter.lng], {
+      radius: 9,
+      fillColor: "#27ae60", // 指定の美しい緑色
+      color: "#ffffff",
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.95
+    }).bindPopup(`<strong>${shelter.name}</strong><br><span style="color:#27ae60;font-weight:bold;">● 安全な指定避難所</span>`)
+      .addTo(shelterLayerGroup);
+  });
+}
+
+// ハザード・避難所操作ボタンのイベント
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
@@ -266,13 +277,23 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
     const isActive = this.classList.contains('active');
     
     if (type === 'shelter') {
-      if (isActive) { shelterLayerGroup.addTo(map); } 
-      else { map.removeLayer(shelterLayerGroup); }
+      shelterActive = isActive;
+      renderShelters(); // 避難所レイヤーグループの更新
     } else {
       if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
       else { layers[type].forEach(layer => map.removeLayer(layer)); }
     }
   };
+});
+
+// 凡例のアコーディオン開閉デザイン連動用JS
+const legendCard = document.getElementById('legendAccordion');
+document.getElementById('legendDetails').addEventListener('toggle', function(e) {
+  if (this.open) {
+    legendCard.setAttribute('open-state', 'true');
+  } else {
+    legendCard.setAttribute('open-state', 'false');
+  }
 });
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
@@ -294,6 +315,7 @@ function updateCurrentLocation(isInitial = false) {
   }, { enableHighAccuracy: true });
 }
 
+// 初期起動時の自動現在地取得
 updateCurrentLocation(true);
 
 function drawRoute() {
