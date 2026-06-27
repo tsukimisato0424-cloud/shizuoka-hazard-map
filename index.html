@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>防災ハザードマップ (完全版)</title>
+<title>防災ハザードマップ (完全ハイブリッド版)</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
@@ -88,12 +88,12 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 🔄 【ここを修正】国土地理院の最新URL「disaportaldata.gsi.go.jp」に差し替えました
+// 国土地理院 ハザードマップポータル（最新URL）
 const flood = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 });
 const landslide = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 });
 const tsunami = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 });
 
-// レイヤーコントロールを左上に配置（チェックを入れると重なる、初期はすべてオフ）
+// レイヤーコントロールを左上に配置
 L.control.layers(null, { 
   "洪水（想定最大規模）": flood, 
   "土砂災害警戒区域": landslide, 
@@ -125,7 +125,7 @@ function updateCurrentLocation(isInitial = false) {
   }, { enableHighAccuracy: true });
 }
 
-// 💻 ページを開いた瞬間に自動で現在地を取得
+// ページを開いた瞬間に自動で現在地を取得
 updateCurrentLocation(true);
 
 // ルート描画関数
@@ -144,22 +144,57 @@ function drawRoute() {
   }).addTo(map);
 }
 
-// 検索コントロール（住所・番地・施設名対応）
-L.Control.geocoder({
-  geocoder: L.Control.Geocoder.nominatim({
-    geocodingQueryParams: { "accept-language": "ja", "countrycodes": "jp", "addressdetails": 1 }
-  }),
+// 🔄 2つの異なる検索エンジン（施設用・番地用）を用意して組み合わせます
+const nominatimGeocoder = L.Control.Geocoder.nominatim(); // 施設名・大まかな住所に強い
+const arcgisGeocoder = L.Control.Geocoder.arcgis();       // 日本の地番・番地に強い
+
+// 検索コントロールの生成
+const geocoderControl = L.Control.geocoder({
+  // 初期設定は施設に強いエンジン
+  geocoder: nominatimGeocoder,
   defaultMarkGeocode: false,
   placeholder: " 🔍 番地、住所、施設名を入力...",
   collapsed: false
-})
-.on("markgeocode", e => {
-  const lat = e.geocode.center.lat;
-  const lng = e.geocode.center.lng;
+}).addTo(map);
+
+// ⚡ 検索実行時のハイブリッド処理
+geocoderControl.on("markgeocode", e => {
+  processSearchResult(e.geocode);
+});
+
+// 入力欄でエンターキーが押された際、ヒットしなかったら別エンジンで再検索する仕組み
+const searchInput = geocoderControl._input;
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const query = searchInput.value;
+    if (!query) return;
+
+    // まずはNominatim（施設）で検索
+    nominatimGeocoder.geocode(query, function(results) {
+      if (results && results.length > 0) {
+        processSearchResult(results[0]);
+      } else {
+        // ❌ ヒットしなかった場合、自動的にArcGIS（番地用）で裏で再検索をかける
+        arcgisGeocoder.geocode(query, function(arcResults) {
+          if (arcResults && arcResults.length > 0) {
+            processSearchResult(arcResults[0]);
+          } else {
+            alert("場所が見つかりませんでした。別のキーワードを試してください。");
+          }
+        });
+      }
+    });
+  }
+});
+
+// 検索結果を地図とルートに反映させる共通処理
+function processSearchResult(geocodeTarget) {
+  const lat = geocodeTarget.center.lat;
+  const lng = geocodeTarget.center.lng;
   destination = L.latLng(lat, lng); 
 
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(e.geocode.name).openPopup();
+  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
   
   if (currentLocation) {
     drawRoute();
@@ -167,9 +202,8 @@ L.Control.geocoder({
     map.fitBounds(bounds, { padding: [60, 60] });
   } else {
     map.setView(destination, 17);
-    alert("現在地を読み込み中です。位置情報が許可されると自動でルートが繋がります。");
   }
-}).addTo(map);
+}
 
 // 右下のボタンを押したときも現在地を更新
 document.getElementById("locationBtn").onclick = () => {
