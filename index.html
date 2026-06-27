@@ -257,4 +257,53 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       <span class="material-icons-round">directions_walk</span>徒歩
     </button>
   </div>
-  <div class="time
+  <div class="time-info">
+    <div class="time-result" id="timeValue">-- 分</div>
+    <div class="distance-result" id="distanceValue">-- km</div>
+  </div>
+</div>
+
+<button id="locationBtn">
+  <span class="material-icons-round">my_location</span>
+</button>
+
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+// 1. 地図の初期化（東京駅周辺を中心に設定）
+const map = L.map('map').setView([35.681236, 139.767125], 13);
+
+// 2. 背景地図（OpenStreetMap）の読み込み
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+
+// 3. 検索バーの追加（CSSの調整に合わせて左上に配置）
+const geocoder = L.Control.geocoder({
+  defaultMarkGeocode: true,
+  placeholder: "住所や場所を検索...",
+  collapsed: false
+}).addTo(map);
+
+// 4. ハザードマップ切り替えボタンの簡易的なイベント設定（枠組みだけ）
+document.querySelectorAll('.hazard-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    this.classList.toggle('active');
+    const type = this.getAttribute('data-type');
+    console.log(type + " がクリックされました。ここにハザードレイヤーのON/OFF処理を書きます。");
+  });
+});
+
+// ルート変更関数のダミー（エラー回避用）
+function changeRouteMode(mode) {
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+  if(mode === 'car') document.getElementById('modeCar').classList.add('active');
+  if(mode === 'foot') document.getElementById('modeWalk').classList.add('active');
+}
+</script>
+
+</body>
+</html>
