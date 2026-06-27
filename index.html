@@ -102,25 +102,50 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* 右側に配置する動的凡例カード */
-#legendCard {
+/* 【改良】右側に配置する開閉式の凡例コンテナ */
+#legendWrapper {
   position: absolute;
   top: 170px;
   right: 10px;
   z-index: 1000;
+  display: none; /* ハザードがONになるまで非表示 */
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+/* 凡例を開閉するためのトリガーボタン */
+#legendToggleBtn {
+  border: none;
+  border-radius: 20px;
+  padding: 8px 14px;
+  background: #fff;
+  color: #1a73e8;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+#legendToggleBtn:active { transform: scale(0.95); }
+
+/* 実際に凡例が並ぶ中身のカード（初期状態は非表示） */
+#legendCard {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 12px 14px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-  width: 180px;
-  max-height: calc(100% - 300px);
+  width: 170px;
+  max-height: 250px;
   overflow-y: auto;
   display: none; 
   font-size: 11px;
   color: #333;
 }
-.legend-group { margin-bottom: 15px; }
+.legend-group { margin-bottom: 12px; }
 .legend-group:last-child { margin-bottom: 0; }
 .legend-group h4 { margin: 0 0 6px 0; font-size: 12px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 3px; }
 .legend-item { display: flex; align-items: center; margin-bottom: 4px; font-weight: 500; }
@@ -163,7 +188,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
 </div>
 
-<div id="legendCard"></div>
+<div id="legendWrapper">
+  <button id="legendToggleBtn">
+    <span class="material-icons-round" id="toggleIcon">info</span><span id="toggleText">凡例を表示</span>
+  </button>
+  <div id="legendCard"></div>
+</div>
 
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
@@ -227,18 +257,21 @@ const legendData = {
   }
 };
 
-// 凡例の表示を更新する関数（複数ONに対応）
+// 凡例の表示を更新する関数
 function updateLegend() {
+  const legendWrapper = document.getElementById('legendWrapper');
   const legendCard = document.getElementById('legendCard');
   const activeBtns = document.querySelectorAll('.hazard-btn.active');
   
+  // 何も選択されていなければラッパーごと隠す
   if (activeBtns.length === 0) {
+    legendWrapper.style.display = 'none';
     legendCard.style.display = 'none';
+    resetToggleButton();
     return;
   }
   
   let html = '';
-  
   activeBtns.forEach(btn => {
     const type = btn.getAttribute('data-type');
     const data = legendData[type];
@@ -255,8 +288,31 @@ function updateLegend() {
   });
   
   legendCard.innerHTML = html;
-  legendCard.style.display = 'block';
+  legendWrapper.style.display = 'flex'; // ボタンを表示
 }
+
+// 凡例トグルボタンのリセット用関数
+function resetToggleButton() {
+  document.getElementById('toggleText').innerText = "凡例を表示";
+  document.getElementById('toggleIcon').innerText = "info";
+}
+
+// 【新規】凡例開閉ボタンのクリックイベント
+document.getElementById('legendToggleBtn').onclick = function() {
+  const legendCard = document.getElementById('legendCard');
+  const toggleText = document.getElementById('toggleText');
+  const toggleIcon = document.getElementById('toggleIcon');
+  
+  if (legendCard.style.display === 'none' || legendCard.style.display === '') {
+    legendCard.style.display = 'block';
+    toggleText.innerText = "凡例を閉じる";
+    toggleIcon.innerText = "close";
+  } else {
+    legendCard.style.display = 'none';
+    toggleText.innerText = "凡例を表示";
+    toggleIcon.innerText = "info";
+  }
+};
 
 // ⚡ 自作ボタンメニューのクリックイベント連動
 document.querySelectorAll('.hazard-btn').forEach(btn => {
@@ -279,99 +335,4 @@ let currentLocation = null, destination = null, routingControl = null, currentMa
 // 現在地を取得する共通関数
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
-    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    
-    if (currentMarker) map.removeLayer(currentMarker);
-    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
-    
-    if (isInitial || !destination) {
-      map.setView(currentLocation, 15);
-    }
-    
-    if (destination) drawRoute();
-    
-  }, err => {
-    console.error("現在地取得失敗: " + err.code);
-    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
-  }, { enableHighAccuracy: true });
-}
-
-// ページを開いた瞬間に自動で現在地を取得
-updateCurrentLocation(true);
-
-// ルート描画関数（※バグ修正箇所）
-function drawRoute() {
-  if (!currentLocation || !destination) return;
-  if (routingControl) map.removeControl(routingControl);
-  
-  routingControl = L.Routing.control({
-    waypoints: [currentLocation, destination],
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    lineOptions: {
-      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
-    }
-  }).addTo(map); // ← 修正：map.control だったのを map.addTo に修正
-}
-
-// 2つの異なる検索エンジン（施設用・番地用）を用意
-const nominatimGeocoder = L.Control.Geocoder.nominatim();
-const arcgisGeocoder = L.Control.Geocoder.arcgis();
-
-const geocoderControl = L.Control.geocoder({
-  geocoder: nominatimGeocoder,
-  defaultMarkGeocode: false,
-  placeholder: " 🔍 番地、住所、施設名を入力...",
-  collapsed: false
-}).addTo(map);
-
-geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
-
-// ハイブリッド検索処理
-const searchInput = geocoderControl._input;
-searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    const query = searchInput.value;
-    if (!query) return;
-
-    nominatimGeocoder.geocode(query, function(results) {
-      if (results && results.length > 0) {
-        processSearchResult(results[0]);
-      } else {
-        arcgisGeocoder.geocode(query, function(arcResults) {
-          if (arcResults && arcResults.length > 0) {
-            processSearchResult(arcResults[0]);
-          } else {
-            alert("場所が見つかりませんでした。別のキーワードを試してください。");
-          }
-        });
-      }
-    });
-  }
-});
-
-function processSearchResult(geocodeTarget) {
-  const lat = geocodeTarget.center.lat;
-  const lng = geocodeTarget.center.lng;
-  destination = L.latLng(lat, lng); 
-
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
-  
-  if (currentLocation) {
-    drawRoute();
-    const bounds = L.latLngBounds([currentLocation, destination]);
-    map.fitBounds(bounds, { padding: [60, 120] }); 
-  } else {
-    map.setView(destination, 17);
-  }
-}
-
-// 右下のボタンを押したときも現在地を更新
-document.getElementById("locationBtn").onclick = () => {
-  updateCurrentLocation(false);
-};
-</script>
-</body>
-</html>
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.
