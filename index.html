@@ -46,10 +46,10 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .leaflet-control-geocoder-icon { display: none !important; }
 
-/* 既存の地味なレイヤーコントロールは非表示にし、自作のリッチUIに置き換える */
+/* 既存の地味なレイヤーコントロールは非表示 */
 .leaflet-control-layers { display: none !important; }
 
-/* 2. 【自作】リッチで立体的なハザード操作カード */
+/* 2. 自作ハザード操作カード */
 #hazardMenuCard {
   position: absolute;
   top: 75px;
@@ -84,7 +84,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .hazard-btn .material-icons-round { font-size: 24px; }
 
-/* 各ボタンがON（アクティブ）になったときの鮮やかな立体グラデーション */
 .hazard-btn.active[data-type="flood"] {
   background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff;
   box-shadow: 0 4px 12px rgba(47, 128, 237, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
@@ -96,10 +95,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .hazard-btn.active[data-type="tsunami"] {
   background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff;
   box-shadow: 0 4px 12px rgba(0, 198, 255, 0.4), inset 0 -2px 0 rgba(0,0,0,0.2);
-}
-.hazard-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
 /* 右側に配置する開閉式の凡例コンテナ */
@@ -113,7 +108,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   align-items: flex-end;
   gap: 6px;
 }
-/* 凡例を開閉するためのトリガーボタン */
 #legendToggleBtn {
   border: none;
   border-radius: 20px;
@@ -127,11 +121,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   align-items: center;
   gap: 4px;
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-  transition: all 0.2s ease;
 }
-#legendToggleBtn:active { transform: scale(0.95); }
 
-/* 実際に凡例が並ぶ中身のカード */
 #legendCard {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -159,16 +150,9 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   cursor: pointer;
   box-shadow: 0 6px 16px rgba(0,0,0,0.2), inset 0 -3px 0 rgba(0,0,0,0.1);
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s ease;
 }
 #locationBtn .material-icons-round { font-size: 28px; }
-#locationBtn:hover { transform: scale(1.05); }
-#locationBtn:active {
-  transform: scale(0.95) translateY(3px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
 
-/* ルートテキスト案内は非表示 */
 .leaflet-routing-container { display: none !important; }
 </style>
 </head>
@@ -202,18 +186,14 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// マップ初期化
 const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 8);
 
-// ズームボタンを右下に配置
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// ベースマップ（国土地理院 淡色地図）
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 国土地理院 ハザードマップポータル
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -224,7 +204,6 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// 各ハザードの公式凡例データ
 const legendData = {
   flood: {
     title: "洪水浸水深",
@@ -257,7 +236,6 @@ const legendData = {
   }
 };
 
-// 凡例の表示を更新する関数
 function updateLegend() {
   const legendWrapper = document.getElementById('legendWrapper');
   const legendCard = document.getElementById('legendCard');
@@ -295,7 +273,6 @@ function resetToggleButton() {
   document.getElementById('toggleIcon').innerText = "info";
 }
 
-// 凡例開閉ボタンのクリックイベント
 document.getElementById('legendToggleBtn').onclick = function() {
   const legendCard = document.getElementById('legendCard');
   const toggleText = document.getElementById('toggleText');
@@ -312,7 +289,6 @@ document.getElementById('legendToggleBtn').onclick = function() {
   }
 };
 
-// 自作ボタンメニューのクリックイベント連動
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
@@ -330,7 +306,6 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
-// 現在地を取得する共通関数
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
@@ -352,11 +327,9 @@ function updateCurrentLocation(isInitial = false) {
 
 updateCurrentLocation(true);
 
-// ルート描画関数（※バグ修正を適用）
 function drawRoute() {
   if (!currentLocation || !destination) return;
   
-  // コントロール削除のエラーを回避する正しい記述法
   if (routingControl) {
     map.removeControl(routingControl);
     routingControl = null;
@@ -373,35 +346,39 @@ function drawRoute() {
   }).addTo(map);
 }
 
-// 検索エンジン設定
-const nominatimGeocoder = L.Control.Geocoder.nominatim();
+// 【重要】ArcGIS（地番・住所用）を優先しつつNominatim（施設名用）を組み合わせるハイブリッド検索設定
 const arcgisGeocoder = L.Control.Geocoder.arcgis();
+const nominatimGeocoder = L.Control.Geocoder.nominatim();
 
 const geocoderControl = L.Control.geocoder({
-  geocoder: nominatimGeocoder,
+  geocoder: arcgisGeocoder, // 標準エンジンを番地に強いArcGISに変更
   defaultMarkGeocode: false,
   placeholder: " 🔍 番地、住所、施設名を入力...",
   collapsed: false
 }).addTo(map);
 
+// 予測候補から選択された時、または確定時の共通処理
 geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
 
-// ハイブリッド検索処理
+// 【修正】エンターキー押下時の高度な条件分岐処理
 const searchInput = geocoderControl._input;
 searchInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
+    e.preventDefault();
     const query = searchInput.value;
     if (!query) return;
 
-    nominatimGeocoder.geocode(query, function(results) {
-      if (results && results.length > 0) {
-        processSearchResult(results[0]);
+    // まずは住所地番（ArcGIS）で検索をかける
+    arcgisGeocoder.geocode(query, function(arcResults) {
+      if (arcResults && arcResults.length > 0) {
+        processSearchResult(arcResults[0]);
       } else {
-        arcgisGeocoder.geocode(query, function(arcResults) {
-          if (arcResults && arcResults.length > 0) {
-            processSearchResult(arcResults[0]);
+        // ヒットしなければ施設名（Nominatim）でセカンド検索を試みる
+        nominatimGeocoder.geocode(query, function(nomResults) {
+          if (nomResults && nomResults.length > 0) {
+            processSearchResult(nomResults[0]);
           } else {
-            alert("場所が見つかりませんでした。別のキーワードを試してください。");
+            alert("場所が見つかりませんでした。別のキーワード（番地や正式名称）を試してください。");
           }
         });
       }
@@ -422,7 +399,7 @@ function processSearchResult(geocodeTarget) {
     const bounds = L.latLngBounds([currentLocation, destination]);
     map.fitBounds(bounds, { padding: [60, 120] }); 
   } else {
-    map.setView(destination, 17);
+    map.setView(destination, 17); // 住所検索時は自動で該当箇所まで拡大
   }
 }
 
