@@ -51,6 +51,8 @@ html, body {
 
 const map = L.map('map').setView([34.9756,138.3828],8);
 let routingControl = null;
+let destination = null;
+let routingControl = null;
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© OpenStreetMap'
@@ -61,7 +63,22 @@ const geocoder = L.Control.geocoder({
 .on("markgeocode", function(e) {
 
     const latlng = e.geocode.center;
+    destination = latlng;
+    if (currentLocation) {
 
+    if (routingControl) {
+        map.removeControl(routingControl);
+    }
+
+    routingControl = L.Routing.control({
+        waypoints: [
+            currentLocation,
+            destination
+        ],
+        routeWhileDragging: false
+    }).addTo(map);
+
+}
     map.setView(latlng, 15);
 
     L.marker(latlng)
