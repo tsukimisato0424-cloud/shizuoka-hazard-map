@@ -83,12 +83,12 @@ html, body { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans
 .hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 .hazard-btn:active { transform: translateY(2px); }
 
-/* 3. 【修正】アコーディオン形式の凡例表示（右上に配置変更） */
+/* 3. アコーディオン形式の凡例表示（右上に配置変更） */
 #legendAccordion {
   position: absolute; 
-  top: 155px; /* ハザードボタン(約70px分)の下に配置 */
+  top: 155px; 
   right: 10px; 
-  left: auto; /* 左側の固定を解除 */
+  left: auto; 
   z-index: 1100;
   width: 260px; background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px); border-radius: 12px;
@@ -198,4 +198,88 @@ html, body { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-<script src="
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+// 1. マップの初期化（東京を中心に設定）
+const map = L.map('map', {
+  zoomControl: false // 標準のズームボタンは非表示
+}).setView([35.681236, 139.767125], 13);
+
+// 地理院地図（標準地図）のタイルを追加
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
+}).addTo(map);
+
+// ズームコントロールを右下にひっそり配置
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// 2. ジオコーダー（住所検索バー）の追加
+const geocoder = L.Control.geocoder({
+  defaultMarkGeocode: false,
+  placeholder: "住所や場所を検索...",
+  errorMessage: "見つかりませんでした"
+}).on('markgeocode', function(e) {
+  const bbox = e.geocode.bbox;
+  const poly = L.polygon([
+    bbox.getSouthEast(), bbox.getNorthEast(), bbox.getNorthWest(), bbox.getSouthWest()
+  ]);
+  map.fitBounds(poly.getBounds());
+}).addTo(map);
+
+// 3. ハザードレイヤーの定義（国土地理院ハザードマップWMTS）
+const hazardLayers = {
+  flood: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/shinsuishotei-all/{z}/{x}/{y}.png', {
+    opacity: 0.7, attribution: '&copy; 国土地理院 洪水浸水想定区域'
+  }),
+  landslide: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/doshasaigaikeikai/{z}/{x}/{y}.png', {
+    opacity: 0.7, attribution: '&copy; 国土地理院 土砂災害警戒区域'
+  }),
+  tsunami: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/tsunamishinsui/{z}/{x}/{y}.png', {
+    opacity: 0.7, attribution: '&copy; 国土地理院 津波浸水想定'
+  })
+};
+
+// 避難所レイヤーグループ
+const shelterLayer = L.layerGroup();
+// サンプル用の避難所ピンを東京駅周辺にいくつか配置
+const dummyShelters = [
+  { name: "中央区立城東小学校 (避難所)", lat: 35.6795, lng: 139.7710 },
+  { name: "千代田区立麹町中学校 (避難所)", lat: 35.6830, lng: 139.7430 }
+];
+dummyShelters.forEach(shelter => {
+  L.marker([shelter.lat, shelter.lng])
+   .bindPopup(`<strong>${shelter.name}</strong><br>緊急避難場所`)
+   .addTo(shelterLayer);
+});
+
+// 4. ボタンのイベントリスナー
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
+    const isActive = this.classList.contains('active');
+
+    if (type === 'shelter') {
+      if (isActive) { map.addLayer(shelterLayer); } 
+      else { map.removeLayer(shelterLayer); }
+    } else {
+      if (isActive) { map.addLayer(hazardLayers[type]); } 
+      else { map.removeLayer(hazardLayers[type]); }
+    }
+  });
+});
+
+// 5. 現在地取得ボタンの処理
+document.getElementById('locationBtn').addEventListener('click', () => {
+  map.locate({ setView: true, maxZoom: 16 });
+});
+map.on('locationfound', (e) => {
+  L.marker(e.latlng).addTo(map).bindPopup("現在地").openPopup();
+});
+map.on('locationerror', () => {
+  alert("現在地を取得できませんでした。位置情報の許可を確認してください。");
+});
+</script>
+</body>
+</html>
