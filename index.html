@@ -78,15 +78,17 @@ const tsunami = L.tileLayer(
 );
 
 // レイヤー切替
-L.control.layers(null, {
+L.control.layers(
+    null,
+ {
   "洪水": flood,
   "土砂災害": landslide,
   "津波": tsunami
 },
-                 {
-                     position:"topleft"
-                 }
-                ).addTo(map);document.getElementById("locationBtn").onclick=function(){
+ {
+position:"topleft"
+ }
+ ).addTo(map);document.getElementById("locationBtn").onclick=function(){
 
 navigator.geolocation.getCurrentPosition(function(pos){
 
