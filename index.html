@@ -267,37 +267,84 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <span class="material-icons-round">my_location</span>
 </button>
 
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// 1. 地図の初期化（東京駅周辺を中心に設定）
+// 1. 地図の初期化
 const map = L.map('map').setView([35.681236, 139.767125], 13);
 
-// 2. 背景地図（OpenStreetMap）の読み込み
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+// 2. 背景地図を「国土地理院 淡色地図」に変更
+L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
 }).addTo(map);
 
-// 3. 検索バーの追加（CSSの調整に合わせて左上に配置）
+// 3. 検索バーの追加
 const geocoder = L.Control.geocoder({
   defaultMarkGeocode: true,
   placeholder: "住所や場所を検索...",
   collapsed: false
 }).addTo(map);
 
-// 4. ハザードマップ切り替えボタンの簡易的なイベント設定（枠組みだけ）
+// 4. 現在地取得機能の実装
+let currentLocationMarker = null;
+
+document.getElementById('locationBtn').addEventListener('click', function() {
+  if (!navigator.geolocation) {
+    alert("お使いのブラウザは位置情報（GPS）に対応していません。");
+    return;
+  }
+
+  // 位置情報の取得を開始
+  navigator.geolocation.getCurrentPosition(
+    function(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      // すでに現在地マーカーがある場合は削除して再作成
+      if (currentLocationMarker) {
+        map.removeLayer(currentLocationMarker);
+      }
+
+      // 現在地にマーカーを設置し、地図の中心を移動
+      currentLocationMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup("現在の位置").openPopup();
+      
+      map.setView([lat, lng], 15); // 少しズームインする
+    },
+    function(error) {
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          alert("位置情報の利用が許可されていません。ブラウザや端末の設定を確認してください。");
+          break;
+        case error.POSITION_UNAVAILABLE:
+          alert("位置情報が取得できませんでした（電波状況など）。");
+          break;
+        case error.TIMEOUT:
+          alert("位置情報の取得がタイムアウトしました。");
+          break;
+        default:
+          alert("位置情報の取得中にエラーが発生しました。");
+          break;
+      }
+    },
+    {
+      enableHighAccuracy: true, // 高精度な位置情報を要求
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+});
+
+// ハザードメニュー切り替え（枠組み）
 document.querySelectorAll('.hazard-btn').forEach(button => {
   button.addEventListener('click', function() {
     this.classList.toggle('active');
-    const type = this.getAttribute('data-type');
-    console.log(type + " がクリックされました。ここにハザードレイヤーのON/OFF処理を書きます。");
   });
 });
 
-// ルート変更関数のダミー（エラー回避用）
+// ルート変更関数のダミー
 function changeRouteMode(mode) {
   document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
   if(mode === 'car') document.getElementById('modeCar').classList.add('active');
