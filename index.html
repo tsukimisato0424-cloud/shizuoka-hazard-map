@@ -16,7 +16,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 #searchContainer {
   position: absolute;
   top: 10px; left: 10px; right: 10px;
-  z-index: 99999 !important; /* 全ての要素の最上位層に固定 */
+  z-index: 99999 !important;
 }
 .custom-search-bar {
   display: flex;
@@ -46,7 +46,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   align-items: center;
 }
 
-/* 🌟 【絶対最前面】検索候補（サジェストリスト）のデザイン */
+/* 検索候補（サジェストリスト）のデザイン */
 #customSuggestions {
   background: #ffffff;
   border-radius: 12px;
@@ -137,7 +137,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .legend-section-title { font-weight: bold; color: #202124; margin: 6px 0 4px 0; display: block; }
 .legend-item { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; color: #5f6368; }
 .legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
-.legend-circle { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 3px rgba(0,0,0,0.4); flex-shrink: 0; }
+.legend-circle { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; }
 
 /* 4. フローティング現在地ボタン */
 #locationBtn {
@@ -171,7 +171,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 .leaflet-routing-container { display: none !important; }
 
-.leaflet-shelter-pane { z-index: 650 !important; }
+/* 避難所レイヤーをハザードマップの上に表示するための最前面ペイン */
+.leaflet-shelter-pane { z-index: 680 !important; }
 </style>
 </head>
 <body>
@@ -218,7 +219,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
       
       <span class="legend-section-title">【避難所】</span>
-      <div class="legend-item"><div class="legend-circle" style="background:#27ae60;"></div>指定避難所 (緑色)</div>
+      <div class="legend-item">
+        <div class="legend-circle" style="background:#27ae60;">
+          <span class="material-icons-round" style="font-size:10px;">directions_run</span>
+        </div>
+        指定緊急避難場所 (緑)
+      </div>
     </div>
   </details>
 </div>
@@ -249,6 +255,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
+// 地図の初期化
 const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 13);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -257,6 +264,7 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
+// 国土地理院ハザードマップポータル レイヤー定義
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -267,38 +275,20 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
+// 🌟 【全国対応】国土地理院が提供する「指定緊急避難場所」公式ラスタタイルを直接バインド
+// これにより日本全国どこに移動しても、公式の避難場所マークが表示されます。
 map.createPane('shelterPane');
-map.getPane('shelterPane').style.zIndex = 650;
+map.getPane('shelterPane').style.zIndex = 680; // ハザードマップより上のレイヤー階層
 
-const shelterLayerGroup = L.layerGroup().addTo(map);
-
-const officialShelters = [
-  { name: "静岡市役所 本庁舎 (指定避難所)", lat: 34.9769, lng: 138.3831 },
-  { name: "城内中学校 (指定緊急避難場所)", lat: 34.9792, lng: 138.3795 },
-  { name: "中央体育館 (指定避難所)", lat: 34.9821, lng: 138.3810 },
-  { name: "アイセル21 (市民活動センター)", lat: 34.9855, lng: 138.3801 }
-];
+const shelterTileLayer = L.tileLayer('https://disaportaldata.gsi.go.jp/raster/06_hinanbasho/{z}/{x}/{y}.png', {
+  opacity: 0.9,
+  maxZoom: 17,
+  pane: 'shelterPane'
+});
 
 let shelterActive = false;
 
-function renderShelters() {
-  shelterLayerGroup.clearLayers();
-  if (!shelterActive) return;
-
-  officialShelters.forEach(shelter => {
-    L.circleMarker([shelter.lat, shelter.lng], {
-      pane: 'shelterPane', 
-      radius: 9,
-      fillColor: "#27ae60",
-      color: "#ffffff",
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.95
-    }).bindPopup(`<strong>${shelter.name}</strong><br><span style="color:#27ae60;font-weight:bold;">● 指定避難所</span>`)
-      .addTo(shelterLayerGroup);
-  });
-}
-
+// 各トグルボタンのイベントハンドラ
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
@@ -307,7 +297,11 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
     
     if (type === 'shelter') {
       shelterActive = isActive;
-      renderShelters();
+      if (shelterActive) {
+        shelterTileLayer.addTo(map);
+      } else {
+        map.removeLayer(shelterTileLayer);
+      }
     } else {
       if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
       else { layers[type].forEach(layer => map.removeLayer(layer)); }
@@ -361,7 +355,7 @@ function drawRoute() {
   });
 }
 
-// 🌟 【実務最適化】施設名最優先ソート型ハイブリッド検索
+// 施設名最優先ソート型ハイブリッド検索
 async function executeHybridSearch(query) {
   if (!query) return;
   const suggestionsBox = document.getElementById('customSuggestions');
@@ -372,8 +366,8 @@ async function executeHybridSearch(query) {
   const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr`;
   const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1`;
 
-  let facilityResults = []; // 施設名格納用
-  let addressResults = [];  // 住所地番格納用
+  let facilityResults = []; 
+  let addressResults = [];  
 
   try {
     const [resArc, resNom] = await Promise.all([
@@ -381,7 +375,6 @@ async function executeHybridSearch(query) {
       fetch(urlNominatim).then(r => r.json()).catch(() => null)
     ]);
 
-    // 1. Nominatim（施設名・建物名）の結果を「施設枠」に優先格納
     if (resNom && resNom.length > 0) {
       resNom.forEach(n => {
         facilityResults.push({
@@ -394,7 +387,6 @@ async function executeHybridSearch(query) {
       });
     }
 
-    // 2. ArcGIS（番地・日本の地番）の結果を「住所枠」に格納
     if (resArc && resArc.candidates) {
       resArc.candidates.forEach(c => {
         addressResults.push({
@@ -407,7 +399,6 @@ async function executeHybridSearch(query) {
       });
     }
 
-    // 🌟 施設名枠を最優先（配列の最初）にし、その後に住所結果を結合する
     const combinedResults = [...facilityResults, ...addressResults];
 
     if (combinedResults.length === 0) {
@@ -416,14 +407,12 @@ async function executeHybridSearch(query) {
       return;
     }
 
-    // 重複カットの処理
     const uniquePositions = [];
     combinedResults.forEach(item => {
       const isDuplicate = uniquePositions.some(u => Math.abs(u.lat - item.lat) < 0.0005 && Math.abs(u.lng - item.lng) < 0.0005);
       if (!isDuplicate && uniquePositions.length < 6) {
         uniquePositions.push(item);
         
-        // 表示文字列の最適化（長い海外表記風をカットし、名称を際立たせる）
         const primaryName = item.name.split(',')[0];
         
         const div = document.createElement('div');
