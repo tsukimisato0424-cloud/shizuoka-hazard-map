@@ -130,17 +130,21 @@ function drawRoute() {
   }).addTo(map);
 }
 
-// 検索コントロール（最上段いっぱいに広げる）
+// 検索コントロール（最上段いっぱいに広げる ＋ 日本の番地検索に強いエンジンに指定）
 L.Control.geocoder({
+  // ★デフォルトのNominatimから、日本の住所・番地に比較的強いArcGISのエンジンに変更
+  geocoder: L.Control.Geocoder.arcgis(), 
   defaultMarkGeocode: false,
-  placeholder: " 🔍 場所、住所、施設名を入力...",
+  placeholder: " 🔍 番地、住所、施設名を入力...",
   collapsed: false
 })
 .on("markgeocode", e => {
   destination = e.geocode.center;
   if (destMarker) map.removeLayer(destMarker);
+  
+  // 検索結果の名前を表示してピンを立てる
   destMarker = L.marker(destination).addTo(map).bindPopup(e.geocode.name).openPopup();
-  map.setView(destination, 15);
+  map.setView(destination, 17); // ★番地が見やすいようにズームレベルを15から17へ拡大
   drawRoute();
 }).addTo(map);
 
