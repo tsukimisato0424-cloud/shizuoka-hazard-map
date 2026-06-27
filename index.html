@@ -137,6 +137,7 @@ navigator.geolocation.getCurrentPosition(function(pos){
 
 const lat=pos.coords.latitude;
 const lng=pos.coords.longitude;
+currentLocation = L.latLng(lat, lng);
 
 map.setView([lat,lng],15);
 
