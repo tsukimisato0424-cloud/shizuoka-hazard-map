@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>防災ハザードマップ (自動ルート検索版)</title>
+<title>防災ハザードマップ (完全版)</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
@@ -51,14 +51,19 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 14px;
 }
 
-/* フローティング現在地ボタン（念のため手動更新用にも残してあります） */
+/* フローティング現在地ボタン */
 #locationBtn {
   position: absolute; right: 20px; bottom: 30px; z-index: 1000;
   width: 56px; height: 56px; border: none; border-radius: 50%;
   background: #fff; color: #1a73e8; font-size: 24px; cursor: pointer;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, transform 0.1s;
 }
+#locationBtn:hover { background: #f8f9fa; }
+#locationBtn:active { transform: scale(0.95); }
+
+/* ルートテキスト案内は非表示 */
 .leaflet-routing-container { display: none !important; }
 </style>
 </head>
@@ -72,9 +77,10 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// マップ初期化（初期位置は静岡周辺ですが、自動現在地で上書きされます）
+// マップ初期化
 const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 8);
 
+// ズームボタンを右下に配置
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 // ベースマップ（国土地理院 淡色地図）
@@ -82,20 +88,20 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 最新ハザードマップデータの定義
-const flood = L.tileLayer.wms('https://disaportaldata.gsi.go.jp/wms/shinsuishin?', {
-  layers: '01_flood_l2_shinsuishin', format: 'image/png', transparent: true, opacity: 0.6
-});
-const landslide = L.tileLayer.wms('https://disaportaldata.gsi.go.jp/wms/dosakukeikai?', {
-  layers: '05_dosekiryukeikaikuiki,05_kyushunkyushachikukeikaikuiki,05_jisubirikeikaikuiki', format: 'image/png', transparent: true, opacity: 0.7
-});
-const tsunami = L.tileLayer('https://pref-shizuoka.geocloud.jp/public/wms/tile/tsunami_shinsui/{z}/{x}/{y}.png', { opacity: 0.6 });
+// 🔄 国土地理院（ハザードマップポータル）の確実なデータソースに戻しました
+const flood = L.tileLayer('https://disaportal.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6 });
+const landslide = L.tileLayer('https://disaportal.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7 });
+const tsunami = L.tileLayer('https://disaportal.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6 });
 
+// レイヤーコントロールを左上に配置（チェックを入れると重なる、初期はすべてオフ）
 L.control.layers(null, { 
-  "【最新】洪水（想定最大規模）": flood, 
-  "【最新】土砂災害警戒区域": landslide, 
-  "【静岡県公式】津波浸水想定": tsunami 
-}, { position: "topleft", collapsed: false }).addTo(map);
+  "洪水（想定最大規模）": flood, 
+  "土砂災害警戒区域": landslide, 
+  "津波浸水想定": tsunami 
+}, { 
+  position: "topleft", 
+  collapsed: false 
+}).addTo(map);
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
@@ -107,7 +113,7 @@ function updateCurrentLocation(isInitial = false) {
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
-    // 初回読み込み時、またはルートがない場合は現在地にズーム
+    // 初回読み込み時、または目的地がまだない場合は現在地にズーム
     if (isInitial || !destination) {
       map.setView(currentLocation, 15);
     }
@@ -117,63 +123,4 @@ function updateCurrentLocation(isInitial = false) {
     
   }, err => {
     console.error("現在地取得失敗: " + err.code);
-    if (!isInitial) alert("現在地を取得できませんでした。位置情報の設定を確認してください。");
-  }, { enableHighAccuracy: true });
-}
-
-// 💻【追加】ページを開いた瞬間に自動で現在地を取得する
-updateCurrentLocation(true);
-
-// ルート描画関数
-function drawRoute() {
-  if (!currentLocation || !destination) return;
-  if (routingControl) map.removeControl(routingControl);
-  
-  routingControl = L.Routing.control({
-    waypoints: [currentLocation, destination],
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    lineOptions: {
-      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
-    }
-  }).addTo(map);
-}
-
-// 検索コントロール
-L.Control.geocoder({
-  geocoder: L.Control.Geocoder.nominatim({
-    geocodingQueryParams: { "accept-language": "ja", "countrycodes": "jp", "addressdetails": 1 }
-  }),
-  defaultMarkGeocode: false,
-  placeholder: " 🔍 番地、住所、施設名を入力...",
-  collapsed: false
-})
-.on("markgeocode", e => {
-  const lat = e.geocode.center.lat;
-  const lng = e.geocode.center.lng;
-  destination = L.latLng(lat, lng); 
-
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(e.geocode.name).openPopup();
-  
-  // ⚡【修正】検索完了したら「直ちに」ルートを描画
-  if (currentLocation) {
-    drawRoute();
-    // 現在地と目的地が両方収まるように地図の表示範囲を自動調整
-    const bounds = L.latLngBounds([currentLocation, destination]);
-    map.fitBounds(bounds, { padding: [50, 50] });
-  } else {
-    // 万が一、現在地がまだ取れていない場合は検索先に飛ぶ
-    map.setView(destination, 17);
-    alert("現在地を判定中です。少し待ってから自動でルートが表示されます。");
-  }
-}).addTo(map);
-
-// 右下のボタンを押したときも現在地を更新
-document.getElementById("locationBtn").onclick = () => {
-  updateCurrentLocation(false);
-};
-</script>
-</body>
-</html>
+    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービス
