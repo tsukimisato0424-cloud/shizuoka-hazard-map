@@ -60,7 +60,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 20 rgba(0,0,0,0.12);
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -102,6 +102,30 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
+/* 右側に配置する動化凡例カード（複数表示のためスクロールと高さを最適化） */
+#legendCard {
+  position: absolute;
+  top: 170px;
+  right: 10px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  width: 180px;
+  max-height: calc(100% - 300px);
+  overflow-y: auto;
+  display: none; 
+  font-size: 11px;
+  color: #333;
+}
+.legend-group { margin-bottom: 15px; }
+.legend-group:last-child { margin-bottom: 0; }
+.legend-group h4 { margin: 0 0 6px 0; font-size: 12px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 3px; }
+.legend-item { display: flex; align-items: center; margin-bottom: 4px; font-weight: 500; }
+.legend-color { width: 22px; height: 12px; margin-right: 8px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+
 /* 3. フローティング現在地ボタンも立体球体風に */
 #locationBtn {
   position: absolute; right: 20px; bottom: 30px; z-index: 1000;
@@ -139,6 +163,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
 </div>
 
+<div id="legendCard"></div>
+
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -158,131 +184,72 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // 国土地理院 ハザードマップポータル（最新URL）
-// ※土砂災害は「土石流」「急傾斜地」「地すべり」を配列でまとめて管理できるように修正
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), // 土石流
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), // 急傾斜地の崩壊
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })  // 地すべり
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), 
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }), 
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })  
   ],
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// ⚡ 自作ボタンメニューのクリックイベント連動（配列に対応）
-document.querySelectorAll('.hazard-btn').forEach(btn => {
-  btn.onclick = function() {
-    const type = this.getAttribute('data-type');
-    this.classList.toggle('active');
-    
-    if (this.classList.contains('active')) {
-      // 配列内のすべてのレイヤーをマップに追加
-      layers[type].forEach(layer => layer.addTo(map));
-    } else {
-      // 配列内のすべてのレイヤーをマップから削除
-      layers[type].forEach(layer => map.removeLayer(layer));
-    }
-  };
-});
-
-let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
-
-// 現在地を取得する共通関数
-function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(pos => {
-    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    
-    if (currentMarker) map.removeLayer(currentMarker);
-    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
-    
-    if (isInitial || !destination) {
-      map.setView(currentLocation, 15);
-    }
-    
-    if (destination) drawRoute();
-    
-  }, err => {
-    console.error("現在地取得失敗: " + err.code);
-    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
-  }, { enableHighAccuracy: true });
-}
-
-// ページを開いた瞬間に自動で現在地を取得
-updateCurrentLocation(true);
-
-// ルート描画関数
-function drawRoute() {
-  if (!currentLocation || !destination) return;
-  if (routingControl) map.removeControl(routingControl);
-  
-  routingControl = L.Routing.control({
-    waypoints: [currentLocation, destination],
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    lineOptions: {
-      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
-    }
-  }).addTo(map);
-}
-
-// 2つの異なる検索エンジン（施設用・番地用）を用意
-const nominatimGeocoder = L.Control.Geocoder.nominatim();
-const arcgisGeocoder = L.Control.Geocoder.arcgis();
-
-const geocoderControl = L.Control.geocoder({
-  geocoder: nominatimGeocoder,
-  defaultMarkGeocode: false,
-  placeholder: " 🔍 番地、住所、施設名を入力...",
-  collapsed: false
-}).addTo(map);
-
-geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
-
-// ハイブリッド検索処理
-const searchInput = geocoderControl._input;
-searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    const query = searchInput.value;
-    if (!query) return;
-
-    nominatimGeocoder.geocode(query, function(results) {
-      if (results && results.length > 0) {
-        processSearchResult(results[0]);
-      } else {
-        arcgisGeocoder.geocode(query, function(arcResults) {
-          if (arcResults && arcResults.length > 0) {
-            processSearchResult(arcResults[0]);
-          } else {
-            alert("場所が見つかりませんでした。別のキーワードを試してください。");
-          }
-        });
-      }
-    });
+// 各ハザードの公式凡例データ
+const legendData = {
+  flood: {
+    title: "洪水浸水深",
+    items: [
+      { color: "#74006A", text: "20m以上" },
+      { color: "#B800D6", text: "10m 〜 20m" },
+      { color: "#FF55FF", text: "5.0m 〜 10m" },
+      { color: "#FF9999", text: "3.0m 〜 5.0m" },
+      { color: "#FFFF73", text: "0.5m 〜 3.0m" },
+      { color: "#E6F2FF", text: "0.5m未満" }
+    ]
+  },
+  landslide: {
+    title: "土砂災害区分",
+    items: [
+      { color: "#FF0000", text: "特別警戒 (レッド)" },
+      { color: "#FFCC00", text: "警戒区域 (イエロー)" }
+    ]
+  },
+  tsunami: {
+    title: "津波浸水深",
+    items: [
+      { color: "#B800D6", text: "10m以上" },
+      { color: "#FF55FF", text: "5.0m 〜 10m" },
+      { color: "#FF9999", text: "3.0m 〜 5.0m" },
+      { color: "#FFFF73", text: "1.0m 〜 3.0m" },
+      { color: "#A3FF73", text: "0.3m 〜 1.0m" },
+      { color: "#CCFFFF", text: "0.3m未満" }
+    ]
   }
-});
-
-function processSearchResult(geocodeTarget) {
-  const lat = geocodeTarget.center.lat;
-  const lng = geocodeTarget.center.lng;
-  destination = L.latLng(lat, lng); 
-
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
-  
-  if (currentLocation) {
-    drawRoute();
-    const bounds = L.latLngBounds([currentLocation, destination]);
-    map.fitBounds(bounds, { padding: [60, 120] }); // メニューと被らないよう下部に余白
-  } else {
-    map.setView(destination, 17);
-  }
-}
-
-// 右下のボタンを押したときも現在地を更新
-document.getElementById("locationBtn").onclick = () => {
-  updateCurrentLocation(false);
 };
-</script>
-</body>
-</html>
+
+// 凡例の表示を更新する関数（複数ONに対応）
+function updateLegend() {
+  const legendCard = document.getElementById('legendCard');
+  // 現在アクティブ（ON）になっているすべてのボタンを取得
+  const activeBtns = document.querySelectorAll('.hazard-btn.active');
+  
+  if (activeBtns.length === 0) {
+    legendCard.style.display = 'none';
+    return;
+  }
+  
+  let html = '';
+  
+  // ONになっているハザードの数だけ、凡例をループして結合生成
+  activeBtns.forEach(btn => {
+    const type = btn.getAttribute('data-type');
+    const data = legendData[type];
+    
+    html += `<div class="legend-group"><h4>${data.title}</h4>`;
+    data.items.forEach(item => {
+      html += `
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: ${item.color};"></div>
+          <span>${item.text}</span>
+        </div>`;
+    });
