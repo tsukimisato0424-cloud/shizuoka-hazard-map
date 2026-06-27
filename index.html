@@ -60,7 +60,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 16px;
   padding: 12px;
-  box-shadow: 0 6px 20 rgba(0,0,0,0.12);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12);
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -102,7 +102,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 1px 3px rgba(0,0,0,0.1), inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
-/* 右側に配置する動化凡例カード（複数表示のためスクロールと高さを最適化） */
+/* 右側に配置する動的凡例カード */
 #legendCard {
   position: absolute;
   top: 170px;
@@ -230,7 +230,6 @@ const legendData = {
 // 凡例の表示を更新する関数（複数ONに対応）
 function updateLegend() {
   const legendCard = document.getElementById('legendCard');
-  // 現在アクティブ（ON）になっているすべてのボタンを取得
   const activeBtns = document.querySelectorAll('.hazard-btn.active');
   
   if (activeBtns.length === 0) {
@@ -240,7 +239,6 @@ function updateLegend() {
   
   let html = '';
   
-  // ONになっているハザードの数だけ、凡例をループして結合生成
   activeBtns.forEach(btn => {
     const type = btn.getAttribute('data-type');
     const data = legendData[type];
@@ -253,3 +251,127 @@ function updateLegend() {
           <span>${item.text}</span>
         </div>`;
     });
+    html += `</div>`;
+  });
+  
+  legendCard.innerHTML = html;
+  legendCard.style.display = 'block';
+}
+
+// ⚡ 自作ボタンメニューのクリックイベント連動
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.onclick = function() {
+    const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
+    
+    if (this.classList.contains('active')) {
+      layers[type].forEach(layer => layer.addTo(map));
+    } else {
+      layers[type].forEach(layer => map.removeLayer(layer));
+    }
+    
+    updateLegend();
+  };
+});
+
+let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
+
+// 現在地を取得する共通関数
+function updateCurrentLocation(isInitial = false) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    
+    if (isInitial || !destination) {
+      map.setView(currentLocation, 15);
+    }
+    
+    if (destination) drawRoute();
+    
+  }, err => {
+    console.error("現在地取得失敗: " + err.code);
+    if (!isInitial) alert("現在地を取得できませんでした。位置情報サービスをONにしてください。");
+  }, { enableHighAccuracy: true });
+}
+
+// ページを開いた瞬間に自動で現在地を取得
+updateCurrentLocation(true);
+
+// ルート描画関数（※バグ修正箇所）
+function drawRoute() {
+  if (!currentLocation || !destination) return;
+  if (routingControl) map.removeControl(routingControl);
+  
+  routingControl = L.Routing.control({
+    waypoints: [currentLocation, destination],
+    routeWhileDragging: false,
+    addWaypoints: false,
+    draggableWaypoints: false,
+    lineOptions: {
+      styles: [{ color: '#1a73e8', opacity: 0.8, weight: 6 }]
+    }
+  }).addTo(map); // ← 修正：map.control だったのを map.addTo に修正
+}
+
+// 2つの異なる検索エンジン（施設用・番地用）を用意
+const nominatimGeocoder = L.Control.Geocoder.nominatim();
+const arcgisGeocoder = L.Control.Geocoder.arcgis();
+
+const geocoderControl = L.Control.geocoder({
+  geocoder: nominatimGeocoder,
+  defaultMarkGeocode: false,
+  placeholder: " 🔍 番地、住所、施設名を入力...",
+  collapsed: false
+}).addTo(map);
+
+geocoderControl.on("markgeocode", e => { processSearchResult(e.geocode); });
+
+// ハイブリッド検索処理
+const searchInput = geocoderControl._input;
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const query = searchInput.value;
+    if (!query) return;
+
+    nominatimGeocoder.geocode(query, function(results) {
+      if (results && results.length > 0) {
+        processSearchResult(results[0]);
+      } else {
+        arcgisGeocoder.geocode(query, function(arcResults) {
+          if (arcResults && arcResults.length > 0) {
+            processSearchResult(arcResults[0]);
+          } else {
+            alert("場所が見つかりませんでした。別のキーワードを試してください。");
+          }
+        });
+      }
+    });
+  }
+});
+
+function processSearchResult(geocodeTarget) {
+  const lat = geocodeTarget.center.lat;
+  const lng = geocodeTarget.center.lng;
+  destination = L.latLng(lat, lng); 
+
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker(destination).addTo(map).bindPopup(geocodeTarget.name).openPopup();
+  
+  if (currentLocation) {
+    drawRoute();
+    const bounds = L.latLngBounds([currentLocation, destination]);
+    map.fitBounds(bounds, { padding: [60, 120] }); 
+  } else {
+    map.setView(destination, 17);
+  }
+}
+
+// 右下のボタンを押したときも現在地を更新
+document.getElementById("locationBtn").onclick = () => {
+  updateCurrentLocation(false);
+};
+</script>
+</body>
+</html>
