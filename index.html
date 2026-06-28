@@ -8,18 +8,55 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <style>
-    /* デザイン：立体感とグラデーション */
-    html, body, #map { height: 100%; margin: 0; font-family: sans-serif; background: #f4f6f9; }
-    #searchContainer { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 99999; }
-    .custom-search-bar { display: flex; align-items: center; background: linear-gradient(180deg, #fff 0%, #f9fafb 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 #fff; border: 1px solid rgba(0,0,0,0.1); padding: 4px 10px; }
-    .custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 12px; background: transparent; }
-    #hazardMenuCard { position: absolute; top: 85px; left: 16px; right: 16px; z-index: 2000; display: flex; gap: 8px; }
-    .hazard-btn { flex: 1; border: none; border-radius: 14px; padding: 10px 2px; background: linear-gradient(180deg, #fff 0%, #f3f4f6 100%); color: #5f6368; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.08), inset 0 1px 0 #fff; transition: 0.2s; }
-    .hazard-btn.active[data-type="flood"] { background: linear-gradient(180deg, #3b82f6, #1d4ed8); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
-    .hazard-btn.active[data-type="landslide"] { background: linear-gradient(180deg, #f97316, #c2410c); color: #fff; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
-    .hazard-btn.active[data-type="tsunami"] { background: linear-gradient(180deg, #06b6d4, #0369a1); color: #fff; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); }
-    .hazard-btn.active[data-type="shelter"] { background: linear-gradient(180deg, #10b981, #047857); color: #fff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
-    #locationBtn { position: absolute; right: 16px; bottom: 100px; z-index: 1500; width: 54px; height: 54px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 6px 15px rgba(0,0,0,0.15); cursor: pointer; }
+   /* 1. 検索バー：さらにGoogleらしく */
+.custom-search-bar {
+  display: flex;
+  align-items: center;
+  background: #ffffff; /* 透明度をなくし、白を強調 */
+  border-radius: 28px; /* 丸みを強くして現代的に */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08); /* 二重の影 */
+  border: 1px solid rgba(0,0,0,0.05); /* 輪郭をわずかに強調 */
+  padding: 2px 12px;
+  transition: box-shadow 0.3s ease;
+}
+.custom-search-bar:focus-within {
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* 選択時に影を深める */
+}
+
+/* 2. ハザード操作カード：質感アップ */
+#hazardMenuCard {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border-radius: 18px;
+  padding: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12); /* よりリッチな影 */
+  border: 1px solid rgba(255,255,255,0.5); /* ガラス感を出す輪郭 */
+}
+.hazard-btn {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.05); /* 輪郭の強調 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hazard-btn:hover {
+  background: #f1f3f4;
+  transform: translateY(-2px);
+}
+.hazard-btn.active {
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3); /* アクティブ時にブランドカラーの光彩 */
+}
+
+/* 3. 凡例：カードの重なりを表現 */
+#legendAccordion {
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 5. ルート情報カード：情報の階層化 */
+#routeInfoCard {
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.1); /* 上方向に影を広げて浮遊感を演出 */
+}
 </style>
 </head>
 <body>
