@@ -363,8 +363,8 @@ async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive) return;
 
-  // ここに取得したいGeoJSONファイルのパス（URL）を入力してください
-  const geojsonUrl = 'https://corsproxy.io/?https://geoshape.ex.nii.ac.jp/city/base/geojson/22130.geojson'; 
+  // dataフォルダの中のファイルを参照する
+  const geojsonUrl = './data/shelter.geojson'; 
 
   try {
     const response = await fetch(geojsonUrl);
