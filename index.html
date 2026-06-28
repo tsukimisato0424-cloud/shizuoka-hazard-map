@@ -360,35 +360,29 @@ const shelterLayerGroup = L.layerGroup().addTo(map);
 let shelterActive = false;
 let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
-// 国土地理院等の指定緊急避難場所データを取得して表示する関数
+// 避難所データを取得して表示する関数（CSV対応版）
 async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive) return;
 
-  // dataフォルダの中のファイルを参照する
-
-async function fetchAndShowShelters(centerLatLng) {
-  shelterLayerGroup.clearLayers();
-  if (!shelterActive) return;
-
-  const csvUrl = './data/shelter.geojson'; // ファイル名は.geojsonのままですが、中身はCSVです
+  // GitHubのdataフォルダ内のCSVファイルパス
+  const csvUrl = './data/shelter.geojson';
 
   try {
     const response = await fetch(csvUrl);
     const csvText = await response.text();
 
-    // PapaParseでCSVを解析
     Papa.parse(csvText, {
-      header: true, // 1行目をヘッダーとして扱う
+      header: true,
       skipEmptyLines: true,
       complete: function(results) {
         results.data.forEach(row => {
-          // Lat: 6番目(Lat), Lon: 7番目(Lon) ※ヘッダー名で指定
+          // データの列名が Lat, Lon, 名称 であることを確認済みです
           const lat = parseFloat(row.Lat);
           const lng = parseFloat(row.Lon);
           const name = row.名称;
 
-          if (lat && lng) {
+          if (!isNaN(lat) && !isNaN(lng)) {
             const shelterIcon = L.divIcon({
               className: 'custom-shelter-icon',
               html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
@@ -412,8 +406,6 @@ async function fetchAndShowShelters(centerLatLng) {
   } catch (err) {
     console.error("避難所データの読み込みに失敗しました:", err);
   }
-}
-  
 }
 
 window.triggerRouteToShelter = function(lat, lng, name) {
