@@ -295,8 +295,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <div id="mapTypeMenu">
     <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
     <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
-    <div class="map-type-item" onclick="changeMap('relief')">標高図</div>
-    <div class="map-type-item" onclick="changeMap('relief_overlay')">色別標高図(重ね)</div>
+    <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
   </div>
   <button id="mapTypeBtn" onclick="toggleMenu()">
     <span class="material-icons-round">layers</span>
@@ -671,26 +670,27 @@ function changeMap(type) {
   if (currentBaseLayer) {
     map.removeLayer(currentBaseLayer);
   }
-  // 念のため、重ね合わせレイヤーも消す
+  // 重ね合わせレイヤーも消す
   if (map.hasLayer(reliefOverlay)) {
     map.removeLayer(reliefOverlay);
   }
 
   // 指定されたモードで表示
   if (type === 'relief_overlay') {
-    // 1. 標準地図を下に敷く
-    baseLayers.pale.addTo(map);
-    // 2. その上に透過した標高図を重ねる
-    reliefOverlay.addTo(map);
-    // 現在のベースレイヤーを標準地図に設定
+    // 【重ね合わせモード】
+    baseLayers.pale.addTo(map);            // 下に標準地図
+    reliefOverlay.addTo(map);              // 上に半透明の標高図
     currentBaseLayer = baseLayers.pale;
-  } else {
-    // 通常の切り替え
-    currentBaseLayer = baseLayers[type].addTo(map);
+  } else if (type === 'pale') {
+    // 【標準地図】
+    currentBaseLayer = baseLayers.pale.addTo(map);
+  } else if (type === 'ort') {
+    // 【航空写真】
+    currentBaseLayer = baseLayers.ort.addTo(map);
   }
   
   // 地図を一番後ろ（他のアイコンの下）に送る
-  currentBaseLayer.bringToBack();
+  if (currentBaseLayer) currentBaseLayer.bringToBack();
   
   // メニューを閉じる
   document.getElementById('mapTypeMenu').style.display = 'none';
