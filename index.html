@@ -364,7 +364,7 @@ async function fetchAndShowShelters(centerLatLng) {
   if (!shelterActive) return;
 
   // dataフォルダの中のファイルを参照する
-  const geojsonUrl = './data/shelter.geojson'; 
+  const geojsonUrl = '/shizuoka-hazard-map/data/shelter.geojson'; 
 
   try {
     const response = await fetch(geojsonUrl);
