@@ -140,7 +140,36 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   cursor: pointer;
   border-bottom: 1px solid #f1f3f4;
 }
-.map-type-item:hover { background: #f8f9fa; }  
+.map-type-item:hover { background: #f8f9fa; } 
+
+#searchContainer {
+  position: absolute; top: 10px; left: 10px; right: 10px;
+  z-index: 1000;
+}
+#hazardMenuCard {
+  position: absolute; top: 75px; left: 10px; right: 10px;
+  z-index: 1000;
+}
+#legendAccordion {
+  position: absolute; top: 160px; right: 10px;
+  z-index: 1000; width: 90px; background: #ffffff;
+  border-radius: 12px; overflow: hidden;
+}
+#locationBtn {
+  position: absolute; right: 16px; bottom: 180px; z-index: 1000;
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+#mapTypeContainer {
+  position: absolute; right: 16px; bottom: 240px; z-index: 1000;
+  width: 50px;
+}
+#mapTypeBtn {
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  background: #ffffff; cursor: pointer; display: flex; 
+  align-items: center; justify-content: center;
+}
+  
 </style>
 </head>
 <body>
