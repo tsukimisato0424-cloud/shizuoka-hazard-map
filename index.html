@@ -364,7 +364,7 @@ async function fetchAndShowShelters(centerLatLng) {
   if (!shelterActive) return;
 
   // ここに取得したいGeoJSONファイルのパス（URL）を入力してください
-  const geojsonUrl = 'YOUR_GEOJSON_FILE_URL_HERE'; 
+  const geojsonUrl = 'https://geoshape.ex.nii.ac.jp/city/base/geojson/22130.geojson'; 
 
   try {
     const response = await fetch(geojsonUrl);
