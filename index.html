@@ -332,7 +332,7 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 const baseLayers = {
   pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
   ort: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg', {attribution: ' © 国土地理院' }),
-  relief: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/{z}/{x}/{y}.png', {attribution: ' © 国土地理院' })
+  relief: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png', {attribution: ' © 国土地理院' })
 };
 
 let currentBaseLayer = baseLayers.pale.addTo(map);
