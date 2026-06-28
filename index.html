@@ -358,66 +358,45 @@ const shelterLayerGroup = L.layerGroup().addTo(map);
 let shelterActive = false;
 let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
-// 指定した中心座標から半径3km(緯度経度換算で約0.027度)以内に、固定された避難所群を展開するロジック
-function generateLocalShelters(centerLatLng) {
+// 国土地理院等の指定緊急避難場所データを取得して表示する関数
+async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
-  if (!shelterActive || !centerLatLng) return;
+  if (!shelterActive) return;
 
-  // 基準点がブレないよう、この関数が呼ばれた時点の中心点を保持
-  shelterCenterLatLng = centerLatLng;
-  const lat = shelterCenterLatLng.lat;
-  const lng = shelterCenterLatLng.lng;
-  
-  // 半経3km以内になるように調整された固定オフセット値（マップ移動で動かないよう固定配置）
-  const locations = [
-    { name: "地域指定 第一小学校 (指定緊急避難場所)", latOff: 0.012, lngOff: -0.015, spec: "洪水・地震・土砂災害対応" },
-    { name: "中央コミュニティ市民センター (指定避難所)", latOff: -0.009, lngOff: 0.018, spec: "洪水・津波・地震対応" },
-    { name: "防災中央市民総合公園 (広域避難場所)", latOff: 0.019, lngOff: 0.021, spec: "大規模火災・地震対応" },
-    { name: "地区総合福祉体育館", latOff: -0.016, lngOff: -0.011, spec: "全災害対応型・福祉避難所" },
-    { name: "第二中学校 体育館", latOff: 0.005, lngOff: 0.008, spec: "地震・津波・火災対応" },
-    { name: "生涯学習交流館", latOff: -0.022, lngOff: 0.005, spec: "洪水・地震対応福祉スペース有" }
-  ];
+  // ここに取得したいGeoJSONファイルのパス（URL）を入力してください
+  const geojsonUrl = 'YOUR_GEOJSON_FILE_URL_HERE'; 
 
-  // 3km圏内を示す円（サークル）をうっすら描画
-  L.circle([lat, lng], {
-    radius: 3000,
-    color: '#27ae60',
-    weight: 1,
-    fillColor: '#27ae60',
-    fillOpacity: 0.05,
-    interactive: false
-  }).addTo(shelterLayerGroup);
+  try {
+    const response = await fetch(geojsonUrl);
+    const data = await response.json();
 
-  locations.forEach(loc => {
-    const finalLat = lat + loc.latOff;
-    const finalLng = lng + loc.lngOff;
+    // GeoJSONの各フィーチャーをループしてマーカーを作成
+    data.features.forEach(feature => {
+      // GeoJSONの座標は [経度, 緯度] の順になっているため変換
+      const lat = feature.geometry.coordinates[1];
+      const lng = feature.geometry.coordinates[0];
+      const name = feature.properties.名称; // データに合わせて項目名を調整してください
 
-    const shelterIcon = L.divIcon({
-      className: 'custom-shelter-icon',
-      html: '<span class="material-icons-round" style="font-size:18px; color:#fff; font-weight:bold;">directions_run</span>',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
+      const shelterIcon = L.divIcon({
+        className: 'custom-shelter-icon',
+        html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+      marker.bindPopup(`
+        <div style="font-family:sans-serif; min-width:150px;">
+          <strong>${name}</strong><br>
+          <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                  style="margin-top:8px; width:100%; cursor:pointer;">ルート検索</button>
+        </div>
+      `);
+      shelterLayerGroup.addLayer(marker);
     });
-
-    const marker = L.marker([finalLat, finalLng], { 
-      icon: shelterIcon,
-      pane: 'shelterPane'
-    });
-
-    marker.bindPopup(`
-      <div style="font-family:sans-serif; min-width:180px;">
-        <strong style="font-size:14px; color:#27ae60; display:block; margin-bottom:4px;">● ${loc.name}</strong>
-        <span style="font-size:11px; color:#5f6368;">【性能】${loc.spec}</span>
-        <hr style="border:none; border-top:1px solid #f1f3f4; margin:8px 0;">
-        <button onclick="triggerRouteToShelter(${finalLat}, ${finalLng}, '${loc.name}')" 
-                style="background:#27ae60; color:#fff; border:none; width:100%; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-          ここへの避難ルートを検索
-        </button>
-      </div>
-    `);
-
-    shelterLayerGroup.addLayer(marker);
-  });
+  } catch (err) {
+    console.error("避難所データの読み込みに失敗しました:", err);
+  }
 }
 
 window.triggerRouteToShelter = function(lat, lng, name) {
