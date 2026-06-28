@@ -549,10 +549,15 @@ function selectLocation(lat, lng, label) {
 }
 
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
+
 map.on('click', function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 避難所表示ボタンが有効化されている場合、タップされた座標を中心に半径3km圏内を再計算
+  // 1. タップした場所を「目的地」として設定する
+  // labelにはタップした座標を表示
+  selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
+  
+  // 2. 避難所表示ボタンが有効化されている場合、その場所を中心に避難所を再展開
   if (shelterActive) {
     generateLocalShelters(e.latlng);
   }
