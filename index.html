@@ -286,8 +286,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </details>
 </div>
 
-<button id="mapTypeBtn"><span class="material-icons-round">layers</span></button>
-
 <div id="mapTypeContainer">
   <div id="mapTypeMenu">
     <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
@@ -642,19 +640,21 @@ searchBtn.onclick = function() {
 };
 
 document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
-// 地図タイプ切替ボタンのロジック
-const mapTypeBtn = document.getElementById('mapTypeBtn');
-let layerIndex = 0;
-const layersOrder = ['pale', 'ort', 'relief'];
 
-mapTypeBtn.onclick = () => {
-  map.removeLayer(currentBaseLayer);
-  layerIndex = (layerIndex + 1) % layersOrder.length;
-  currentBaseLayer = baseLayers[layersOrder[layerIndex]].addTo(map);
-  
-  // 地図がハザード情報より上に重ならないように最背面に移動
+// --- メニュー型切り替えロジック ---
+function toggleMenu() {
+  const menu = document.getElementById('mapTypeMenu');
+  menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+}
+
+function changeMap(type) {
+  if (currentBaseLayer) {
+    map.removeLayer(currentBaseLayer);
+  }
+  currentBaseLayer = baseLayers[type].addTo(map);
   currentBaseLayer.bringToBack();
-};
+  document.getElementById('mapTypeMenu').style.display = 'none';
+}
   
 </script>
 </body>
