@@ -296,20 +296,17 @@ function generateLocalShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive || !centerLatLng) return;
 
-  // 基準点がブレないよう、この関数が呼ばれた時点の中心点を保持
+  // 基準点を保持
   shelterCenterLatLng = centerLatLng;
-  const lat = shelterCenterLatLng.lat;
-  const lng = shelterCenterLatLng.lng;
 
-  // 3km圏内を計算するための基準点（lat, lng）は関数の引数から取得済みです
-  
-  // 1. 外部GeoJSONを取得
+  // 外部GeoJSONを取得
   fetch('https://your-server.com/shizuoka_data.geojson')
     .then(response => response.json())
     .then(data => {
-      // 2. フィルタリングして3km以内のデータのみを抽出
+      // フィルタリングして3km以内のデータのみを抽出
       L.geoJSON(data, {
         filter: (feature) => {
+          // 座標が [経度, 緯度] の順であることを想定
           const point = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
           return point.distanceTo(centerLatLng) <= 3000; // 3000m = 3km
         },
@@ -325,13 +322,25 @@ function generateLocalShelters(centerLatLng) {
           });
         },
         onEachFeature: (feature, layer) => {
-          // feature.properties.名称 は実際のデータ項目名に変更してください
-          layer.bindPopup(`<strong>${feature.properties.名称}</strong>`);
+          // 名称プロパティをポップアップに表示
+          const name = feature.properties.名称 || "避難所";
+          layer.bindPopup(`
+            <div style="font-family:sans-serif; min-width:180px;">
+              <strong style="font-size:14px; color:#27ae60;">● ${name}</strong>
+              <hr style="margin:8px 0;">
+              <button onclick="triggerRouteToShelter(${feature.geometry.coordinates[1]}, ${feature.geometry.coordinates[0]}, '${name}')" 
+                      style="background:#27ae60; color:#fff; border:none; width:100%; padding:8px; border-radius:6px; cursor:pointer;">
+                ここへの避難ルートを検索
+              </button>
+            </div>
+          `);
         }
       }).addTo(shelterLayerGroup);
     })
     .catch(err => console.error("避難所データの読み込みに失敗しました:", err));
+}
 
+// 修正版ではこの位置に移動しました
 window.triggerRouteToShelter = function(lat, lng, name) {
   map.closePopup();
   selectLocation(lat, lng, name);
