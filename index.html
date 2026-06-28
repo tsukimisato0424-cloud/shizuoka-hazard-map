@@ -366,6 +366,13 @@ async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive || !centerLatLng) return;
 
+const circle = L.circle(centerLatLng, {
+    color: '#27ae60',       // 枠線の色
+    fillColor: '#27ae60',   // 中の色
+    fillOpacity: 0.1,       // 透明度（薄くする）
+    radius: 3000            // 半径3000m
+  }).addTo(shelterLayerGroup);
+  
   const csvUrl = './data/shelter.geojson';
 
   try {
