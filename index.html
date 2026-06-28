@@ -418,7 +418,7 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
       if (shelterActive) {
         // ボタンON時、目的地（検索場所）があればそこを中心に、なければ現在地、それもなければマップの中心に配置
         const targetCenter = destination || currentLocation || map.getCenter();
-        generateLocalShelters(targetCenter);
+        fetchAndShowShelters(targetCenter);
       } else {
         shelterLayerGroup.clearLayers();
         shelterCenterLatLng = null;
@@ -449,7 +449,7 @@ function updateCurrentLocation(isInitial = false) {
     
     // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
     if (shelterActive) {
-      generateLocalShelters(currentLocation);
+      fetchAndShowShelters(currentLocation);
     }
     
     if (destination) drawRoute();
@@ -458,7 +458,7 @@ function updateCurrentLocation(isInitial = false) {
     // 位置情報が取れない場合のフォールバック
     if (isInitial) {
       currentLocation = map.getCenter();
-      if (shelterActive) generateLocalShelters(currentLocation);
+      if (shelterActive) fetchAndShowShelters(currentLocation);
     }
   }, { enableHighAccuracy: true });
 }
@@ -590,7 +590,7 @@ function selectLocation(lat, lng, label) {
 
   // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
   if (shelterActive) {
-    setTimeout(() => { generateLocalShelters(destination); }, 500);
+    setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
 }
 
@@ -605,7 +605,7 @@ map.on('click', function(e) {
   
   // 2. 避難所表示ボタンが有効化されている場合、その場所を中心に避難所を再展開
   if (shelterActive) {
-    generateLocalShelters(e.latlng);
+    fetchAndShowShelters(e.latlng);
   }
 });
 
