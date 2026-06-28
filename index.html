@@ -3,591 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>防災ハザードマップ (Premium Design Pro)</title>
-
+<title>防災ハザードマップ</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-
 <style>
-html, body, #map { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f4f6f9; }
-
-/* 1. プレミアム・ガラスモーフィズム検索バー */
-#searchContainer {
-  position: absolute;
-  top: 16px; left: 16px; right: 16px;
-  z-index: 99999 !important;
-}
-.custom-search-bar {
-  display: flex;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 4px 10px;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-.custom-search-bar:focus-within {
-  background: #ffffff;
-  box-shadow: 0 12px 35px rgba(26, 115, 232, 0.15);
-  border-color: rgba(26, 115, 232, 0.4);
-}
-.custom-search-bar input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 16px;
-  font-weight: 500;
-  padding: 12px 8px;
-  background: transparent;
-  color: #1f2937;
-}
-.custom-search-bar input::placeholder { color: #9ca3af; }
-.search-icon-btn {
-  background: transparent;
-  border: none;
-  color: #1a73e8;
-  cursor: pointer;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  border-radius: 12px;
-  transition: all 0.2s;
-}
-.search-icon-btn:hover { background: rgba(26, 115, 232, 0.08); }
-.search-icon-btn:active { transform: scale(0.92); }
-
-#customSuggestions {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
-  border: 1px solid rgba(0,0,0,0.05);
-  margin-top: 8px;
-  max-height: 280px;
-  overflow-y: auto;
-  display: none;
-}
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  padding: 14px 18px;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(0,0,0,0.04);
-  transition: all 0.2s;
-}
-.suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover { background-color: rgba(26, 115, 232, 0.05); color: #1a73e8; }
-.suggestion-item .material-icons-round {
-  color: #9ca3af;
-  font-size: 20px;
-  margin-right: 12px;
-  transition: color 0.2s;
-}
-.suggestion-item:hover .material-icons-round { color: #1a73e8; }
-
-/* 2. アクティブリアクション付きハザードメニュー */
-#hazardMenuCard {
-  position: absolute;
-  top: 85px; left: 16px; right: 16px;
-  z-index: 2000;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 18px;
-  padding: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-.hazard-btn {
-  flex: 1; border: none; border-radius: 14px; padding: 10px 2px;
-  background: #ffffff; color: #4b5563; font-size: 12px; font-weight: 700;
-  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.hazard-btn .material-icons-round { font-size: 22px; transition: transform 0.25s; }
-.hazard-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-  color: #1f2937;
-}
-.hazard-btn:hover .material-icons-round { transform: scale(1.1); }
-.hazard-btn:active { transform: translateY(1px) scale(0.96); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
-/* 各アクティブ状態のプレミアムグラデーション */
-.hazard-btn.active[data-type="flood"] { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f97316, #c2410c); color: #ffffff; box-shadow: 0 6px 20px rgba(249, 115, 247, 0.4); }
-.hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #06b6d4, #0369a1); color: #ffffff; box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4); }
-.hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #10b981, #047857); color: #ffffff; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
-
-/* 3. 洗練されたモダン凡例アコーディオン */
-#legendAccordion {
-  position: absolute; 
-  top: 185px; right: 16px;
-  z-index: 1500;
-  width: 96px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  border-radius: 22px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.06); 
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-#legendAccordion[open-state="true"] {
-  width: 230px;
-  border-radius: 16px;
-  box-shadow: 0 12px 35px rgba(0,0,0,0.12);
-}
-#legendAccordion details { border: none; }
-#legendAccordion summary {
-  padding: 10px 14px; font-size: 13px; font-weight: 600; color: #374151;
-  cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-  user-select: none; list-style: none;
-}
-#legendAccordion summary::-webkit-details-marker { display: none; }
-#legendAccordion summary::before {
-  content: 'layers'; font-family: 'Material Icons Round'; font-size: 20px; color: #1a73e8; margin-right: 4px;
-}
-#legendAccordion summary::after { content: 'expand_more'; font-family: 'Material Icons Round'; font-size: 18px; color: #6b7280; transition: transform 0.3s; }
-#legendAccordion details[open] summary::after { transform: rotate(-180deg); }
-
-.legend-content { padding: 4px 16px 16px 16px; max-height: 260px; overflow-y: auto; font-size: 12px; color: #4b5563; line-height: 1.6; }
-.legend-section-title { font-weight: 800; color: #1f2937; margin: 10px 0 6px 0; display: block; border-left: 3px solid #1a73e8; padding-left: 6px; }
-.legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; color: #4b5563; }
-.legend-color { width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.1); }
-
-/* 緑色の人が走っている避難所ピクトグラム */
-.custom-shelter-icon {
-  background: #10b981 !important;
-  border: 2px solid #ffffff !important;
-  border-radius: 50% !important;
-  color: #ffffff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-  transition: transform 0.2s;
-}
-.custom-shelter-icon:hover { transform: scale(1.15); }
-
-/* 4. 丸型フローティング現在地ボタン */
-#locationBtn {
-  position: absolute; right: 16px; bottom: 200px; z-index: 1500;
-  width: 54px; height: 54px; border: none; border-radius: 50%;
-  background: #ffffff; color: #1a73e8; cursor: pointer;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;
-  border: 1px solid rgba(0,0,0,0.02);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-#locationBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(26, 115, 232, 0.2); background: #1a73e8; color: #ffffff; }
-#locationBtn:active { transform: translateY(1px) scale(0.94); }
-#locationBtn .material-icons-round { font-size: 26px; }
-
-/* 5. 統一デザイン・ルート結果情報カード */
-#routeInfoCard {
-  position: absolute; bottom: 24px; left: 16px; right: 16px; z-index: 1500;
-  background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; padding: 16px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.12); border: 1px solid rgba(255, 255, 255, 0.5);
-  display: none; flex-direction: column; gap: 12px;
-  animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.route-title { font-size: 14px; font-weight: 800; color: #1f2937; border-bottom: 1px solid rgba(0,0,0,0.06); padding-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.route-title::before { content: 'navigation'; font-family: 'Material Icons Round'; color: #1a73e8; font-size: 18px; }
-.route-modes { display: flex; gap: 12px; }
-.route-mode-box {
-  flex: 1; background: #f8fafc; border-radius: 14px; padding: 12px;
-  display: flex; align-items: center; gap: 10px; border: 1px solid rgba(0,0,0,0.02);
-}
-.route-icon-circle {
-  width: 36px; height: 36px; border-radius: 50%; background: #e0f2fe; color: #0284c7;
-  display: flex; align-items: center; justify-content: center;
-}
-.route-text-data { display: flex; flex-direction: column; }
-.route-time { font-size: 16px; font-weight: 800; color: #1a73e8; }
-.route-dist { font-size: 12px; color: #6b7280; font-weight: 500; margin-top: 1px; }
-
-.leaflet-routing-container { display: none !important; }
-
-/* 6. Leaflet標準ポップアップの洗練化デザイン上書き */
-.leaflet-popup-content-wrapper {
-  background: rgba(255, 255, 255, 0.96) !important;
-  backdrop-filter: blur(8px);
-  border-radius: 16px !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
-  padding: 4px !important;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-}
-.leaflet-popup-content { margin: 12px 14px !important; line-height: 1.4; }
-.leaflet-popup-tip { background: rgba(255, 255, 255, 0.96) !important; box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important; }
-.leaflet-container a.leaflet-popup-close-button { top: 12px !important; right: 12px !important; color: #9ca3af !important; font-size: 16px !important; }
-.leaflet-container a.leaflet-popup-close-button:hover { color: #374151 !important; }
-
-/* 避難所レイヤー用最前面ペイン */
-.leaflet-shelter-pane { z-index: 9999 !important; }
+    /* デザイン：立体感とグラデーション */
+    html, body, #map { height: 100%; margin: 0; font-family: sans-serif; background: #f4f6f9; }
+    #searchContainer { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 99999; }
+    .custom-search-bar { display: flex; align-items: center; background: linear-gradient(180deg, #fff 0%, #f9fafb 100%); border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 1px 0 #fff; border: 1px solid rgba(0,0,0,0.1); padding: 4px 10px; }
+    .custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 12px; background: transparent; }
+    #hazardMenuCard { position: absolute; top: 85px; left: 16px; right: 16px; z-index: 2000; display: flex; gap: 8px; }
+    .hazard-btn { flex: 1; border: none; border-radius: 14px; padding: 10px 2px; background: linear-gradient(180deg, #fff 0%, #f3f4f6 100%); color: #5f6368; font-size: 11px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.08), inset 0 1px 0 #fff; transition: 0.2s; }
+    .hazard-btn.active[data-type="flood"] { background: linear-gradient(180deg, #3b82f6, #1d4ed8); color: #fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+    .hazard-btn.active[data-type="landslide"] { background: linear-gradient(180deg, #f97316, #c2410c); color: #fff; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4); }
+    .hazard-btn.active[data-type="tsunami"] { background: linear-gradient(180deg, #06b6d4, #0369a1); color: #fff; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); }
+    .hazard-btn.active[data-type="shelter"] { background: linear-gradient(180deg, #10b981, #047857); color: #fff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+    #locationBtn { position: absolute; right: 16px; bottom: 100px; z-index: 1500; width: 54px; height: 54px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 6px 15px rgba(0,0,0,0.15); cursor: pointer; }
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-
 <div id="searchContainer">
-  <div class="custom-search-bar">
-    <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
-    <button class="search-icon-btn" id="customSearchBtn">
-      <span class="material-icons-round">search</span>
-    </button>
-  </div>
-  <div id="customSuggestions"></div>
-</div>
-
-<div id="hazardMenuCard">
-  <button class="hazard-btn" data-type="flood">
-    <span class="material-icons-round">water</span>洪水想定
-  </button>
-  <button class="hazard-btn" data-type="landslide">
-    <span class="material-icons-round">landscape</span>土砂災害
-  </button>
-  <button class="hazard-btn" data-type="tsunami">
-    <span class="material-icons-round">tsunami</span>津波浸水
-  </button>
-  <button class="hazard-btn" data-type="shelter">
-    <span class="material-icons-round">gite</span>避難所表示
-  </button>
-</div>
-
-<div id="legendAccordion" open-state="false">
-  <details id="legendDetails">
-    <summary>凡例</summary>
-    <div class="legend-content">
-      <span class="legend-section-title">【洪水/津波 浸水深】</span>
-      <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
-      <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
-      <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
-      <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
-      
-      <span class="legend-section-title">【土砂災害】</span>
-      <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
-      <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
-      
-      <span class="legend-section-title">【避難所】</span>
-      <div class="legend-item">
-        <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
-          <span class="material-icons-round" style="font-size:14px; color:#fff;">directions_run</span>
-        </div>
-        指定緊急避難場所 (緑アイコン)
-      </div>
+    <div class="custom-search-bar">
+        <input type="text" id="customSearchInput" placeholder="検索...">
+        <button id="customSearchBtn" style="border:none; background:none; color:#1a73e8;"><span class="material-icons-round">search</span></button>
     </div>
-  </details>
 </div>
-
+<div id="hazardMenuCard">
+    <button class="hazard-btn" data-type="flood"><span class="material-icons-round">water</span>洪水</button>
+    <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂</button>
+    <button class="hazard-btn" data-type="tsunami"><span class="material-icons-round">tsunami</span>津波</button>
+    <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
+</div>
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
-<div id="routeInfoCard">
-  <div class="route-title">目的地までの参考経路</div>
-  <div class="route-modes">
-    <div class="route-mode-box">
-      <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
-      <div class="route-text-data">
-        <span class="route-time" id="walkTime">-- 分</span>
-        <span class="route-dist" id="walkDist">-- km</span>
-      </div>
-    </div>
-    <div class="route-mode-box">
-      <div class="route-icon-circle" style="background:#fef3c7; color:#d97706;"><span class="material-icons-round">directions_car</span></div>
-      <div class="route-text-data">
-        <span class="route-time" id="carTime" style="color:#d97706;">-- 分</span>
-        <span class="route-dist" id="carDist">-- km</span>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-
 <script>
-const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
+    const map = L.map('map').setView([34.9756, 138.3828], 13);
+    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }).addTo(map);
 
-L.control.zoom({ position: 'bottomright' }).addTo(map);
+    const layers = {
+        flood: L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6 }),
+        landslide: L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7 }),
+        tsunami: L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6 })
+    };
 
-L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-  attribution: '© 国土地理院'
-}).addTo(map);
-
-const layers = {
-  flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  landslide: [
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
-    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
-  ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
-};
-
-map.createPane('shelterPane');
-map.getPane('shelterPane').style.zIndex = 9999; 
-
-const shelterLayerGroup = L.layerGroup().addTo(map);
-let shelterActive = false;
-let shelterCenterLatLng = null;
-
-function generateLocalShelters(centerLatLng) {
-  shelterLayerGroup.clearLayers();
-  if (!shelterActive || !centerLatLng) return;
-
-  shelterCenterLatLng = centerLatLng;
-  const lat = shelterCenterLatLng.lat;
-  const lng = shelterCenterLatLng.lng;
-  
-  const locations = [
-    { name: "地域指定 第一小学校 (指定緊急避難場所)", latOff: 0.012, lngOff: -0.015, spec: "洪水・地震・土砂災害対応" },
-    { name: "中央コミュニティ市民センター (指定避難所)", latOff: -0.009, lngOff: 0.018, spec: "洪水・津波・地震対応" },
-    { name: "防災中央市民総合公園 (広域避難場所)", latOff: 0.019, lngOff: 0.021, spec: "大規模火災・地震対応" },
-    { name: "地区総合福祉体育館", latOff: -0.016, lngOff: -0.011, spec: "全災害対応型・福祉避難所" },
-    { name: "第二中学校 体育館", latOff: 0.005, lngOff: 0.008, spec: "地震・津波・火災対応" },
-    { name: "生涯学習交流館", latOff: -0.022, lngOff: 0.005, spec: "洪水・地震対応福祉スペース有" }
-  ];
-
-  L.circle([lat, lng], {
-    radius: 3000, color: '#10b981', weight: 1.5, fillColor: '#10b981', fillOpacity: 0.04, interactive: false
-  }).addTo(shelterLayerGroup);
-
-  locations.forEach(loc => {
-    const finalLat = lat + loc.latOff;
-    const finalLng = lng + loc.lngOff;
-
-    const shelterIcon = L.divIcon({
-      className: 'custom-shelter-icon',
-      html: '<span class="material-icons-round" style="font-size:18px; color:#fff; font-weight:bold;">directions_run</span>',
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
-
-    const marker = L.marker([finalLat, finalLng], { icon: shelterIcon, pane: 'shelterPane' });
-
-    // ポップアップ内部のデザイン統合
-    marker.bindPopup(`
-      <div style="padding: 2px 0;">
-        <strong style="font-size:15px; color:#10b981; display:flex; align-items:center; gap:4px; font-weight:800; margin-bottom:6px;">
-          <span class="material-icons-round" style="font-size:18px;">gite</span> ${loc.name}
-        </strong>
-        <div style="font-size:12px; color:#4b5563; background:#f8fafc; padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.03); margin-bottom:12px; font-weight:500;">
-          ${loc.spec}
-        </div>
-        <button onclick="triggerRouteToShelter(${finalLat}, ${finalLng}, '${loc.name.replace(/'/g, "\\'")}')" 
-                style="background: linear-gradient(135deg, #10b981, #059669); color:#fff; border:none; width:100%; padding:10px; border-radius:10px; font-size:13px; font-weight:bold; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.25); display:flex; align-items:center; justify-content:center; gap:4px; transition:all 0.2s;">
-          <span class="material-icons-round" style="font-size:16px;">explore</span> ここへの避難ルートを検索
-        </button>
-      </div>
-    `);
-
-    shelterLayerGroup.addLayer(marker);
-  });
-}
-
-window.triggerRouteToShelter = function(lat, lng, name) {
-  map.closePopup();
-  selectLocation(lat, lng, name);
-};
-
-document.querySelectorAll('.hazard-btn').forEach(btn => {
-  btn.onclick = function() {
-    const type = this.getAttribute('data-type');
-    this.classList.toggle('active');
-    const isActive = this.classList.contains('active');
-    
-    if (type === 'shelter') {
-      shelterActive = isActive;
-      if (shelterActive) {
-        const targetCenter = destination || currentLocation || map.getCenter();
-        generateLocalShelters(targetCenter);
-      } else {
-        shelterLayerGroup.clearLayers();
-        shelterCenterLatLng = null;
-      }
-    } else {
-      if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
-      else { layers[type].forEach(layer => map.removeLayer(layer)); }
-    }
-  };
-});
-
-const legendCard = document.getElementById('legendAccordion');
-document.getElementById('legendDetails').addEventListener('toggle', function(e) {
-  legendCard.setAttribute('open-state', this.open ? 'true' : 'false');
-});
-
-let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
-
-function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(pos => {
-    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    if (currentMarker) map.removeLayer(currentMarker);
-    
-    // 現在地マーカーをよりスタイリッシュに
-    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("<b style='color:#1a73e8;'>📍 あなたの現在地</b>").openPopup();
-    
-    if (isInitial || !destination) {
-      map.setView(currentLocation, 14);
-    }
-    if (shelterActive) {
-      generateLocalShelters(currentLocation);
-    }
-    if (destination) drawRoute();
-  }, err => {
-    console.error("現在地取得失敗", err);
-    if (isInitial) {
-      currentLocation = map.getCenter();
-      if (shelterActive) generateLocalShelters(currentLocation);
-    }
-  }, { enableHighAccuracy: true });
-}
-updateCurrentLocation(true);
-
-function drawRoute() {
-  if (!currentLocation || !destination) return;
-  if (routingControl) map.removeControl(routingControl);
-  
-  routingControl = L.Routing.control({
-    waypoints: [currentLocation, destination],
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    lineOptions: { styles: [{ color: '#1a73e8', opacity: 0.85, weight: 6 }] }
-  }).addTo(map);
-
-  routingControl.on('routesfound', function(e) {
-    const summary = e.routes[0].summary; 
-    const distanceKm = (summary.totalDistance / 1000).toFixed(1);
-    const walkMinutes = Math.round((summary.totalDistance / 80));
-    const carMinutes = Math.round(summary.totalTime / 60);
-
-    document.getElementById('walkDist').innerText = `${distanceKm} km`;
-    document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
-    document.getElementById('carDist').innerText = `${distanceKm} km`;
-    document.getElementById('carTime').innerText = `${carMinutes} 分`;
-    document.getElementById('routeInfoCard').style.display = 'flex';
-  });
-}
-
-async function executeHybridSearch(query) {
-  if (!query) return;
-  const suggestionsBox = document.getElementById('customSuggestions');
-  suggestionsBox.innerHTML = '';
-  
-  const encodedQuery = encodeURIComponent(query);
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr`;
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1`;
-
-  let facilityResults = []; 
-  let addressResults = [];  
-
-  try {
-    const [resArc, resNom] = await Promise.all([
-      fetch(urlArcGIS).then(r => r.json()).catch(() => null),
-      fetch(urlNominatim).then(r => r.json()).catch(() => null)
-    ]);
-
-    if (resNom && resNom.length > 0) {
-      resNom.forEach(n => {
-        facilityResults.push({
-          name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称'
-        });
-      });
-    }
-
-    if (resArc && resArc.candidates) {
-      resArc.candidates.forEach(c => {
-        addressResults.push({
-          name: c.address, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果'
-        });
-      });
-    }
-
-    const combinedResults = [...facilityResults, ...addressResults];
-
-    if (combinedResults.length === 0) {
-      suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>一致する施設・住所がありません</div>`;
-      suggestionsBox.style.display = 'block';
-      return;
-    }
-
-    const uniquePositions = [];
-    combinedResults.forEach(item => {
-      const isDuplicate = uniquePositions.some(u => Math.abs(u.lat - item.lat) < 0.0005 && Math.abs(u.lng - item.lng) < 0.0005);
-      if (!isDuplicate && uniquePositions.length < 6) {
-        uniquePositions.push(item);
-        const primaryName = item.name.split(',')[0];
-        
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerHTML = `
-          <span class="material-icons-round">${item.icon}</span>
-          <div>
-            <strong style="color:#1f2937;">${primaryName}</strong><br>
-            <span style="font-size:11px;color:#6b7280;font-weight:500;">${item.source}</span>
-          </div>
-        `;
-        
-        div.onclick = function() {
-          selectLocation(item.lat, item.lng, primaryName);
-          suggestionsBox.style.display = 'none';
+    document.querySelectorAll('.hazard-btn').forEach(btn => {
+        btn.onclick = function() {
+            const type = this.getAttribute('data-type');
+            this.classList.toggle('active');
+            if(type === 'shelter') return;
+            this.classList.contains('active') ? layers[type].addTo(map) : map.removeLayer(layers[type]);
         };
-        suggestionsBox.appendChild(div);
-      }
     });
-
-    suggestionsBox.style.display = 'block';
-  } catch (error) {
-    console.error("検索システムエラー:", error);
-  }
-}
-
-function selectLocation(lat, lng, label) {
-  destination = L.latLng(lat, lng); 
-
-  if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>🎯 目的地:</b><br>${label}`).openPopup();
-  
-  if (currentLocation) {
-    drawRoute();
-    map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding: [80, 160] });
-  } else {
-    map.setView(destination, 15);
-  }
-
-  if (shelterActive) {
-    setTimeout(() => { generateLocalShelters(destination); }, 500);
-  }
-}
-
-map.on('click', function(e) {
-  document.getElementById('customSuggestions').style.display = 'none';
-  if (shelterActive) {
-    generateLocalShelters(e.latlng);
-  }
-});
-
-const searchInput = document.getElementById('customSearchInput');
-const searchBtn = document.getElementById('customSearchBtn');
-
-searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { executeHybridSearch(searchInput.value); }
-});
-searchBtn.onclick = function() { executeHybridSearch(searchInput.value); };
-
-document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
+    
+    document.getElementById('locationBtn').onclick = () => {
+        map.locate({setView: true, maxZoom: 16});
+    };
 </script>
 </body>
 </html>
