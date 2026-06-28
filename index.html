@@ -148,6 +148,13 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
+/* 地図タイプ切替ボタンのスタイル */
+#mapTypeBtn {
+  position: absolute; right: 16px; bottom: 240px; z-index: 1500;
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  background: #ffffff; color: #5f6368; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
+}  
 /* 4. フローティング現在地ボタン */
 #locationBtn {
   position: absolute; right: 16px; bottom: 180px; z-index: 1500;
@@ -238,6 +245,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </details>
 </div>
 
+<button id="mapTypeBtn"><span class="material-icons-round">layers</span></button>
+
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
 <div id="routeInfoCard">
@@ -269,10 +278,16 @@ const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 1
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-  attribution: '© 国土地理院'
-}).addTo(map);
+// 新しいベースレイヤーの定義
+const baseLayers = {
+  pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
+  ort: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg', {attribution: ' © 国土地理院' }),
+  relief: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/{z}/{x}/{y}.png', {attribution: ' © 国土地理院' })
+};
 
+//　初期表示を「単色地図(pale)」に設定
+let currentBaseLayer = baseLayers.pale.addTo(map);
+    
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -576,6 +591,20 @@ searchBtn.onclick = function() {
 };
 
 document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
+// 地図タイプ切替ボタンのロジック
+const mapTypeBtn = document.getElementById('mapTypeBtn');
+let layerIndex = 0;
+const layersOrder = ['pale', 'ort', 'relief'];
+
+mapTypeBtn.onclick = () => {
+  map.removeLayer(currentBaseLayer);
+  layerIndex = (layerIndex + 1) % layersOrder.length;
+  currentBaseLayer = baseLayers[layersOrder[layerIndex]].addTo(map);
+  
+  // 地図がハザード情報より上に重ならないように最背面に移動
+  currentBaseLayer.bringToBack();
+};
+  
 </script>
 </body>
 </html>
