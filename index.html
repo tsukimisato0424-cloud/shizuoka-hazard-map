@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  
 <style>
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
@@ -364,39 +366,54 @@ async function fetchAndShowShelters(centerLatLng) {
   if (!shelterActive) return;
 
   // dataフォルダの中のファイルを参照する
-  const geojsonUrl = '/shizuoka-hazard-map/data/shelter.geojson'; 
+
+async function fetchAndShowShelters(centerLatLng) {
+  shelterLayerGroup.clearLayers();
+  if (!shelterActive) return;
+
+  const csvUrl = './data/shelter.geojson'; // ファイル名は.geojsonのままですが、中身はCSVです
 
   try {
-    const response = await fetch(geojsonUrl);
-    const data = await response.json();
+    const response = await fetch(csvUrl);
+    const csvText = await response.text();
 
-    // GeoJSONの各フィーチャーをループしてマーカーを作成
-    data.features.forEach(feature => {
-      // GeoJSONの座標は [経度, 緯度] の順になっているため変換
-      const lat = feature.geometry.coordinates[1];
-      const lng = feature.geometry.coordinates[0];
-      const name = feature.properties.P13_004; // 避難所データに合わせて修正しました
+    // PapaParseでCSVを解析
+    Papa.parse(csvText, {
+      header: true, // 1行目をヘッダーとして扱う
+      skipEmptyLines: true,
+      complete: function(results) {
+        results.data.forEach(row => {
+          // Lat: 6番目(Lat), Lon: 7番目(Lon) ※ヘッダー名で指定
+          const lat = parseFloat(row.Lat);
+          const lng = parseFloat(row.Lon);
+          const name = row.名称;
 
-      const shelterIcon = L.divIcon({
-        className: 'custom-shelter-icon',
-        html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
-      });
+          if (lat && lng) {
+            const shelterIcon = L.divIcon({
+              className: 'custom-shelter-icon',
+              html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+              iconSize: [28, 28],
+              iconAnchor: [14, 14]
+            });
 
-      const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
-      marker.bindPopup(`
-        <div style="font-family:sans-serif; min-width:150px;">
-          <strong>${name}</strong><br>
-          <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-                  style="margin-top:8px; width:100%; cursor:pointer;">ルート検索</button>
-        </div>
-      `);
-      shelterLayerGroup.addLayer(marker);
+            const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+            marker.bindPopup(`
+              <div style="font-family:sans-serif; min-width:150px;">
+                <strong>${name}</strong><br>
+                <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                        style="margin-top:8px; width:100%; cursor:pointer;">ルート検索</button>
+              </div>
+            `);
+            shelterLayerGroup.addLayer(marker);
+          }
+        });
+      }
     });
   } catch (err) {
     console.error("避難所データの読み込みに失敗しました:", err);
   }
+}
+  
 }
 
 window.triggerRouteToShelter = function(lat, lng, name) {
