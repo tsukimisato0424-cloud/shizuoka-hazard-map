@@ -214,12 +214,14 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 #mapTypeMenu {
   display: none; /* 初期状態は非表示 */
+  position: absolute; /*親コンテナに対して絶対位置 */
+  buttom: 60px;       /*ボタンの上部に出るように調整 */
+  right: 0;           /*右端を揃える　*/
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  margin-bottom: 8px;
-  overflow: hidden;
   width: 120px;
+  overflow: hidden;
 }
 
 .map-type-item {
