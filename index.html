@@ -296,6 +296,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
     <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
     <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
     <div class="map-type-item" onclick="changeMap('relief')">標高図</div>
+    <div class="map-type-item" onclick="changeMap('relief_overlay')">色別標高図(重ね)</div>
   </div>
   <button id="mapTypeBtn" onclick="toggleMenu()">
     <span class="material-icons-round">layers</span>
@@ -352,6 +353,12 @@ const layers = {
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
+//透過表示用の色別標高図レイヤーを定義
+const reliefOverlay = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png', {
+  opacity: 0.5,
+  attribution: '© 国土地理院'
+});
+    
 // 最前面の描画用独立ペインを生成
 map.createPane('shelterPane');
 map.getPane('shelterPane').style.zIndex = 9999; 
@@ -660,11 +667,32 @@ function toggleMenu() {
 }
 
 function changeMap(type) {
+  // 現在表示中のベースマップを一旦消す
   if (currentBaseLayer) {
     map.removeLayer(currentBaseLayer);
   }
-  currentBaseLayer = baseLayers[type].addTo(map);
+  // 念のため、重ね合わせレイヤーも消す
+  if (map.hasLayer(reliefOverlay)) {
+    map.removeLayer(reliefOverlay);
+  }
+
+  // 指定されたモードで表示
+  if (type === 'relief_overlay') {
+    // 1. 標準地図を下に敷く
+    baseLayers.pale.addTo(map);
+    // 2. その上に透過した標高図を重ねる
+    reliefOverlay.addTo(map);
+    // 現在のベースレイヤーを標準地図に設定
+    currentBaseLayer = baseLayers.pale;
+  } else {
+    // 通常の切り替え
+    currentBaseLayer = baseLayers[type].addTo(map);
+  }
+  
+  // 地図を一番後ろ（他のアイコンの下）に送る
   currentBaseLayer.bringToBack();
+  
+  // メニューを閉じる
   document.getElementById('mapTypeMenu').style.display = 'none';
 }
   
