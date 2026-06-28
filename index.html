@@ -375,7 +375,7 @@ async function fetchAndShowShelters(centerLatLng) {
       // GeoJSONの座標は [経度, 緯度] の順になっているため変換
       const lat = feature.geometry.coordinates[1];
       const lng = feature.geometry.coordinates[0];
-      const name = feature.properties.名称; // データに合わせて項目名を調整してください
+      const name = feature.properties.P13_004; // 避難所データに合わせて修正しました
 
       const shelterIcon = L.divIcon({
         className: 'custom-shelter-icon',
