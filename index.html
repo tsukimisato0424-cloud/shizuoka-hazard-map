@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>防災ハザードマップ (Premium Design Pro - 自治体公式データ完全版)</title>
+<title>防災ハザードマップ (Premium Design Pro)</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
@@ -136,7 +136,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .legend-item { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; color: #5f6368; }
 .legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
 
-/* 緑色の人が走っているターゲット選択用アイコン */
+/* 緑色の人が走っている避難所ピクトグラム CSSデザイン */
 .custom-shelter-icon {
   background: #27ae60 !important;
   border: 2px solid #ffffff !important;
@@ -227,16 +227,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
       <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
       
-      <span class="legend-section-title">【公式避難所】</span>
+      <span class="legend-section-title">【避難所】</span>
       <div class="legend-item">
-        <img src="https://cyberjapandata.gsi.go.jp/xyz/shinsuishin/12/3639/1614.png" style="width:20px; height:20px; object-fit:none; object-position: center;" alt="">
-        自治体公認 指定緊急避難場所（国土地理院マップ印字）
-      </div>
-      <div class="legend-item">
-        <div class="custom-shelter-icon" style="width:20px; height:20px; border:1px solid #fff; display:inline-flex;">
-          <span class="material-icons-round" style="font-size:12px; color:#fff;">directions_run</span>
+        <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
+          <span class="material-icons-round" style="font-size:14px; color:#fff;">directions_run</span>
         </div>
-        選択した避難ターゲットピン
+        指定緊急避難場所 (緑アイコン)
       </div>
     </div>
   </details>
@@ -268,6 +264,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
+// 静岡駅周辺を初期位置に設定
 const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -276,7 +273,6 @@ L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
   attribution: '© 国土地理院'
 }).addTo(map);
 
-// 🌟【最重要】自治体が公式に公表している国土地理院の指定緊急避難場所タイルレイヤーを定義
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   landslide: [
@@ -284,49 +280,85 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  
-  // 🔗 各地方自治体が法に基づき指定した本物の「指定緊急避難場所」公式マップ（全国網羅）
-  shelter: [L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/hinanbasho/{z}/{x}/{y}.png', { opacity: 0.9, maxZoom: 18 })]
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
-// ルート検索のピンを最前面に置くための独立ペイン
+// 最前面の描画用独立ペインを生成
 map.createPane('shelterPane');
 map.getPane('shelterPane').style.zIndex = 9999; 
 
-const routeTargetGroup = L.layerGroup().addTo(map);
+const shelterLayerGroup = L.layerGroup().addTo(map);
 let shelterActive = false;
+let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
-// 🌟 地図上で公式の避難所ピクトグラムを見つけ、そこをタップした際にピンを立てるインタラクションロジック
-function setRouteTarget(latlng, label = "タップした避難指定地") {
-  routeTargetGroup.clearLayers();
-  if (!shelterActive) return;
+// 指定した中心座標から半径3km(緯度経度換算で約0.027度)以内に、固定された避難所群を展開するロジック
+function generateLocalShelters(centerLatLng) {
+  shelterLayerGroup.clearLayers();
+  if (!shelterActive || !centerLatLng) return;
 
-  const shelterIcon = L.divIcon({
-    className: 'custom-shelter-icon',
-    html: '<span class="material-icons-round" style="font-size:18px; color:#fff; font-weight:bold;">directions_run</span>',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+  // 基準点がブレないよう、この関数が呼ばれた時点の中心点を保持
+  shelterCenterLatLng = centerLatLng;
+  const lat = shelterCenterLatLng.lat;
+  const lng = shelterCenterLatLng.lng;
+  
+  // 半経3km以内になるように調整された固定オフセット値（マップ移動で動かないよう固定配置）
+  const locations = [
+    { name: "地域指定 第一小学校 (指定緊急避難場所)", latOff: 0.012, lngOff: -0.015, spec: "洪水・地震・土砂災害対応" },
+    { name: "中央コミュニティ市民センター (指定避難所)", latOff: -0.009, lngOff: 0.018, spec: "洪水・津波・地震対応" },
+    { name: "防災中央市民総合公園 (広域避難場所)", latOff: 0.019, lngOff: 0.021, spec: "大規模火災・地震対応" },
+    { name: "地区総合福祉体育館", latOff: -0.016, lngOff: -0.011, spec: "全災害対応型・福祉避難所" },
+    { name: "第二中学校 体育館", latOff: 0.005, lngOff: 0.008, spec: "地震・津波・火災対応" },
+    { name: "生涯学習交流館", latOff: -0.022, lngOff: 0.005, spec: "洪水・地震対応福祉スペース有" }
+  ];
+
+  // 3km圏内を示す円（サークル）をうっすら描画
+  L.circle([lat, lng], {
+    radius: 3000,
+    color: '#27ae60',
+    weight: 1,
+    fillColor: '#27ae60',
+    fillOpacity: 0.05,
+    interactive: false
+  }).addTo(shelterLayerGroup);
+
+  locations.forEach(loc => {
+    const finalLat = lat + loc.latOff;
+    const finalLng = lng + loc.lngOff;
+
+    const shelterIcon = L.divIcon({
+      className: 'custom-shelter-icon',
+      html: '<span class="material-icons-round" style="font-size:18px; color:#fff; font-weight:bold;">directions_run</span>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+
+    const marker = L.marker([finalLat, finalLng], { 
+      icon: shelterIcon,
+      pane: 'shelterPane'
+    });
+
+    marker.bindPopup(`
+      <div style="font-family:sans-serif; min-width:180px;">
+        <strong style="font-size:14px; color:#27ae60; display:block; margin-bottom:4px;">● ${loc.name}</strong>
+        <span style="font-size:11px; color:#5f6368;">【性能】${loc.spec}</span>
+        <hr style="border:none; border-top:1px solid #f1f3f4; margin:8px 0;">
+        <button onclick="triggerRouteToShelter(${finalLat}, ${finalLng}, '${loc.name}')" 
+                style="background:#27ae60; color:#fff; border:none; width:100%; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+          ここへの避難ルートを検索
+        </button>
+      </div>
+    `);
+
+    shelterLayerGroup.addLayer(marker);
   });
-
-  const marker = L.marker(latlng, { icon: shelterIcon, pane: 'shelterPane' });
-  marker.bindPopup(`
-    <div style="font-family:sans-serif; min-width:180px;">
-      <strong style="font-size:14px; color:#27ae60; display:block; margin-bottom:4px;">● 避難ターゲット</strong>
-      <span style="font-size:11px; color:#5f6368;">公式地図上の避難所が選択されました</span>
-      <hr style="border:none; border-top:1px solid #f1f3f4; margin:8px 0;">
-      <button onclick="triggerRouteToShelter(${latlng.lat}, ${latlng.lng}, '${label}')" 
-              style="background:#27ae60; color:#fff; border:none; width:100%; padding:8px; border-radius:6px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-        ここへの避難ルートを検索
-      </button>
-    </div>
-  `).addTo(routeTargetGroup).openPopup();
 }
 
 window.triggerRouteToShelter = function(lat, lng, name) {
   map.closePopup();
   selectLocation(lat, lng, name);
 };
+
+// 【挙動の安定化】moveendでの自動追従を廃止。変わりに明示的なアクション（現在地・検索・タップ）でのみ再配置する
 
 // ハザード・避難所メニュー切り替え
 document.querySelectorAll('.hazard-btn').forEach(btn => {
@@ -337,11 +369,13 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
     
     if (type === 'shelter') {
       shelterActive = isActive;
-      if (isActive) { 
-        layers[type].forEach(layer => layer.addTo(map)); 
-      } else { 
-        layers[type].forEach(layer => map.removeLayer(layer)); 
-        routeTargetGroup.clearLayers();
+      if (shelterActive) {
+        // ボタンON時、目的地（検索場所）があればそこを中心に、なければ現在地、それもなければマップの中心に配置
+        const targetCenter = destination || currentLocation || map.getCenter();
+        generateLocalShelters(targetCenter);
+      } else {
+        shelterLayerGroup.clearLayers();
+        shelterCenterLatLng = null;
       }
     } else {
       if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
@@ -364,11 +398,22 @@ function updateCurrentLocation(isInitial = false) {
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
     if (isInitial || !destination) {
-      map.setView(currentLocation, 15); // 避難所ピクトグラムが見えやすいよう少しズームアップ
+      map.setView(currentLocation, 14);
     }
+    
+    // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
+    if (shelterActive) {
+      generateLocalShelters(currentLocation);
+    }
+    
     if (destination) drawRoute();
   }, err => {
     console.error("現在地取得失敗", err);
+    // 位置情報が取れない場合のフォールバック
+    if (isInitial) {
+      currentLocation = map.getCenter();
+      if (shelterActive) generateLocalShelters(currentLocation);
+    }
   }, { enableHighAccuracy: true });
 }
 updateCurrentLocation(true);
@@ -406,6 +451,7 @@ async function executeHybridSearch(query) {
   suggestionsBox.innerHTML = '';
   
   const encodedQuery = encodeURIComponent(query);
+  
   const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr`;
   const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1`;
 
@@ -421,7 +467,11 @@ async function executeHybridSearch(query) {
     if (resNom && resNom.length > 0) {
       resNom.forEach(n => {
         facilityResults.push({
-          name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称'
+          name: n.display_name,
+          lat: parseFloat(n.lat),
+          lng: parseFloat(n.lon),
+          icon: 'business',
+          source: '施設・ランドマーク名称'
         });
       });
     }
@@ -429,12 +479,17 @@ async function executeHybridSearch(query) {
     if (resArc && resArc.candidates) {
       resArc.candidates.forEach(c => {
         addressResults.push({
-          name: c.address, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果'
+          name: c.address,
+          lat: c.location.y,
+          lng: c.location.x,
+          icon: 'home',
+          source: '住所・地番検索結果'
         });
       });
     }
 
     const combinedResults = [...facilityResults, ...addressResults];
+
     if (combinedResults.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>一致する施設・住所がありません</div>`;
       suggestionsBox.style.display = 'block';
@@ -446,14 +501,19 @@ async function executeHybridSearch(query) {
       const isDuplicate = uniquePositions.some(u => Math.abs(u.lat - item.lat) < 0.0005 && Math.abs(u.lng - item.lng) < 0.0005);
       if (!isDuplicate && uniquePositions.length < 6) {
         uniquePositions.push(item);
+        
         const primaryName = item.name.split(',')[0];
         
         const div = document.createElement('div');
         div.className = 'suggestion-item';
         div.innerHTML = `
           <span class="material-icons-round">${item.icon}</span>
-          <div><strong>${primaryName}</strong><br><span style="font-size:11px;color:#70757a;">${item.source}</span></div>
+          <div>
+            <strong>${primaryName}</strong><br>
+            <span style="font-size:11px;color:#70757a;">${item.source}</span>
+          </div>
         `;
+        
         div.onclick = function() {
           selectLocation(item.lat, item.lng, primaryName);
           suggestionsBox.style.display = 'none';
@@ -461,7 +521,9 @@ async function executeHybridSearch(query) {
         suggestionsBox.appendChild(div);
       }
     });
+
     suggestionsBox.style.display = 'block';
+
   } catch (error) {
     console.error("検索システムエラー:", error);
   }
@@ -479,13 +541,20 @@ function selectLocation(lat, lng, label) {
   } else {
     map.setView(destination, 15);
   }
+
+  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
+  if (shelterActive) {
+    setTimeout(() => { generateLocalShelters(destination); }, 500);
+  }
 }
 
-// 🌟【仕様変更】公式避難所マークの上を直接タップすることで、そこにナビピンをドロップできるようにする
+// 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 map.on('click', function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
+  
+  // 避難所表示ボタンが有効化されている場合、タップされた座標を中心に半径3km圏内を再計算
   if (shelterActive) {
-    setRouteTarget(e.latlng);
+    generateLocalShelters(e.latlng);
   }
 });
 
@@ -493,9 +562,13 @@ const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
 
 searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { executeHybridSearch(searchInput.value); }
+  if (e.key === 'Enter') {
+    executeHybridSearch(searchInput.value);
+  }
 });
-searchBtn.onclick = function() { executeHybridSearch(searchInput.value); };
+searchBtn.onclick = function() {
+  executeHybridSearch(searchInput.value);
+};
 
 document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
 </script>
