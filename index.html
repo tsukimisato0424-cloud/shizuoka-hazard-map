@@ -291,7 +291,7 @@ const shelterLayerGroup = L.layerGroup().addTo(map);
 let shelterActive = false;
 let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
-// 避難所データを詳細化
+// 避難所データ
 const locations = [
   { name: "第一小学校", type: "指定緊急避難場所", hazardTypes: ["大雨", "地震", "土砂災害"], latOff: 0.012, lngOff: -0.015 },
   { name: "中央コミュニティセンター", type: "指定避難所", hazardTypes: ["大雨", "津波"], latOff: -0.009, lngOff: 0.018 },
@@ -306,27 +306,34 @@ function generateLocalShelters(centerLatLng) {
   const lat = centerLatLng.lat;
   const lng = centerLatLng.lng;
 
+  // 1. 半径3km圏内を示す円を再描画
+  L.circle([lat, lng], {
+    radius: 3000,
+    color: '#27ae60',
+    weight: 1,
+    fillColor: '#27ae60',
+    fillOpacity: 0.05,
+    interactive: false
+  }).addTo(shelterLayerGroup);
+
+  // 2. 避難所マーカーの描画
   locations.forEach(loc => {
     const finalLat = lat + loc.latOff;
     const finalLng = lng + loc.lngOff;
 
-    // 種別によるアイコンと色の切り替え
     const isEmergency = loc.type === "指定緊急避難場所";
-    const iconHtml = isEmergency 
-      ? '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>' 
-      : '<span class="material-icons-round" style="font-size:18px; color:#fff;">home</span>';
+    const iconHtml = isEmergency ? '<span class="material-icons-round">directions_run</span>' : '<span class="material-icons-round">home</span>';
     const bgColor = isEmergency ? "#27ae60" : "#2f80ed";
 
     const shelterIcon = L.divIcon({
       className: 'custom-shelter-icon',
       html: iconHtml,
       iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      iconAnchor: [16, 16],
+      style: `background:${bgColor} !important;`
     });
-    // ※CSSのbackgroundを直接上書きできない場合はL.divIconのオプションで指定します
-    const marker = L.marker([finalLat, finalLng], { icon: shelterIcon, pane: 'shelterPane' });
 
-    // 対応災害タグの生成
+    const marker = L.marker([finalLat, finalLng], { icon: shelterIcon, pane: 'shelterPane' });
     const tags = loc.hazardTypes.map(h => `<span style="background:#e8f0fe; color:#1a73e8; padding:2px 6px; border-radius:4px; font-size:10px; margin-right:4px;">${h}</span>`).join('');
 
     marker.bindPopup(`
@@ -340,7 +347,6 @@ function generateLocalShelters(centerLatLng) {
         </button>
       </div>
     `);
-
     shelterLayerGroup.addLayer(marker);
   });
 }
