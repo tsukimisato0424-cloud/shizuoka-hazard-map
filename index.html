@@ -361,11 +361,11 @@ let shelterActive = false;
 let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
 // 避難所データを取得して表示する関数（CSV対応版）
+
 async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive) return;
 
-  // GitHubのdataフォルダ内のCSVファイルパス
   const csvUrl = './data/shelter.geojson';
 
   try {
@@ -377,7 +377,6 @@ async function fetchAndShowShelters(centerLatLng) {
       skipEmptyLines: true,
       complete: function(results) {
         results.data.forEach(row => {
-          // データの列名が Lat, Lon, 名称 であることを確認済みです
           const lat = parseFloat(row.Lat);
           const lng = parseFloat(row.Lon);
           const name = row.名称;
@@ -391,11 +390,20 @@ async function fetchAndShowShelters(centerLatLng) {
             });
 
             const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+            
+            // ポップアップの内容をカスタマイズ
             marker.bindPopup(`
-              <div style="font-family:sans-serif; min-width:150px;">
-                <strong>${name}</strong><br>
+              <div style="font-family:sans-serif; min-width:200px;">
+                <strong style="font-size:16px;">${name}</strong><hr>
+                <div style="font-size:13px; line-height:1.6;">
+                  <div><b>災害種別:</b> ${row.災害種別 || '情報なし'}</div>
+                  <div><b>電話番号:</b> ${row.電話番号 || 'なし'}</div>
+                  <div><b>収容人数:</b> ${row.想定収容人数 || '---'} 人</div>
+                </div>
                 <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-                        style="margin-top:8px; width:100%; cursor:pointer;">ルート検索</button>
+                        style="margin-top:10px; width:100%; padding:8px; cursor:pointer; background:#1a73e8; color:white; border:none; border-radius:6px;">
+                  ルート検索を開始
+                </button>
               </div>
             `);
             shelterLayerGroup.addLayer(marker);
