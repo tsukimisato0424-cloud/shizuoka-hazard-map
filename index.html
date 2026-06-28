@@ -8,67 +8,80 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 <style>
-  html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
-  /* (※スタイル部分は前のコードと同じです。そのまま使えます) */
+/* CSSはこれまで通りでOKです */
+html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; }
+#searchContainer { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 99999; }
+.custom-search-bar { display: flex; align-items: center; background: rgba(255, 255, 255, 0.95); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); padding: 2px 8px; }
+.custom-search-bar input { flex: 1; border: none; outline: none; padding: 14px 12px; }
+#customSuggestions { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-top: 6px; display: none; }
+.suggestion-item { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f1f3f4; }
+#hazardMenuCard { position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000; display: flex; gap: 6px; }
+.hazard-btn { flex: 1; border: none; border-radius: 12px; padding: 8px; background: #fff; cursor: pointer; }
+.hazard-btn.active { background: #27ae60; color: #fff; }
+#mapTypeContainer { position: absolute; right: 16px; bottom: 240px; z-index: 1500; }
+#mapTypeMenu { display: none; position: absolute; bottom: 0; right: 60px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 120px; }
+.map-type-item { padding: 12px; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="searchContainer"><div class="custom-search-bar"><input type="text" id="customSearchInput"><button id="customSearchBtn"><span class="material-icons-round">search</span></button></div><div id="customSuggestions"></div></div>
+<div id="hazardMenuCard">
+  <button class="hazard-btn" data-type="flood">洪水</button>
+  <button class="hazard-btn" data-type="landslide">土砂</button>
+  <button class="hazard-btn" data-type="tsunami">津波</button>
+  <button class="hazard-btn" data-type="shelter">避難所</button>
+</div>
+<div id="mapTypeContainer"><div id="mapTypeMenu"><div class="map-type-item" onclick="changeMap('pale')">標準</div><div class="map-type-item" onclick="changeMap('ort')">航空</div></div><button id="mapTypeBtn" onclick="toggleMenu()">Layers</button></div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-// --- 地図の初期化 ---
-const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
-L.control.zoom({ position: 'bottomright' }).addTo(map);
+const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 13);
+const baseLayers = {
+  pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png'),
+  ort: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg')
+};
+let currentBaseLayer = baseLayers.pale.addTo(map);
 
-// --- 避難所タイルレイヤー（ここが重要！） ---
-const shelterLayer = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/shelter/{z}/{x}/{y}.png', {
-  attribution: '© 国土地理院',
-  maxZoom: 18
-});
+// ★新：公式避難所タイル
+const shelterLayer = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/shelter/{z}/{x}/{y}.png');
 
-// --- ハザード・避難所メニュー切り替え部分 ---
+const layers = {
+  flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', {opacity:0.6})],
+  landslide: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', {opacity:0.7})],
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', {opacity:0.6})]
+};
+
+// ★ボタン処理を新方式に統合
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
     this.classList.toggle('active');
-    const isActive = this.classList.contains('active');
-    
     if (type === 'shelter') {
-      if (isActive) {
-        shelterLayer.addTo(map); // タイルを表示
-        const center = destination || currentLocation || map.getCenter();
-        findNearestShelters(center.lat, center.lng).then(list => {
-           console.log("近くの避難所:", list); // F12で確認可能
-        });
-      } else {
-        map.removeLayer(shelterLayer);
-      }
+      this.classList.contains('active') ? shelterLayer.addTo(map) : map.removeLayer(shelterLayer);
     } else {
-      // 洪水・土砂・津波の切り替え処理
-      const layerGroup = layers[type];
-      if (isActive) { layerGroup.forEach(l => l.addTo(map)); } 
-      else { layerGroup.forEach(l => map.removeLayer(l)); }
+      this.classList.contains('active') ? layers[type].forEach(l => l.addTo(map)) : layers[type].forEach(l => map.removeLayer(l));
     }
   };
 });
 
-// --- 近い避難所を計算する関数 ---
+// ★新：リストアップ機能
 async function findNearestShelters(lat, lng) {
   const url = `https://disaportaldata.gsi.go.jp/geojson/emergency_shelter.geojson`;
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.features
-      .filter(f => f.geometry && f.geometry.coordinates)
-      .map(f => ({ ...f, dist: map.distance([lat, lng], [f.geometry.coordinates[1], f.geometry.coordinates[0]]) }))
-      .sort((a, b) => a.dist - b.dist)
-      .slice(0, 5);
-  } catch (e) { console.error("データ取得エラー", e); return []; }
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.features
+    .map(f => ({ ...f, dist: map.distance([lat, lng], [f.geometry.coordinates[1], f.geometry.coordinates[0]]) }))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 5);
 }
 
-// (※その他の検索機能やルート描画機能は、以前のコードをそのままここに続けて貼り付けてください)
+function toggleMenu() { document.getElementById('mapTypeMenu').style.display = (document.getElementById('mapTypeMenu').style.display === 'block') ? 'none' : 'block'; }
+function changeMap(type) { map.removeLayer(currentBaseLayer); currentBaseLayer = baseLayers[type].addTo(map); currentBaseLayer.bringToBack(); }
+
+// (※その他の既存関数はここにそのまま残してください)
 </script>
 </body>
 </html>
