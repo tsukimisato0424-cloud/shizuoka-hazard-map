@@ -364,7 +364,7 @@ let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固
 
 async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
-  if (!shelterActive) return;
+  if (!shelterActive || !centerLatLng) return;
 
   const csvUrl = './data/shelter.geojson';
 
@@ -382,31 +382,37 @@ async function fetchAndShowShelters(centerLatLng) {
           const name = row.名称;
 
           if (!isNaN(lat) && !isNaN(lng)) {
-            const shelterIcon = L.divIcon({
-              className: 'custom-shelter-icon',
-              html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
-              iconSize: [28, 28],
-              iconAnchor: [14, 14]
-            });
-
-            const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+            const shelterLatLng = L.latLng(lat, lng);
             
-            // ポップアップの内容をカスタマイズ
-            marker.bindPopup(`
-              <div style="font-family:sans-serif; min-width:200px;">
-                <strong style="font-size:16px;">${name}</strong><hr>
-                <div style="font-size:13px; line-height:1.6;">
-                  <div><b>災害種別:</b> ${row.災害種別 || '情報なし'}</div>
-                  <div><b>電話番号:</b> ${row.電話番号 || 'なし'}</div>
-                  <div><b>収容人数:</b> ${row.想定収容人数 || '---'} 人</div>
+            // ★ここが半径3kmのフィルター判定
+            // centerLatLngからの距離（メートル）を計算
+            const distance = centerLatLng.distanceTo(shelterLatLng);
+            
+            if (distance <= 3000) { // 3000m = 3km
+              const shelterIcon = L.divIcon({
+                className: 'custom-shelter-icon',
+                html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+              });
+
+              const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+              marker.bindPopup(`
+                <div style="font-family:sans-serif; min-width:200px;">
+                  <strong style="font-size:16px;">${name}</strong><hr>
+                  <div style="font-size:13px; line-height:1.6;">
+                    <div><b>災害種別:</b> ${row.災害種別 || '情報なし'}</div>
+                    <div><b>電話番号:</b> ${row.電話番号 || 'なし'}</div>
+                    <div><b>収容人数:</b> ${row.想定収容人数 || '---'} 人</div>
+                  </div>
+                  <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                          style="margin-top:10px; width:100%; padding:8px; cursor:pointer; background:#1a73e8; color:white; border:none; border-radius:6px;">
+                    ルート検索を開始
+                  </button>
                 </div>
-                <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-                        style="margin-top:10px; width:100%; padding:8px; cursor:pointer; background:#1a73e8; color:white; border:none; border-radius:6px;">
-                  ルート検索を開始
-                </button>
-              </div>
-            `);
-            shelterLayerGroup.addLayer(marker);
+              `);
+              shelterLayerGroup.addLayer(marker);
+            }
           }
         });
       }
@@ -415,7 +421,7 @@ async function fetchAndShowShelters(centerLatLng) {
     console.error("避難所データの読み込みに失敗しました:", err);
   }
 }
-
+  
 window.triggerRouteToShelter = function(lat, lng, name) {
   map.closePopup();
   selectLocation(lat, lng, name);
