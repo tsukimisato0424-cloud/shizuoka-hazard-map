@@ -12,162 +12,62 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   
 <style>
-html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
-/* 1. Google風スタイリッシュ検索バー */
-#searchContainer {
-  position: absolute;
-  top: 10px; left: 10px; right: 10px;
-  z-index: 99999 !important;
-}
+/* --- 検索バーの立体化 --- */
 .custom-search-bar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
+  background: #ffffff;
   border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  /* 柔らかな浮き出し影 */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
   padding: 2px 8px;
-}
-.custom-search-bar input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 16px;
-  padding: 14px 12px;
-  background: transparent;
-  color: #202124;
-}
-.search-icon-btn {
-  background: none;
-  border: none;
-  color: #1a73e8;
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
-#customSuggestions {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  margin-top: 6px;
-  max-height: 260px;
-  overflow-y: auto;
-  display: none;
-}
-.suggestion-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #3c4043;
-  cursor: pointer;
-  border-bottom: 1px solid #f1f3f4;
-  transition: background 0.2s;
-}
-.suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover { background-color: #f8f9fa; }
-.suggestion-item .material-icons-round {
-  color: #70757a;
-  font-size: 18px;
-  margin-right: 10px;
-}
-
-/* 2. ハザード操作カード */
-#hazardMenuCard {
-  position: absolute;
-  top: 75px; left: 10px; right: 10px;
-  z-index: 2000;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-}
+/* --- ハザードボタンの高級感・立体化 --- */
 .hazard-btn {
-  flex: 1; border: none; border-radius: 12px; padding: 8px 2px;
-  background: #fff; color: #5f6368; font-size: 11px; font-weight: bold;
+  flex: 1; border: none; border-radius: 12px; padding: 10px 2px;
+  background: #ffffff; color: #5f6368; font-size: 11px; font-weight: bold;
   cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05), inset 0 -1px 0 rgba(0,0,0,0.1);
-  transition: all 0.2s ease;
-}
-.hazard-btn .material-icons-round { font-size: 20px; }
-
-.hazard-btn.active[data-type="flood"] { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
-.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
-.hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
-.hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
-.hazard-btn:active { transform: translateY(1px); }
-
-/* 3. 凡例 */
-#legendAccordion {
-  position: absolute; 
-  top: 160px; right: 10px;
-  z-index: 1500;
-  width: 90px;
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
-  overflow: hidden;
-  transition: width 0.2s ease, border-radius 0.2s ease;
-}
-#legendAccordion[open-state="true"] {
-  width: 210px;
-  border-radius: 12px;
-}
-#legendAccordion details { border: none; }
-#legendAccordion summary {
-  padding: 8px 12px; font-size: 12px; font-weight: 500; color: #3c4043;
-  cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-  user-select: none; list-style: none;
-}
-#legendAccordion summary::-webkit-details-marker { display: none; }
-#legendAccordion summary::before {
-  content: 'layers'; font-family: 'Material Icons Round'; font-size: 18px; color: #1a73e8; margin-right: 2px;
-}
-#legendAccordion summary::after { content: 'expand_more'; font-family: 'Material Icons Round'; font-size: 16px; color: #70757a; }
-#legendAccordion details[open] summary::after { content: 'expand_less'; }
-
-.legend-content { padding: 4px 12px 12px 12px; max-height: 240px; overflow-y: auto; font-size: 11px; color: #3c4043; line-height: 1.5; }
-.legend-section-title { font-weight: bold; color: #202124; margin: 6px 0 4px 0; display: block; }
-.legend-item { display: flex; align-items: center; margin-bottom: 4px; gap: 8px; color: #5f6368; }
-.legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
-
-/* 緑色の人が走っている避難所ピクトグラム CSSデザイン */
-.custom-shelter-icon {
-  background: #27ae60 !important;
-  border: 2px solid #ffffff !important;
-  border-radius: 50% !important;
-  color: #ffffff !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  /* 浮き出たような影 */
+  box-shadow: 0 4px 0 #cbd0d6, 0 6px 8px rgba(0,0,0,0.1);
+  transition: all 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
-#mapTypeMenu {
-  display: none; /* 初期状態は非表示 */
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  margin-bottom: 8px;
-  overflow: hidden;
-  width: 120px;
+/* ボタン押下時の沈み込み */
+.hazard-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 transparent;
 }
 
-.map-type-item {
-  padding: 12px 16px;
-  font-size: 13px;
-  color: #3c4043;
-  cursor: pointer;
-  border-bottom: 1px solid #f1f3f4;
+/* --- アクティブ時の発光表現 --- */
+.hazard-btn.active[data-type="flood"] { 
+  background: #2f80ed; color: #fff;
+  box-shadow: 0 0 15px rgba(47, 128, 237, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
 }
-.map-type-item:hover { background: #f8f9fa; }  
+.hazard-btn.active[data-type="landslide"] { 
+  background: #f2994a; color: #fff;
+  box-shadow: 0 0 15px rgba(242, 153, 74, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.hazard-btn.active[data-type="tsunami"] { 
+  background: #00c6ff; color: #fff;
+  box-shadow: 0 0 15px rgba(0, 198, 255, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.hazard-btn.active[data-type="shelter"] { 
+  background: #27ae60; color: #fff;
+  box-shadow: 0 0 15px rgba(39, 174, 96, 0.6), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+
+/* --- フローティングボタン共通の立体化 --- */
+#locationBtn, #mapTypeBtn {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+#locationBtn:active, #mapTypeBtn:active {
+  transform: scale(0.92);
+}
+  
 /* 4. フローティング現在地ボタン */
 #locationBtn {
   position: absolute; right: 16px; bottom: 180px; z-index: 1500;
