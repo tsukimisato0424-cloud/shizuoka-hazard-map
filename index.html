@@ -550,14 +550,14 @@ function drawRoute() {
   });
 }
 
-// 施設名最優先ハイブリッド検索
+// --- 統合・最適化された検索関連ロジック ---
+let abortController = null;
+let searchTimer = null;
 
-let abortController = null; // 検索キャンセル用
-
+// 検索エンジン本体
 async function executeHybridSearch(query) {
-  if (!query) return;
+  if (!query || query.length < 2) return;
   
-  // 既存の通信があればキャンセル（二重リクエスト防止）
   if (abortController) abortController.abort();
   abortController = new AbortController();
   const signal = abortController.signal;
@@ -567,161 +567,51 @@ async function executeHybridSearch(query) {
   suggestionsBox.style.display = 'block';
   
   const encodedQuery = encodeURIComponent(query);
-  let locationParams = "";
-  if (currentLocation) {
-    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`;
-  }
-
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}`;
+  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr`;
   const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1`;
 
   try {
-    // 通信実行時に signal を渡す
     const [resArc, resNom] = await Promise.all([
       fetch(urlArcGIS, { signal }).then(r => r.json()),
       fetch(urlNominatim, { signal }).then(r => r.json())
     ]);
 
-    let facilityResults = []; 
-    let addressResults = [];  
+    let results = [];
+    if (resNom) resNom.forEach(n => results.push({ name: n.display_name, lat: n.lat, lng: n.lon, icon: 'business' }));
+    if (resArc && resArc.candidates) resArc.candidates.forEach(c => results.push({ name: c.address, lat: c.location.y, lng: c.location.x, icon: 'home' }));
 
-    if (resNom && resNom.length > 0) {
-      resNom.forEach(n => {
-        facilityResults.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設' });
-      });
-    }
-
-    if (resArc && resArc.candidates) {
-      resArc.candidates.forEach(c => {
-        const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        addressResults.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所' });
-      });
-    }
-
-    let combinedResults = [...facilityResults, ...addressResults];
-
-    // 結果が空の場合の再試行ロジック（必要に応じて）
-    if (combinedResults.length === 0) {
-      suggestionsBox.innerHTML = `<div class="suggestion-item">該当する場所が見つかりませんでした</div>`;
+    suggestionsBox.innerHTML = '';
+    if (results.length === 0) {
+      suggestionsBox.innerHTML = '<div class="suggestion-item">見つかりませんでした</div>';
     } else {
-      suggestionsBox.innerHTML = ''; // クリア
-      combinedResults.forEach(item => {
+      results.forEach(item => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span style="font-size:11px;color:#70757a;">${item.name}</span></div>`;
+        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span>${item.name}</span></div>`;
         div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
         suggestionsBox.appendChild(div);
       });
     }
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.error("検索システムエラー:", error);
-      suggestionsBox.innerHTML = `<div class="suggestion-item">通信エラーが発生しました</div>`;
-    }
-  }
-}
-  
-async function executeHybridSearch(query) {
-  if (!query) return;
-  const suggestionsBox = document.getElementById('customSuggestions');
-  suggestionsBox.innerHTML = '';
-  
-  const encodedQuery = encodeURIComponent(query);
-  
-  // 現在地設定
-  let locationParams = "";
-  let viewboxParams = "";
-  if (currentLocation) {
-    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`;
-    viewboxParams = `&viewbox=${currentLocation.lng - 0.5},${currentLocation.lat - 0.5},${currentLocation.lng + 0.5},${currentLocation.lat + 0.5}&bounded=1`;
-  }
-
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
-
-  let facilityResults = []; 
-  let addressResults = [];  
-
-  try {
-    const [resArc, resNom] = await Promise.all([
-      fetch(urlArcGIS).then(r => r.json()).catch(() => null),
-      fetch(urlNominatim).then(r => r.json()).catch(() => null)
-    ]);
-
-    if (resNom && resNom.length > 0) {
-      resNom.forEach(n => {
-        facilityResults.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称' });
-      });
-    }
-
-    if (resArc && resArc.candidates) {
-      resArc.candidates.forEach(c => {
-        const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        if (fullAddress !== "ヤマハ") {
-          addressResults.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果' });
-        }
-      });
-    }
-
-    let combinedResults = [...facilityResults, ...addressResults];
-
-    // 並び替えロジック
-    if (currentLocation) {
-      combinedResults.sort((a, b) => {
-        const getRegionalBoost = (item) => (item.name.includes("静岡") || item.name.includes("浜松")) ? -10000 : 0;
-        const getPriorityAdjustment = (item) => (item.name.toLowerCase().includes("本社") || item.name.toLowerCase().includes("工場")) ? -5000 : 0;
-        const distA = currentLocation.distanceTo(L.latLng(a.lat, a.lng)) + getPriorityAdjustment(a) + getRegionalBoost(a);
-        const distB = currentLocation.distanceTo(L.latLng(b.lat, b.lng)) + getPriorityAdjustment(b) + getRegionalBoost(b);
-        return distA - distB;
-      });
-    }
-
-    // 該当なし時の処理
-    if (combinedResults.length === 0) {
-      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&addressdetails=1&limit=1`;
-      const res = await fetch(fallbackUrl).then(r => r.json());
-      if (res && res.length > 0) {
-        map.setView([res[0].lat, res[0].lon], 16);
-        selectLocation(res[0].lat, res[0].lon, res[0].display_name);
-        suggestionsBox.innerHTML = `<div class="suggestion-item">最寄りを表示中: ${res[0].display_name}</div>`;
-      } else {
-        suggestionsBox.innerHTML = `<div class="suggestion-item">該当する場所が見つかりませんでした</div>`;
-      }
-    } else {
-      combinedResults.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span style="font-size:11px;color:#70757a;">${item.name}</span></div>`;
-        div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
-        suggestionsBox.appendChild(div);
-      });
-    }
-    suggestionsBox.style.display = 'block';
-  } catch (error) {
-    console.error("検索システムエラー:", error);
+    if (error.name !== 'AbortError') console.error(error);
   }
 }
 
+// 目的地を選択する関数
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
-
   if (destMarker) map.removeLayer(destMarker);
   destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
-  
   if (currentLocation) {
     drawRoute();
     map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding: [80, 160] });
   } else {
     map.setView(destination, 15);
   }
-
-  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
 }
-
-// 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
 // --- 住所取得機能付きのクリックイベント ---
 map.on('click', function(e) {
