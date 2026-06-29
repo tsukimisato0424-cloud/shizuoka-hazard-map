@@ -783,7 +783,8 @@ document.getElementById("refreshBtn").onclick = () => {
   Object.values(layers).forEach(group => {
     group.forEach(layer => {
       if (map.hasLayer(layer)) {
-        layer.redraw();
+        //　現在のURLを取得し、タイムスタンプを付与して再セットする
+        const oldUrl('${oldUrl}?t=${new Data().getTime()}`);
       }
     });
   });
