@@ -387,17 +387,18 @@ async function fetchAndShowShelters(centerLatLng) {
   // 半径3kmの円を表示
   L.circle(centerLatLng, { color: '#27ae60', fillOpacity: 0.1, radius: 3000 }).addTo(shelterLayerGroup);
   
-  // GeojsonファイルのURL
-  const geojsonUrl = './data/shelter.geojson'; // フィイル名に合わせる 
+  // 読み込むファイルリスト
+  const geojsonUrls = ['./data/shelter_1.geojson', './data/shelter_2.geojson'];
 
   try {
-    // 1. fetchでgeojsonを取得
-    const response = await fetch(geojsonUrl);
-    const geojson = await response.json(); 
+    // すべてのファイルを並行して取得
+    const responses = await Promise.all(geojsonUrls.map(url => fetch(url).then(r => r.json())));
+    
+    // 全てのデータを統合（FeatureCollectionを想定）
+    const allFeatures = responses.flatMap(data => data.features || []);
 
     // 2. フィルタリングして描画
-    geojson.features.forEach(feature => {
-      // geojsonの座標は [lng, lat]の順
+    allFeatures.forEach(feature => {
       const lng = feature.geometry.coordinates[0];
       const lat = feature.geometry.coordinates[1];
       const props = feature.properties;
@@ -418,9 +419,8 @@ async function fetchAndShowShelters(centerLatLng) {
           pane: 'shelterPane'
         });
             
-        // ※geojsonの属性名を確認してください
-        // コンソールで確認するには console.log(props) を入れてください
-        const name = props.名称 // props.K03_004 || "名称不明"; 
+        // ※プロパティ名は適宜調整してください
+        const name = props.名称 || props.K03_004 || "名称不明"; 
         
         marker.bindPopup(`
           <div style="font-family:sans-serif; min-width:200px;">
@@ -435,7 +435,7 @@ async function fetchAndShowShelters(centerLatLng) {
       }
     });
   } catch (err) {
-    console.error("geojsonの読み込みに失敗しました:", err);
+    console.error("GeoJSONの読み込み中にエラーが発生しました:", err);
   }
 }
   
