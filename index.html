@@ -30,13 +30,22 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .suggestion-item:hover { background-color: #f8f9fa; }
 .suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
-/* 2. ハザード操作カード */
+/* 2. ハザード操作カード (青系縁取りで統一) */
 #hazardMenuCard {
-  position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000;
-  background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
-  border-radius: 16px; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  display: flex; justify-content: space-between; gap: 6px;
+  position: absolute;
+  top: 75px; left: 10px; right: 10px;
+  z-index: 2000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 10px;
+  /* 青系の縁取りと影を追加 */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 0 0 1.5px #1a73e8;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
 }
+  
 .hazard-btn {
   flex: 1; border-radius: 12px; padding: 8px 2px;
   background: #fff; color: #5f6368; font-size: 11px; font-weight: bold;
