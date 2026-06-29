@@ -596,9 +596,25 @@ async function executeHybridSearch(query) {
       });
     }
     
-    if (combinedResults.length === 0) {
-      suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>一致する施設・住所がありません</div>`;
-      suggestionsBox.style.display = 'block';
+      if (combinedResults.length === 0) {
+      // 1. 一致がない場合、Nominatimで「市町村レベル」まで曖昧に再検索をかける
+      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=1`;
+      
+      fetch(fallbackUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            // 見つかった場所へ移動
+            const item = data[0];
+            map.setView([item.lat, item.lon], 15); // クローズアップ
+            suggestionsBox.innerHTML = `<div class="suggestion-item">詳細な一致はありませんでしたが、周辺を表示します: ${item.display_name}</div>`;
+            suggestionsBox.style.display = 'block';
+          } else {
+            // 本当に何もない場合
+            suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>該当する場所が見つかりませんでした</div>`;
+            suggestionsBox.style.display = 'block';
+          }
+        });
       return;
     }
 
