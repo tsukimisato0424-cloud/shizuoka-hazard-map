@@ -776,16 +776,6 @@ document.getElementById("refreshBtn").onclick = () => {
   // trueを指定するとキャッシュを無視してサーバーから再取得します
   location.reload(true);
 };
-
-// 初期表示時の海抜取得（ページロード完了時に実行）
-window.addEventListener('load', async function() {
-  const initialLat = 34.9756;
-  const initialLng = 138.3828;
-  
-  // 初期位置の海抜を取得して表示
-  const initialElevation = await getElevation(initialLat, initialLng);
-  document.getElementById('elevationDisplay').innerText = initialElevation;
-});
   
 </script>
 </body>
