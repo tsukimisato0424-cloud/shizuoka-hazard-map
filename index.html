@@ -31,20 +31,25 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
 /* 2. ハザード操作カード (青系縁取りで統一) */
+/* 既存の #hazardMenuCard を以下に置き換え */
 #hazardMenuCard {
-  position: absolute;
-  top: 75px; left: 10px; right: 10px;
-  z-index: 2000;
+  position: absolute; top: 75px; right: 10px; z-index: 2000;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 10px;
-  /* 青系の縁取りと影を追加 */
+  border-radius: 16px; padding: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 0 0 1.5px #1a73e8;
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
+  display: flex; gap: 6px; transition: width 0.3s ease;
 }
+
+#hazardMenuCard.collapsed { width: 50px; padding: 5px; }
+#hazardMenuCard.collapsed .hazard-menu-content { display: none; }
+#hazardMenuCard.expanded .hazard-btn-icon-only { display: none; }
+
+.hazard-btn-icon-only {
+  display: flex; background: #1a73e8; color: #fff;
+  border: none; border-radius: 12px; padding: 8px; cursor: pointer;
+}
+.hazard-menu-content { display: flex; gap: 6px; }
   
 .hazard-btn {
   flex: 1; border-radius: 12px; padding: 8px 2px;
@@ -207,19 +212,25 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <div id="customSuggestions"></div>
 </div>
 
-<div id="hazardMenuCard">
-  <button class="hazard-btn" data-type="flood">
-    <span class="material-icons-round">water</span>洪水想定
+<div id="hazardMenuCard" class="expanded">
+  <button id="toggleHazardBtn" class="hazard-btn-icon-only">
+    <span class="material-icons-round">water</span>
   </button>
-  <button class="hazard-btn" data-type="landslide">
-    <span class="material-icons-round">landscape</span>土砂災害
-  </button>
-  <button class="hazard-btn" data-type="tsunami">
-    <span class="material-icons-round">tsunami</span>津波浸水
-  </button>
-  <button class="hazard-btn" data-type="shelter">
-    <span class="material-icons-round">gite</span>避難所表示
-  </button>
+  
+  <div id="hazardMenuContent" class="hazard-menu-content">
+    <button class="hazard-btn" data-type="flood">
+      <span class="material-icons-round">water</span>洪水
+    </button>
+    <button class="hazard-btn" data-type="landslide">
+      <span class="material-icons-round">landscape</span>土砂
+    </button>
+    <button class="hazard-btn" data-type="tsunami">
+      <span class="material-icons-round">tsunami</span>津波
+    </button>
+    <button class="hazard-btn" data-type="shelter">
+      <span class="material-icons-round">gite</span>避難所
+    </button>
+  </div>
 </div>
 
 <div id="legendAccordion" open-state="false">
@@ -396,6 +407,30 @@ window.triggerRouteToShelter = function(lat, lng, name) {
   selectLocation(lat, lng, name);
 };
 
+// --- ハザードメニューの開閉ロジック ---
+const hazardCard = document.getElementById('hazardMenuCard');
+const toggleBtn = document.getElementById('toggleHazardBtn');
+
+// 収納・展開の切り替え
+toggleBtn.onclick = function() {
+  hazardCard.classList.toggle('collapsed');
+  hazardCard.classList.toggle('expanded');
+};
+
+// 展開状態（通常）に戻す処理を既存のボタンクリックに追加
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    // 展開状態を維持するためのクラス付与
+    hazardCard.classList.add('expanded');
+    hazardCard.classList.remove('collapsed');
+    
+    // ここに既存のハザード表示/非表示処理が入ります
+    const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
+    // ...以降の既存処理
+  });
+});
+  
 // 【挙動の安定化】moveendでの自動追従を廃止。変わりに明示的なアクション（現在地・検索・タップ）でのみ再配置する
 
 // ハザード・避難所メニュー切り替え
