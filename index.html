@@ -673,6 +673,15 @@ function selectLocation(lat, lng, label) {
   }
 }
 
+// パネルをタップで開閉するイベントを追加
+document.getElementById('statusPanel').addEventListener('click', function(e) {
+  // すでに開いている場合、クリックで閉じられるようにする（標準動作）
+});
+
+// もし「タップ時に必ず閉じる」などの挙動を制御したい場合は以下のように追記
+// map.on('click', ...) の中に以下を入れると、地図をタップした時にパネルが閉じるようになります
+// document.getElementById('statusPanel').open = true; // 開いたままにする場合
+  
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
 map.on('click', async function(e) {
