@@ -157,7 +157,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .leaflet-routing-container { display: none !important; }
 
 /* 避難所レイヤー用最前面ペイン */
-.leaflet-shelter-pane { z-index: 9999 !important; }
+.leaflet-shelter-pane { z-index: 400 !important; }
 
 /* --- 地図タイプ切り替えメニューのスタイル --- */
 #mapTypeContainer {
@@ -191,6 +191,15 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   border-bottom: 1px solid #f1f3f4;
 }
 .map-type-item:hover { background: #f8f9fa; }  
+
+/* ポップアップに隠れたマーカーもクリック可能にする設定 */
+.leaflet-popup-pane {
+  pointer-events: none; 
+}
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  pointer-events: auto; 
+}
+  
 </style>
 </head>
 <body>
@@ -365,7 +374,12 @@ const circle = L.circle(centerLatLng, {
                 iconAnchor: [14, 14]
               });
 
-              const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+              const marker = L.marker([lat, lng], {
+                icon: shelterIcon,
+                pane: 'shelterPane',
+                zIndexOffset: -1000 // これでアイコンを強制的にポップアップの下へ送ります
+              });
+                  
               marker.bindPopup(`
                 <div style="font-family:sans-serif; min-width:200px;">
                   <strong style="font-size:16px;">${name}</strong><hr>
