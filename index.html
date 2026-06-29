@@ -361,18 +361,19 @@ async function fetchAndShowShelters(centerLatLng) {
   // 半径3kmの円を表示
   L.circle(centerLatLng, { color: '#27ae60', fillOpacity: 0.1, radius: 3000 }).addTo(shelterLayerGroup);
   
-  // サーバーに置いたZIPファイルへのパス（GitHub Pagesなら ./data/shelter.zip など）
-  const zipUrl = './data/shelter.zip'; 
+  // GeojsonファイルのURL
+  const geojsonUrl = './data/shelter.geojson'; // フィイル名に合わせる 
 
   try {
-    // 1. shpjsを使ってZIPを直接ロード・変換
-    const geojson = await shp(zipUrl); 
+    // 1. fetchでgeojsonを取得
+    const response = await fetch(geojsonUrl);
+    const geojson = await response.json(); 
 
     // 2. フィルタリングして描画
     geojson.features.forEach(feature => {
-      const coords = feature.geometry.coordinates; // [lng, lat]
-      const lat = coords[1];
-      const lng = coords[0];
+      // geojsonの座標は [lng, lat]の順
+      const lng = feature.geometry.coordinates[0];
+      const lat = feature.geometry.coordinates[1];
       const props = feature.properties;
 
       const shelterLatLng = L.latLng(lat, lng);
@@ -391,9 +392,9 @@ async function fetchAndShowShelters(centerLatLng) {
           pane: 'shelterPane'
         });
             
-        // ※注意: "K03_004" は国土地理院の標準的な名称属性です
-        // もし表示されない場合は console.log(props) で属性名を確認してください
-        const name = props.K03_004 || "名称不明"; 
+        // ※geojsonの属性名を確認してください
+        // コンソールで確認するには console.log(props) を入れてください
+        const name = props.名称 // props.K03_004 || "名称不明"; 
         
         marker.bindPopup(`
           <div style="font-family:sans-serif; min-width:200px;">
@@ -408,7 +409,7 @@ async function fetchAndShowShelters(centerLatLng) {
       }
     });
   } catch (err) {
-    console.error("Shapefileの読み込み・変換に失敗しました:", err);
+    console.error("geojsonの読み込みに失敗しました:", err);
   }
 }
   
