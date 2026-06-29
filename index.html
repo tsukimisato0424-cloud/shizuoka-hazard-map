@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>  
   
 <style>
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
@@ -353,77 +354,61 @@ const shelterLayerGroup = L.layerGroup().addTo(map);
 let shelterActive = false;
 let shelterCenterLatLng = null; // 避難所を生成する基準中心点（固定用）
 
-// 避難所データを取得して表示する関数（CSV対応版）
-
 async function fetchAndShowShelters(centerLatLng) {
   shelterLayerGroup.clearLayers();
   if (!shelterActive || !centerLatLng) return;
 
-const circle = L.circle(centerLatLng, {
-    color: '#27ae60',       // 枠線の色
-    fillColor: '#27ae60',   // 中の色
-    fillOpacity: 0.1,       // 透明度（薄くする）
-    radius: 3000            // 半径3000m
-  }).addTo(shelterLayerGroup);
+  // 半径3kmの円を表示
+  L.circle(centerLatLng, { color: '#27ae60', fillOpacity: 0.1, radius: 3000 }).addTo(shelterLayerGroup);
   
-  const csvUrl = './data/shelter.geojson';
+  // サーバーに置いたZIPファイルへのパス（GitHub Pagesなら ./data/shelter.zip など）
+  const zipUrl = './data/shelter.zip'; 
 
   try {
-    const response = await fetch(csvUrl);
-    const csvText = await response.text();
+    // 1. shpjsを使ってZIPを直接ロード・変換
+    const geojson = await shp(zipUrl); 
 
-    Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        results.data.forEach(row => {
-          const lat = parseFloat(row.Lat);
-          const lng = parseFloat(row.Lon);
-          const name = row.名称;
+    // 2. フィルタリングして描画
+    geojson.features.forEach(feature => {
+      const coords = feature.geometry.coordinates; // [lng, lat]
+      const lat = coords[1];
+      const lng = coords[0];
+      const props = feature.properties;
 
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const shelterLatLng = L.latLng(lat, lng);
-            
-            // ★ここが半径3kmのフィルター判定
-            // centerLatLngからの距離（メートル）を計算
-            const distance = centerLatLng.distanceTo(shelterLatLng);
-            
-            if (distance <= 3000) { // 3000m = 3km
-              const shelterIcon = L.divIcon({
-                className: 'custom-shelter-icon',
-                html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
-              });
-
-              const marker = L.marker([lat, lng], {
-                icon: shelterIcon,
-                pane: 'shelterPane',
-                zIndexOffset: -1000 // これでアイコンを強制的にポップアップの下へ送ります
-              });
-                  
-              marker.bindPopup(`
-                <div style="font-family:sans-serif; min-width:200px;">
-                  <strong style="font-size:16px;">${name}</strong><hr>
-                  <div style="font-size:13px; line-height:1.6;">
-                    <div><b>災害種別:</b> ${row.災害種別 || '情報なし'}</div>
-                    <div><b>電話番号:</b> ${row.電話番号 || 'なし'}</div>
-                    <div><b>収容人数:</b> ${row.想定収容人数 || '---'} 人</div>
-                  </div>
-                  <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-                          style="margin-top:10px; width:100%; padding:8px; cursor:pointer; background:#1a73e8; color:white; border:none; border-radius:6px;">
-                    ルート検索を開始
-                  </button>
-                </div>
-              `);
-              shelterLayerGroup.addLayer(marker);
-            }
-          }
+      const shelterLatLng = L.latLng(lat, lng);
+      const distance = centerLatLng.distanceTo(shelterLatLng);
+      
+      if (distance <= 3000) {
+        const shelterIcon = L.divIcon({
+          className: 'custom-shelter-icon',
+          html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
         });
+
+        const marker = L.marker([lat, lng], {
+          icon: shelterIcon,
+          pane: 'shelterPane'
+        });
+            
+        // ※注意: "K03_004" は国土地理院の標準的な名称属性です
+        // もし表示されない場合は console.log(props) で属性名を確認してください
+        const name = props.K03_004 || "名称不明"; 
+        
+        marker.bindPopup(`
+          <div style="font-family:sans-serif; min-width:200px;">
+            <strong style="font-size:16px;">${name}</strong>
+            <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                    style="margin-top:10px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px;">
+              ルート検索を開始
+            </button>
+          </div>
+        `);
+        shelterLayerGroup.addLayer(marker);
       }
     });
   } catch (err) {
-    console.error("避難所データの読み込みに失敗しました:", err);
+    console.error("Shapefileの読み込み・変換に失敗しました:", err);
   }
 }
   
