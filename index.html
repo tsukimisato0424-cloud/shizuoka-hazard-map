@@ -392,7 +392,8 @@ async function fetchAndShowShelters(centerLatLng) {
 
   try {
     const responses = await Promise.all(geojsonUrls.map(url => fetch(url).then(r => r.json())));
-    const allFeatures = responses.flatMap(data => data.features || []);
+
+const allFeatures = responses.flatMap(data => data.features || []);
 
     allFeatures.forEach(feature => {
       const lng = feature.geometry.coordinates[0];
@@ -403,6 +404,27 @@ async function fetchAndShowShelters(centerLatLng) {
       const distance = centerLatLng.distanceTo(shelterLatLng);
       
       if (distance <= 3000) {
+        // 名称と住所
+        const name = props["施設・場所名"] || "名称不明";
+        const address = props["住所"] || "住所情報なし";
+        
+        // 指定緊急避難場所フラグ (shelter_1のデータ用)
+        const isEmergencySite = props["指定緊急避難場所との住所同一"] === "1" 
+          ? '<span style="color:green; font-weight:bold;">●指定緊急避難場所</span>' 
+          : '<span style="color:gray;">－</span>';
+
+        // 災害対応種別 (shelter_2のデータ用)
+        // データが存在する場合にのみ表示するための処理
+        let hazards = [];
+        if (props["洪水"] === "1") hazards.push("洪水");
+        if (props["津波"] === "1") hazards.push("津波");
+        if (props["地震"] === "1") hazards.push("地震");
+        if (props["崖崩れ、土石流及び地滑り"] === "1") hazards.push("土砂災害");
+        
+        const hazardDisplay = hazards.length > 0 
+          ? `<div style="font-size:11px; margin-top:5px; color:#d35400;">対応: ${hazards.join(', ')}</div>` 
+          : "";
+
         const shelterIcon = L.divIcon({
           className: 'custom-shelter-icon',
           html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
@@ -410,26 +432,23 @@ async function fetchAndShowShelters(centerLatLng) {
           iconAnchor: [14, 14]
         });
 
-        const marker = L.marker([lat, lng], {
-          icon: shelterIcon,
-          pane: 'shelterPane'
-        });
+        const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
             
-        // 【修正箇所】"施設・場所名" をキーとして指定
-        const name = props["施設・場所名"] || "名称不明"; 
-        
         marker.bindPopup(`
-          <div style="font-family:sans-serif; min-width:200px;">
-            <strong style="font-size:16px;">${name}</strong>
+          <div style="font-family:sans-serif; min-width:220px;">
+            <strong style="font-size:15px; display:block; margin-bottom:5px;">${name}</strong>
+            <div style="font-size:12px; color:#555;">住所: ${address}</div>
+            <div style="font-size:12px; margin-top:5px;">避難場所: ${isEmergencySite}</div>
+            ${hazardDisplay}
             <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-                    style="margin-top:10px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px;">
+                    style="margin-top:12px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer;">
               ルート検索を開始
             </button>
           </div>
         `);
         shelterLayerGroup.addLayer(marker);
       }
-    });
+    });    
   } catch (err) {
     console.error("GeoJSONの読み込み中にエラーが発生しました:", err);
   }
