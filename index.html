@@ -167,8 +167,18 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
 }
 
+/* 開いている時だけの調整（必要あれば） */
+#statusPanel[open] { padding-bottom: 14px; }
+
+/* 閉じる時の見た目 */
+#statusPanel:not([open]) {
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+  
 /* 上段：海抜とルートタイトルの行 */
 .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
 #elevationDisplay { font-weight: bold; color: #d35400; }
@@ -317,8 +327,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <span class="material-icons-round">refresh</span>
 </button>
   
-<div id="statusPanel">
-  <div class="status-header">
+<details id="statusPanel" open>
+  <summary style="list-style:none; display:none;"></summary>summary> <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
