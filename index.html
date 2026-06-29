@@ -582,10 +582,22 @@ async function executeHybridSearch(query) {
   }
 }
   
-  // ArcGISのURL：locationとproximityを指定して現在地周辺を優先
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
+async function executeHybridSearch(query) {
+  if (!query) return;
+  const suggestionsBox = document.getElementById('customSuggestions');
+  suggestionsBox.innerHTML = '';
   
-  // NominatimのURL：viewboxで現在地周辺を優先
+  const encodedQuery = encodeURIComponent(query);
+  
+  // 現在地設定
+  let locationParams = "";
+  let viewboxParams = "";
+  if (currentLocation) {
+    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`;
+    viewboxParams = `&viewbox=${currentLocation.lng - 0.5},${currentLocation.lat - 0.5},${currentLocation.lng + 0.5},${currentLocation.lat + 0.5}&bounded=1`;
+  }
+
+  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
   const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
 
   let facilityResults = []; 
@@ -599,117 +611,53 @@ async function executeHybridSearch(query) {
 
     if (resNom && resNom.length > 0) {
       resNom.forEach(n => {
-        facilityResults.push({
-          name: n.display_name,
-          lat: parseFloat(n.lat),
-          lng: parseFloat(n.lon),
-          icon: 'business',
-          source: '施設・ランドマーク名称'
-        });
+        facilityResults.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称' });
       });
     }
 
     if (resArc && resArc.candidates) {
       resArc.candidates.forEach(c => {
-        // 詳細な住所がある場合はそれを使用、なければaddressを使用する
         const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        
-        // 「ヤマハ」という名前だけで、住所が曖昧なものを除外するフィルタ
-        if (fullAddress === "ヤマハ" || fullAddress.split(',').length < 2) return;
-
-        addressResults.push({
-          name: fullAddress, // ここに詳細住所が入る
-          lat: c.location.y,
-          lng: c.location.x,
-          icon: 'home',
-          source: '住所・地番検索結果'
-        });
+        if (fullAddress !== "ヤマハ") {
+          addressResults.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果' });
+        }
       });
     }
 
-    const combinedResults = [...facilityResults, ...addressResults];
+    let combinedResults = [...facilityResults, ...addressResults];
 
-// --- ここから追加する並び替えロジック ---
-    const keyword = query.toLowerCase();
-        // --- 距離と重要度を組み合わせた並び替えロジック ---
-
-   if (currentLocation) {
+    // 並び替えロジック
+    if (currentLocation) {
       combinedResults.sort((a, b) => {
-        // --- ★ここを追加：現在地周辺のものを優先するスコア ---
-        // 施設名に「静岡」や「浜松」が含まれていれば、さらに優先度を上げる
-        const getRegionalBoost = (item) => {
-          const name = item.name;
-          if (name.includes("静岡") || name.includes("浜松")) return -10000;
-          return 0;
-        };
-
-        const getPriorityAdjustment = (item) => {
-          const name = item.name.toLowerCase();
-          if (name.includes("本社") || name.includes("工場") || name.includes("本部")) return -5000;
-          return 0;
-        };
-
-        // 距離 ＋ 重要度補正 ＋ 地域名補正
+        const getRegionalBoost = (item) => (item.name.includes("静岡") || item.name.includes("浜松")) ? -10000 : 0;
+        const getPriorityAdjustment = (item) => (item.name.toLowerCase().includes("本社") || item.name.toLowerCase().includes("工場")) ? -5000 : 0;
         const distA = currentLocation.distanceTo(L.latLng(a.lat, a.lng)) + getPriorityAdjustment(a) + getRegionalBoost(a);
         const distB = currentLocation.distanceTo(L.latLng(b.lat, b.lng)) + getPriorityAdjustment(b) + getRegionalBoost(b);
-
         return distA - distB;
       });
     }
-    
-      if (combinedResults.length === 0) {
-      // 1. 一致がない場合、Nominatimで「市町村レベル」まで曖昧に再検索をかける
-      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=1`;
-      
-      fetch(fallbackUrl)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            // 見つかった場所へ移動
-            const item = data[0];
-            map.setView([item.lat, item.lon], 15); // クローズアップ
-            suggestionsBox.innerHTML = `<div class="suggestion-item">詳細な一致はありませんでしたが、周辺を表示します: ${item.display_name}</div>`;
-            suggestionsBox.style.display = 'block';
-          } else {
-            // 本当に何もない場合
-            suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>該当する場所が見つかりませんでした</div>`;
-            suggestionsBox.style.display = 'block';
-          }
-        });
-      return;
-    }
 
-    const uniquePositions = [];
-    combinedResults.forEach(item => {
-      const isDuplicate = uniquePositions.some(u => Math.abs(u.lat - item.lat) < 0.0005 && Math.abs(u.lng - item.lng) < 0.0005);
-      if (!isDuplicate && uniquePositions.length < 6) {
-        uniquePositions.push(item);
-        
-        const primaryName = item.name.split(',')[0];
-        
+    // 該当なし時の処理
+    if (combinedResults.length === 0) {
+      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&addressdetails=1&limit=1`;
+      const res = await fetch(fallbackUrl).then(r => r.json());
+      if (res && res.length > 0) {
+        map.setView([res[0].lat, res[0].lon], 16);
+        selectLocation(res[0].lat, res[0].lon, res[0].display_name);
+        suggestionsBox.innerHTML = `<div class="suggestion-item">最寄りを表示中: ${res[0].display_name}</div>`;
+      } else {
+        suggestionsBox.innerHTML = `<div class="suggestion-item">該当する場所が見つかりませんでした</div>`;
+      }
+    } else {
+      combinedResults.forEach(item => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-
-                div.innerHTML = `
-          <span class="material-icons-round">${item.icon}</span>
-          <div style="width: 100%; overflow: hidden;">
-            <div style="font-weight: bold;">${primaryName}</div>
-            <div style="font-size: 11px; color: #70757a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${item.name}
-            </div>
-          </div>
-        `;
-        
-        div.onclick = function() {
-          selectLocation(item.lat, item.lng, primaryName);
-          suggestionsBox.style.display = 'none';
-        };
+        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span style="font-size:11px;color:#70757a;">${item.name}</span></div>`;
+        div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
         suggestionsBox.appendChild(div);
-      }
-    });
-
+      });
+    }
     suggestionsBox.style.display = 'block';
-
   } catch (error) {
     console.error("検索システムエラー:", error);
   }
