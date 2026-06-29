@@ -170,7 +170,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .status-row { display: flex; justify-content: space-between; font-size: 14px; color: #3c4043; }
 #elevationDisplay { font-weight: bold; color: #d35400; }
-.route-section { display: none; flex-direction: column; gap: 10px; border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
+.route-section { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
 .route-title { font-size: 13px; font-weight: bold; color: #202124; }
 .route-modes { display: flex; gap: 10px; }
 .route-mode-box { flex: 1; background: #f8f9fa; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 8px; }
@@ -227,6 +227,10 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .leaflet-popup-close-button {
   pointer-events: auto; 
 }
+
+/* ルート検索の不要な吹き出しを隠す */
+.leaflet-routing-container { display: none !important; }
+.leaflet-marker-pane .leaflet-popup { display: none !important; }
   
 </style>
 </head>
@@ -530,6 +534,7 @@ function drawRoute() {
     routeWhileDragging: false,
     addWaypoints: false,
     draggableWaypoints: false,
+    show: false, // ★ルート情報のリスト表示を消す
     lineOptions: { styles: [{ color: '#1a73e8', opacity: 0.8, weight: 5 }] }
   }).addTo(map);
 
