@@ -533,12 +533,16 @@ async function executeHybridSearch(query) {
       });
     }
 
-        if (resArc && resArc.candidates) {
+    if (resArc && resArc.candidates) {
       resArc.candidates.forEach(c => {
-        // c.address をそのまま名前として登録するのではなく、
-        // 住所文字列として詳細を表示できるようにします
+        // 詳細な住所がある場合はそれを使用、なければaddressを使用する
+        const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
+        
+        // 「ヤマハ」という名前だけで、住所が曖昧なものを除外するフィルタ
+        if (fullAddress === "ヤマハ" || fullAddress.split(',').length < 2) return;
+
         addressResults.push({
-          name: c.address, // ここに詳細な住所が入ってきます
+          name: fullAddress, // ここに詳細住所が入る
           lat: c.location.y,
           lng: c.location.x,
           icon: 'home',
