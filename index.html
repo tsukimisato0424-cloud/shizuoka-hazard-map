@@ -717,11 +717,23 @@ map.on('click', function(e) {
 const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
 
-searchInput.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    executeHybridSearch(searchInput.value);
+// --- 【追加】入力のたびに候補を出す（0.5秒待機して検索） ---
+let searchTimer;
+searchInput.addEventListener('input', function(e) {
+  clearTimeout(searchTimer); // 前の検索待ちをキャンセル
+  const query = e.target.value;
+  
+  if (query.length < 2) { // 2文字以上から検索開始
+    document.getElementById('customSuggestions').style.display = 'none';
+    return;
   }
+  
+  // 0.5秒後に検索を実行
+  searchTimer = setTimeout(() => {
+    executeHybridSearch(query);
+  }, 500);
 });
+  
 searchBtn.onclick = function() {
   executeHybridSearch(searchInput.value);
 };
