@@ -684,17 +684,34 @@ function selectLocation(lat, lng, label) {
 
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
+// --- 住所取得機能付きのクリックイベント ---
 map.on('click', function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 1. タップした場所を「目的地」として設定する
-  // labelにはタップした座標を表示
-  selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
-  
-  // 2. 避難所表示ボタンが有効化されている場合、その場所を中心に避難所を再展開
-  if (shelterActive) {
-    fetchAndShowShelters(e.latlng);
-  }
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  // Nominatimの逆ジオコーディングAPIで住所を取得
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      // 取得した住所、なければ座標を表示
+      const address = data.display_name || `座標: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      
+      // 目的地としてセット（ポップアップに住所が出るようになります）
+      selectLocation(lat, lng, address);
+      
+      // 避難所表示が有効なら再展開
+      if (shelterActive) {
+        fetchAndShowShelters(e.latlng);
+      }
+    })
+    .catch(err => {
+      console.error("住所取得エラー:", err);
+      selectLocation(lat, lng, "タップした地点");
+    });
 });
 
 const searchInput = document.getElementById('customSearchInput');
