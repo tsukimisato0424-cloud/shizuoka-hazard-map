@@ -532,67 +532,70 @@ function drawRoute() {
 
 // 施設名最優先ハイブリッド検索
 
+// 検索結果を一時保存する変数
+let searchMarkers = [];
+
 async function executeHybridSearch(query) {
   if (!query) return;
   const suggestionsBox = document.getElementById('customSuggestions');
   suggestionsBox.innerHTML = '';
   
-  const encodedQuery = encodeURIComponent(query);
-  
-  let locationParams = "";
-  let viewboxParams = "";
-  if (currentLocation) {
-    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`;
-    viewboxParams = `&viewbox=${currentLocation.lng - 0.5},${currentLocation.lat - 0.5},${currentLocation.lng + 0.5},${currentLocation.lat + 0.5}&bounded=1`;
-  }
+  // 既存のピンをすべて削除
+  searchMarkers.forEach(m => map.removeLayer(m));
+  searchMarkers = [];
 
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
+  const encodedQuery = encodeURIComponent(query);
+  const bounds = map.getBounds();
+  const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=1`;
+  
+  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=10&addressdetails=1`;
 
   try {
-    const [resArc, resNom] = await Promise.all([
-      fetch(urlArcGIS).then(r => r.json()).catch(() => null),
-      fetch(urlNominatim).then(r => r.json()).catch(() => null)
-    ]);
-
-    let results = [];
-    if (resNom && resNom.length > 0) {
-      resNom.forEach(n => results.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business' }));
-    }
-    if (resArc && resArc.candidates) {
-      resArc.candidates.forEach(c => {
-        const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        results.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home' });
-      });
-    }
+    const response = await fetch(urlNominatim);
+    const results = await response.json();
 
     if (results.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item">該当なし</div>`;
-    } else {
-      
-results.forEach(item => {
-  const div = document.createElement('div');
-  div.className = 'suggestion-item';
-  
-  // nameをカンマで分割し、1つ目を施設名、2つ目以降を住所として扱う
-  const parts = item.name.split(',');
-  const title = parts[0];
-  const address = parts.slice(1).join(', ') || '詳細情報なし';
-
-  div.innerHTML = `
-    <span class="material-icons-round">${item.icon}</span>
-    <div style="line-height: 1.2;">
-      <div style="font-weight: bold; color: #202124;">${title}</div>
-      <div style="font-size: 11px; color: #70757a;">${address}</div>
-    </div>
-  `;
-  div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
-  suggestionsBox.appendChild(div);
-});
+      suggestionsBox.style.display = 'block';
+      return;
     }
+
+    // 検索結果を地図上にピン留めしていく
+    results.forEach(item => {
+      const lat = parseFloat(item.lat);
+      const lon = parseFloat(item.lon);
+      const nameParts = item.display_name.split(',');
+      const shopName = nameParts[0].trim();
+      const address = nameParts.slice(1).join(', ').trim();
+
+      // 1. ピンを地図に置く
+      const marker = L.marker([lat, lon]).addTo(map);
+      marker.bindPopup(`<b>${shopName}</b><br>${address}<br>
+        <button onclick="selectLocation(${lat}, ${lon}, '${item.display_name}')" 
+                style="margin-top:8px; width:100%; padding:5px; cursor:pointer;">
+          ここを目的地にする
+        </button>`);
+      searchMarkers.push(marker);
+
+      // 2. 検索窓の候補リストにも表示
+      const div = document.createElement('div');
+      div.className = 'suggestion-item';
+      div.innerHTML = `<strong>${shopName}</strong><br><small>${address}</small>`;
+      div.onclick = () => { 
+        selectLocation(lat, lon, item.display_name); 
+        map.setView([lat, lon], 16);
+        suggestionsBox.style.display = 'none'; 
+      };
+      suggestionsBox.appendChild(div);
+    });
+
     suggestionsBox.style.display = 'block';
+    // 地図の表示範囲を検索結果全体に合わせる
+    const group = L.featureGroup(searchMarkers);
+    map.fitBounds(group.getBounds().pad(0.1));
+
   } catch (error) {
-    console.error("検索システムエラー:", error);
+    console.error("検索エラー:", error);
   }
 }
 
