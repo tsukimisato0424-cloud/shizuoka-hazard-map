@@ -138,6 +138,36 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 #locationBtn .material-icons-round { font-size: 24px; }
 
+<button id="refreshBtn">
+  <span class="material-icons-round">refresh</span>
+</button>
+
+<button id="refreshBtn">
+  <span class="material-icons-round">refresh</span>
+</button>
+
+#refreshBtn {
+  position: absolute;
+  right: 16px;
+  bottom: 120px;   /* 現在地ボタンより60px下 */
+  z-index: 1500;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1a73e8;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#refreshBtn .material-icons-round {
+  font-size: 24px;
+}
+  
 /* 5. ルート結果情報カード */
 #routeInfoCard {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
@@ -750,7 +780,24 @@ function changeMap(type) {
   // メニューを閉じる
   document.getElementById('mapTypeMenu').style.display = 'none';
 }
-  
+
+document.getElementById("refreshBtn").onclick = () => {
+
+  // ハザードレイヤーを更新
+  Object.values(layers).forEach(group => {
+    group.forEach(layer => {
+      if (map.hasLayer(layer)) {
+        layer.redraw();
+      }
+    });
+  });
+
+  // 避難所表示も更新
+  if (shelterActive) {
+    fetchAndShowShelters(destination || currentLocation || map.getCenter());
+  }
+
+};  
 </script>
 </body>
 </html>
