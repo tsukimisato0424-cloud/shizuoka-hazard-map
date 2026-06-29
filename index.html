@@ -175,6 +175,19 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ボタンの初期表示制御 */
+#openStatusBtn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* パネルが閉じている時だけボタンを表示 */
+#statusPanel:not([open]) ~ #openStatusBtn {
+  opacity: 1;
+  pointer-events: auto;
+}
+  
 /* 畳んだ時は右側にスライドして隠す */
 #statusPanel:not([open]) {
   transform: translateX(110%);
@@ -334,6 +347,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   
 <details id="statusPanel" open>
   <summary style="display:none;"></summary>
+</details>
+
+  <button id="openStatusBtn" style="position:absolute; right:16px; bottom:20px; z-index:1400; width:50px; height:50px; border-radius:50%; background:#fff; color:#1a73e8; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+  <span class="material-icons-round">info</span>
+</button>
+  
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
@@ -696,24 +715,26 @@ document.getElementById('statusPanel').addEventListener('click', function(e) {
 const statusPanel = document.getElementById('statusPanel');
 const openBtn = document.getElementById('openStatusBtn');
 
-// パネルをタップ（クリック）したら畳む
+// 1. パネル自体をクリックしたら「畳む」処理
 statusPanel.addEventListener('click', function(e) {
+  // ボタンクリック時は開閉させない
   if (e.target.tagName === 'BUTTON') return;
   statusPanel.open = false; 
 });
 
-// infoボタンを押したら開く
+// 2. 右下のinfoボタンを押したら「展開する」処理
 openBtn.addEventListener('click', function() {
   statusPanel.open = true;
 });
 
-// 地図をタップした時はパネルを開く
+// 3. 地図をタップした時は「展開する」処理
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 地図クリック時はパネルを自動で開く
+  // パネルを開く
   statusPanel.open = true;
   
+  // 標高取得と表示
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
   
