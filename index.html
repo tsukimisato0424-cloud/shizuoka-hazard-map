@@ -569,13 +569,25 @@ async function executeHybridSearch(query) {
     if (results.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item">該当なし</div>`;
     } else {
-      results.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong></div>`;
-        div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
-        suggestionsBox.appendChild(div);
-      });
+results.forEach(item => {
+  const div = document.createElement('div');
+  div.className = 'suggestion-item';
+  
+  // nameをカンマで分割し、1つ目を施設名、2つ目以降を住所として扱う
+  const parts = item.name.split(',');
+  const title = parts[0];
+  const address = parts.slice(1).join(', ') || '詳細情報なし';
+
+  div.innerHTML = `
+    <span class="material-icons-round">${item.icon}</span>
+    <div style="line-height: 1.2;">
+      <div style="font-weight: bold; color: #202124;">${title}</div>
+      <div style="font-size: 11px; color: #70757a;">${address}</div>
+    </div>
+  `;
+  div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
+  suggestionsBox.appendChild(div);
+});
     }
     suggestionsBox.style.display = 'block';
   } catch (error) {
