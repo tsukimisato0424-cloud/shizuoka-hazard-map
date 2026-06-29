@@ -669,50 +669,10 @@ function changeMap(type) {
 }
 
 document.getElementById("refreshBtn").onclick = () => {
-  // 1. ハザードレイヤーを更新
-  Object.values(layers).forEach(group => {
-    group.forEach(layer => {
-      if (map.hasLayer(layer)) {
-        // 現在のURLから既存のクエリパラメータを削除
-        const baseUrl = layer._url.split('?')[0]; 
-        // 毎回異なるタイムスタンプを付与
-        const newUrl = `${baseUrl}?t=${new Date().getTime()}`;
-        
-        layer.setUrl(newUrl); // これによりLeafletが新しいURLとしてタイルを再取得します
-      }
-    });
-  });
-
-  // 2. 避難所データの更新
-  if (shelterActive) {
-    const center = destination || currentLocation || map.getCenter();
-    fetchAndShowSheltersWithTimestamp(center);
-  }
-map.eachLayer(layer => {
-  if (layer instanceof L.TileLayer) {
-    layer.redraw(); // マップ上のすべてのタイルレイヤーに対して再描画を命令
-  }
-});
-  
+  // ブラウザの再読み込みを強制する
+  // trueを指定するとキャッシュを無視してサーバーから再取得します
+  location.reload(true);
 };
-
-async function fetchAndShowSheltersWithTimestamp(centerLatLng) {
-  shelterLayerGroup.clearLayers();
-  
-  // タイムスタンプを付与
-  const timestamp = new Date().getTime();
-  const geojsonUrl = `./data/shelter.geojson?t=${timestamp}`;
-
-  try {
-    // cache: 'no-store' でキャッシュを一切利用させない
-    const response = await fetch(geojsonUrl, { cache: 'no-store' });
-    const geojson = await response.json(); 
-
-    // ... (以下、既存の描画ロジック)
-  } catch (err) {
-    console.error("更新失敗:", err);
-  }
-}
   
 </script>
 </body>
