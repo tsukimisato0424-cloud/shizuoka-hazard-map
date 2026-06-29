@@ -160,29 +160,25 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* 5. ルート結果情報カード */
-#routeInfoCard {
+/* 5. ステータスパネル */
+#statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: #ffffff; border-radius: 16px; padding: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  display: none; flex-direction: column; gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px; padding: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
-.route-title { font-size: 13px; font-weight: bold; color: #202124; border-bottom: 1px solid #f1f3f4; padding-bottom: 6px; }
+.status-row { display: flex; justify-content: space-between; font-size: 14px; color: #3c4043; }
+#elevationDisplay { font-weight: bold; color: #d35400; }
+.route-section { display: none; flex-direction: column; gap: 10px; border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
+.route-title { font-size: 13px; font-weight: bold; color: #202124; }
 .route-modes { display: flex; gap: 10px; }
-.route-mode-box {
-  flex: 1; background: #f8f9fa; border-radius: 10px; padding: 10px;
-  display: flex; align-items: center; gap: 8px;
-}
-.route-icon-circle {
-  width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; color: #1a73e8;
-  display: flex; align-items: center; justify-content: center;
-}
+.route-mode-box { flex: 1; background: #f8f9fa; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 8px; }
+.route-icon-circle { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; }
 .route-text-data { display: flex; flex-direction: column; }
 .route-time { font-size: 15px; font-weight: bold; color: #1a73e8; }
 .route-dist { font-size: 11px; color: #5f6368; }
-
-.leaflet-routing-container { display: none !important; }
-
+  
 /* 避難所レイヤー用最前面ペイン */
 .leaflet-shelter-pane { z-index: 400 !important; }
 
@@ -313,21 +309,27 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <span class="material-icons-round">refresh</span>
 </button>
   
-<div id="routeInfoCard">
-  <div class="route-title">目的地までの参考経路</div>
-  <div class="route-modes">
-    <div class="route-mode-box">
-      <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
-      <div class="route-text-data">
-        <span class="route-time" id="walkTime">-- 分</span>
-        <span class="route-dist" id="walkDist">-- km</span>
+<div id="statusPanel">
+  <div class="status-row">
+    <span>タップ地点の海抜:</span>
+    <span id="elevationDisplay">-- m</span>
+  </div>
+  <div id="routeSection" class="route-section">
+    <div class="route-title">目的地までの参考経路</div>
+    <div class="route-modes">
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="walkTime">-- 分</span>
+          <span class="route-dist" id="walkDist">-- km</span>
+        </div>
       </div>
-    </div>
-    <div class="route-mode-box">
-      <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
-      <div class="route-text-data">
-        <span class="route-time" id="carTime">-- 分</span>
-        <span class="route-dist" id="carDist">-- km</span>
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="carTime">-- 分</span>
+          <span class="route-dist" id="carDist">-- km</span>
+        </div>
       </div>
     </div>
   </div>
@@ -541,7 +543,7 @@ function drawRoute() {
     document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
     document.getElementById('carDist').innerText = `${distanceKm} km`;
     document.getElementById('carTime').innerText = `${carMinutes} 分`;
-    document.getElementById('routeInfoCard').style.display = 'flex';
+    document.getElementById('routeSection').style.display = 'flex';
   });
 }
 
@@ -658,19 +660,13 @@ function selectLocation(lat, lng, label) {
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 1. 標高を取得
+  // 標高取得と表示
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
+  document.getElementById('elevationDisplay').innerText = elevation;
   
-  // 2. 取得した標高を含めて目的地設定（既存の処理）
-  // 目的地ラベルに標高を追記する例
-  const label = `地点: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)} (標高: ${elevation})`;
-  
-  selectLocation(e.latlng.lat, e.latlng.lng, label);
-  
-  // 避難所表示などの既存処理
-  if (shelterActive) {
-    fetchAndShowShelters(e.latlng);
-  }
+  // 目的地設定とルート表示
+  selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
+  if (shelterActive) fetchAndShowShelters(e.latlng);
 });
 
 const searchInput = document.getElementById('customSearchInput');
