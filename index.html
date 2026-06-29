@@ -160,24 +160,28 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* 5. ステータスパネル */
+/* 5. ステータスパネル（よりスリムに） */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 16px; padding: 14px;
+  border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
-.status-row { display: flex; justify-content: space-between; font-size: 14px; color: #3c4043; }
+
+/* 上段：海抜とルートタイトルの行 */
+.status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
 #elevationDisplay { font-weight: bold; color: #d35400; }
-.route-section { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
-.route-title { font-size: 13px; font-weight: bold; color: #202124; }
-.route-modes { display: flex; gap: 10px; }
-.route-mode-box { flex: 1; background: #f8f9fa; border-radius: 10px; padding: 10px; display: flex; align-items: center; gap: 8px; }
-.route-icon-circle { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; }
-.route-text-data { display: flex; flex-direction: column; }
-.route-time { font-size: 15px; font-weight: bold; color: #1a73e8; }
-.route-dist { font-size: 11px; color: #5f6368; }
+
+/* 下段：ルート情報の行 */
+.route-section { display: flex; flex-direction: row; gap: 8px; border-top: 1px solid #eee; padding-top: 8px; margin: 0; }
+.route-title { display: none; } /* タイトルを削除してスッキリさせる */
+.route-modes { display: flex; gap: 8px; flex: 1; }
+.route-mode-box { flex: 1; background: #f8f9fa; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+.route-icon-circle { width: 24px; height: 24px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; }
+.route-icon-circle .material-icons-round { font-size: 14px; }
+.route-time { font-size: 13px; font-weight: bold; color: #1a73e8; }
+.route-dist { font-size: 10px; color: #5f6368; }
   
 /* 避難所レイヤー用最前面ペイン */
 .leaflet-shelter-pane { z-index: 400 !important; }
@@ -314,12 +318,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <div id="statusPanel">
-  <div class="status-row">
-    <span>タップ地点の海抜:</span>
-    <span id="elevationDisplay">-- m</span>
+  <div class="status-header">
+    <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
+    <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
+  
   <div id="routeSection" class="route-section">
-    <div class="route-title">目的地までの参考経路</div>
     <div class="route-modes">
       <div class="route-mode-box">
         <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
@@ -548,7 +552,6 @@ function drawRoute() {
     document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
     document.getElementById('carDist').innerText = `${distanceKm} km`;
     document.getElementById('carTime').innerText = `${carMinutes} 分`;
-    document.getElementById('routeSection').style.display = 'flex';
   });
 }
 
