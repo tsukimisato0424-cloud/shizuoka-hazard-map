@@ -12,6 +12,53 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   
 <style>
+
+/* --- Googleマップのようなタイポグラフィ改善 --- */
+body {
+  /* Googleが使用しているフォント構成に近付けます */
+  font-family: 'Roboto', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased; /* 文字をくっきりさせる */
+}
+
+/* 検索ボックスの文字デザイン */
+.custom-search-bar input {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  color: #202124;
+}
+
+/* 検索候補（サジェスト）の文字デザイン */
+.suggestion-item {
+  font-size: 15px;
+  color: #3c4043;
+  padding: 14px 20px;
+}
+.suggestion-item strong {
+  font-weight: 500; /* 太さを調整して視認性アップ */
+  color: #000;
+}
+.suggestion-item span {
+  font-size: 12px; /* 住所の行を少し小さくしてメリハリを出す */
+  color: #70757a;
+}
+
+/* カード内のタイトル等の文字デザイン */
+.route-title, .legend-section-title {
+  font-family: 'Roboto', sans-serif;
+  text-transform: uppercase; /* 大文字風にすることでモダンな印象に */
+  letter-spacing: 0.8px;
+  font-size: 11px !important;
+  color: #5f6368 !important;
+}
+
+/* 全体のボタン類 */
+.hazard-btn {
+  font-family: 'Roboto', sans-serif;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+  
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
 /* 1. Google風スタイリッシュ検索バー (青系縁取り) */
