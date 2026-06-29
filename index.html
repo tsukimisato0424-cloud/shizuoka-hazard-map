@@ -328,7 +328,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <details id="statusPanel" open>
-  <summary style="list-style:none; display:none;"></summary>summary> <div class="status-header">
+  <summary></summary> 
+  <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
@@ -351,7 +352,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       </div>
     </div>
   </div>
-</div>
+</details>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -684,18 +685,25 @@ document.getElementById('statusPanel').addEventListener('click', function(e) {
   
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
+const statusPanel = document.getElementById('statusPanel');
+statusPanel.addEventListener('click', function(e) {
+  if (e.target.tagName === 'BUTTON') return;
+  statusPanel.open = !statusPanel.open;
+});
+  
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 標高取得と表示
+  // パネルを強制的に開く処理を追加
+  document.getElementById('statusPanel').open = true;
+  
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
   
-  // 目的地設定とルート表示
   selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
 });
-
+  
 const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
 
