@@ -192,11 +192,16 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 .map-type-item:hover { background: #f8f9fa; }  
 
-/* ポップアップに隠れたマーカーもクリック可能にする設定 */
+/* ポップアップが地図上の他の要素を遮らないようにしつつ、ボタン等はクリック可能にする設定 */
 .leaflet-popup-pane {
   pointer-events: none; 
 }
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+.leaflet-popup {
+  pointer-events: auto;
+}
+.leaflet-popup-content-wrapper, 
+.leaflet-popup-tip,
+.leaflet-popup-close-button {
   pointer-events: auto; 
 }
   
