@@ -806,6 +806,7 @@ document.getElementById("refreshBtn").onclick = () => {
 // 避難所用のキャッシュ回避関数
 async function fetchAndShowSheltersWithTimestamp(centerLatLng) {
   shelterLayerGroup.clearLayers();
+  
   // URLにタイムスタンプパラメータを追加
   const timestamp = new Date().getTime();
   const geojsonUrl = `./data/shelter.geojson?t=${timestamp}`;
@@ -813,8 +814,41 @@ async function fetchAndShowSheltersWithTimestamp(centerLatLng) {
   try {
     const response = await fetch(geojsonUrl);
     const geojson = await response.json(); 
-    // ...（以下、既存の描画ロジックと同じ）
-    // ※元の fetchAndShowShelters 内のコードをここへコピーしてください
+
+    // --- ここから描画ロジックを実装 ---
+    geojson.features.forEach(feature => {
+      const lng = feature.geometry.coordinates[0];
+      const lat = feature.geometry.coordinates[1];
+      const props = feature.properties;
+
+      const shelterLatLng = L.latLng(lat, lng);
+      const distance = centerLatLng.distanceTo(shelterLatLng);
+      
+      if (distance <= 3000) {
+        const shelterIcon = L.divIcon({
+          className: 'custom-shelter-icon',
+          html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+        
+        const name = props.名称 || "名称不明"; 
+        marker.bindPopup(`
+          <div style="font-family:sans-serif; min-width:200px;">
+            <strong style="font-size:16px;">${name}</strong>
+            <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                    style="margin-top:10px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px;">
+              ルート検索を開始
+            </button>
+          </div>
+        `);
+        shelterLayerGroup.addLayer(marker);
+      }
+    });
+    // --- 描画ロジックここまで ---
+    
   } catch (err) {
     console.error("更新失敗:", err);
   }
