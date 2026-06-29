@@ -547,6 +547,19 @@ async function executeHybridSearch(query) {
 
     const combinedResults = [...facilityResults, ...addressResults];
 
+// --- ここから追加する並び替えロジック ---
+    const keyword = query.toLowerCase();
+    combinedResults.sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+
+      // 「本社」という文字が含まれる方を優先する（スコアを上げる）
+      const scoreA = nameA.includes("本社") ? 10 : (nameA.includes(keyword) ? 5 : 0);
+      const scoreB = nameB.includes("本社") ? 10 : (nameB.includes(keyword) ? 5 : 0);
+
+      return scoreB - scoreA; // スコアが高い順（降順）に並べる
+    });
+    
     if (combinedResults.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>一致する施設・住所がありません</div>`;
       suggestionsBox.style.display = 'block';
