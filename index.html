@@ -545,6 +545,26 @@ function drawRoute() {
   });
 }
 
+// 標高を取得する関数
+async function getElevation(lat, lng) {
+  try {
+    // 地理院地図標高APIのURL
+    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    // 標高が取得できればその値を、なければ「測定不能」を返す
+    if (data.elevation !== undefined && data.elevation !== null) {
+      return data.elevation.toFixed(1) + " m";
+    } else {
+      return "標高データなし";
+    }
+  } catch (error) {
+    console.error("標高取得エラー:", error);
+    return "取得失敗";
+  }
+}
+  
 // 施設名最優先ハイブリッド検索
 
 // 検索結果を一時保存する変数
@@ -635,14 +655,19 @@ function selectLocation(lat, lng, label) {
 
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
-map.on('click', function(e) {
+map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 1. タップした場所を「目的地」として設定する
-  // labelにはタップした座標を表示
-  selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
+  // 1. 標高を取得
+  const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   
-  // 2. 避難所表示ボタンが有効化されている場合、その場所を中心に避難所を再展開
+  // 2. 取得した標高を含めて目的地設定（既存の処理）
+  // 目的地ラベルに標高を追記する例
+  const label = `地点: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)} (標高: ${elevation})`;
+  
+  selectLocation(e.latlng.lat, e.latlng.lng, label);
+  
+  // 避難所表示などの既存処理
   if (shelterActive) {
     fetchAndShowShelters(e.latlng);
   }
