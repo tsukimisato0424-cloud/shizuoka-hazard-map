@@ -387,17 +387,13 @@ async function fetchAndShowShelters(centerLatLng) {
   // 半径3kmの円を表示
   L.circle(centerLatLng, { color: '#27ae60', fillOpacity: 0.1, radius: 3000 }).addTo(shelterLayerGroup);
   
-  // 読み込むファイルリスト
+  // 読み込むファイルリスト（お手元のファイル名に合わせて適宜変更してください）
   const geojsonUrls = ['./data/shelter_1.geojson', './data/shelter_2.geojson'];
 
   try {
-    // すべてのファイルを並行して取得
     const responses = await Promise.all(geojsonUrls.map(url => fetch(url).then(r => r.json())));
-    
-    // 全てのデータを統合（FeatureCollectionを想定）
     const allFeatures = responses.flatMap(data => data.features || []);
 
-    // 2. フィルタリングして描画
     allFeatures.forEach(feature => {
       const lng = feature.geometry.coordinates[0];
       const lat = feature.geometry.coordinates[1];
@@ -419,8 +415,8 @@ async function fetchAndShowShelters(centerLatLng) {
           pane: 'shelterPane'
         });
             
-        // ※プロパティ名は適宜調整してください
-        const name = props.名称 || props.K03_004 || "名称不明"; 
+        // 【修正箇所】"施設・場所名" をキーとして指定
+        const name = props["施設・場所名"] || "名称不明"; 
         
         marker.bindPopup(`
           <div style="font-family:sans-serif; min-width:200px;">
