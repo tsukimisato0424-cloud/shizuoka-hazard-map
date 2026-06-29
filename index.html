@@ -532,50 +532,6 @@ function drawRoute() {
 
 // 施設名最優先ハイブリッド検索
 
-async function executeHybridSearch(query) {
-  if (!query) return;
-  const suggestionsBox = document.getElementById('customSuggestions');
-  suggestionsBox.innerHTML = '';
-  
-  const encodedQuery = encodeURIComponent(query);
-  
-  // 現在地設定
-  let locationParams = "";
-  let viewboxParams = "";
-  if (currentLocation) {
-    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`;
-    viewboxParams = `&viewbox=${currentLocation.lng - 0.5},${currentLocation.lat - 0.5},${currentLocation.lng + 0.5},${currentLocation.lat + 0.5}&bounded=1`;
-  }
-
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
-
-  let facilityResults = []; 
-  let addressResults = [];  
-
-  try {
-    const [resArc, resNom] = await Promise.all([
-      fetch(urlArcGIS).then(r => r.json()).catch(() => null),
-      fetch(urlNominatim).then(r => r.json()).catch(() => null)
-    ]);
-
-    if (resNom && resNom.length > 0) {
-      resNom.forEach(n => {
-        facilityResults.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称' });
-      });
-    }
-
-    if (resArc && resArc.candidates) {
-      resArc.candidates.forEach(c => {
-        const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        if (fullAddress !== "ヤマハ") {
-          addressResults.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果' });
-        }
-      });
-    }
-
-    let combinedResults = [...facilityResults, ...addressResults];
-
     if (currentLocation) {
       combinedResults.sort((a, b) => {
         const getRegionalBoost = (item) => (item.name.includes("静岡") || item.name.includes("浜松")) ? -10000 : 0;
