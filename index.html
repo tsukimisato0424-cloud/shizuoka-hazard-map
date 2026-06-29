@@ -520,9 +520,15 @@ document.getElementById('legendDetails').addEventListener('toggle', function(e) 
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
+// 現在地ボタンを押した時に呼ばれる関数
 function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(pos => {
+  navigator.geolocation.getCurrentPosition(async pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    
+    // 現在地取得後に海抜を取得して表示
+    const elevation = await getElevation(currentLocation.lat, currentLocation.lng);
+    document.getElementById('elevationDisplay').innerText = elevation;
+    
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
@@ -530,7 +536,6 @@ function updateCurrentLocation(isInitial = false) {
       map.setView(currentLocation, 14);
     }
     
-    // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
     if (shelterActive) {
       fetchAndShowShelters(currentLocation);
     }
@@ -538,13 +543,9 @@ function updateCurrentLocation(isInitial = false) {
     if (destination) drawRoute();
   }, err => {
     console.error("現在地取得失敗", err);
-    // 位置情報が取れない場合のフォールバック
-    if (isInitial) {
-      currentLocation = map.getCenter();
-      if (shelterActive) fetchAndShowShelters(currentLocation);
-    }
   }, { enableHighAccuracy: true });
 }
+  
 updateCurrentLocation(true);
 
 function drawRoute() {
