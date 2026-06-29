@@ -532,41 +532,6 @@ function drawRoute() {
 
 // 施設名最優先ハイブリッド検索
 
-    if (currentLocation) {
-      combinedResults.sort((a, b) => {
-        const getRegionalBoost = (item) => (item.name.includes("静岡") || item.name.includes("浜松")) ? -10000 : 0;
-        const getPriorityAdjustment = (item) => (item.name.toLowerCase().includes("本社") || item.name.toLowerCase().includes("工場")) ? -5000 : 0;
-        const distA = currentLocation.distanceTo(L.latLng(a.lat, a.lng)) + getPriorityAdjustment(a) + getRegionalBoost(a);
-        const distB = currentLocation.distanceTo(L.latLng(b.lat, b.lng)) + getPriorityAdjustment(b) + getRegionalBoost(b);
-        return distA - distB;
-      });
-    }
-
-    if (combinedResults.length === 0) {
-      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&addressdetails=1&limit=1`;
-      const res = await fetch(fallbackUrl).then(r => r.json());
-      if (res && res.length > 0) {
-        map.setView([res[0].lat, res[0].lon], 16);
-        selectLocation(res[0].lat, res[0].lon, res[0].display_name);
-        suggestionsBox.innerHTML = `<div class="suggestion-item">最寄りを表示中: ${res[0].display_name}</div>`;
-      } else {
-        suggestionsBox.innerHTML = `<div class="suggestion-item">該当する場所が見つかりませんでした</div>`;
-      }
-    } else {
-      combinedResults.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span style="font-size:11px;color:#70757a;">${item.name}</span></div>`;
-        div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
-        suggestionsBox.appendChild(div);
-      });
-    }
-    suggestionsBox.style.display = 'block';
-  } catch (error) {
-    console.error("検索システムエラー:", error);
-  }
-}
-  
 async function executeHybridSearch(query) {
   if (!query) return;
   const suggestionsBox = document.getElementById('customSuggestions');
@@ -574,7 +539,6 @@ async function executeHybridSearch(query) {
   
   const encodedQuery = encodeURIComponent(query);
   
-  // 現在地設定
   let locationParams = "";
   let viewboxParams = "";
   if (currentLocation) {
@@ -585,59 +549,30 @@ async function executeHybridSearch(query) {
   const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
   const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
 
-  let facilityResults = []; 
-  let addressResults = [];  
-
   try {
     const [resArc, resNom] = await Promise.all([
       fetch(urlArcGIS).then(r => r.json()).catch(() => null),
       fetch(urlNominatim).then(r => r.json()).catch(() => null)
     ]);
 
+    let results = [];
     if (resNom && resNom.length > 0) {
-      resNom.forEach(n => {
-        facilityResults.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business', source: '施設・ランドマーク名称' });
-      });
+      resNom.forEach(n => results.push({ name: n.display_name, lat: parseFloat(n.lat), lng: parseFloat(n.lon), icon: 'business' }));
     }
-
     if (resArc && resArc.candidates) {
       resArc.candidates.forEach(c => {
         const fullAddress = (c.attributes && c.attributes.Match_addr) ? c.attributes.Match_addr : c.address;
-        if (fullAddress !== "ヤマハ") {
-          addressResults.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home', source: '住所・地番検索結果' });
-        }
+        results.push({ name: fullAddress, lat: c.location.y, lng: c.location.x, icon: 'home' });
       });
     }
 
-    let combinedResults = [...facilityResults, ...addressResults];
-
-    // 並び替えロジック
-    if (currentLocation) {
-      combinedResults.sort((a, b) => {
-        const getRegionalBoost = (item) => (item.name.includes("静岡") || item.name.includes("浜松")) ? -10000 : 0;
-        const getPriorityAdjustment = (item) => (item.name.toLowerCase().includes("本社") || item.name.toLowerCase().includes("工場")) ? -5000 : 0;
-        const distA = currentLocation.distanceTo(L.latLng(a.lat, a.lng)) + getPriorityAdjustment(a) + getRegionalBoost(a);
-        const distB = currentLocation.distanceTo(L.latLng(b.lat, b.lng)) + getPriorityAdjustment(b) + getRegionalBoost(b);
-        return distA - distB;
-      });
-    }
-
-    // 該当なし時の処理
-    if (combinedResults.length === 0) {
-      const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&addressdetails=1&limit=1`;
-      const res = await fetch(fallbackUrl).then(r => r.json());
-      if (res && res.length > 0) {
-        map.setView([res[0].lat, res[0].lon], 16);
-        selectLocation(res[0].lat, res[0].lon, res[0].display_name);
-        suggestionsBox.innerHTML = `<div class="suggestion-item">最寄りを表示中: ${res[0].display_name}</div>`;
-      } else {
-        suggestionsBox.innerHTML = `<div class="suggestion-item">該当する場所が見つかりませんでした</div>`;
-      }
+    if (results.length === 0) {
+      suggestionsBox.innerHTML = `<div class="suggestion-item">該当なし</div>`;
     } else {
-      combinedResults.forEach(item => {
+      results.forEach(item => {
         const div = document.createElement('div');
         div.className = 'suggestion-item';
-        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong><br><span style="font-size:11px;color:#70757a;">${item.name}</span></div>`;
+        div.innerHTML = `<span class="material-icons-round">${item.icon}</span><div><strong>${item.name.split(',')[0]}</strong></div>`;
         div.onclick = () => { selectLocation(item.lat, item.lng, item.name); suggestionsBox.style.display = 'none'; };
         suggestionsBox.appendChild(div);
       });
