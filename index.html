@@ -507,10 +507,25 @@ async function executeHybridSearch(query) {
   const suggestionsBox = document.getElementById('customSuggestions');
   suggestionsBox.innerHTML = '';
   
-  const encodedQuery = encodeURIComponent(query);
+    const encodedQuery = encodeURIComponent(query);
   
-  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr`;
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1`;
+  // 現在地がある場合、それをパラメータに追加する（現在地がない場合は空のまま）
+  let locationParams = "";
+  let viewboxParams = "";
+  
+  if (currentLocation) {
+    // 緯度経度を使ってパラメータを作成
+    locationParams = `&location=${currentLocation.lng},${currentLocation.lat}`; // ArcGIS用
+    
+    // 検索範囲を現在地周辺に絞る（Nominatim用）
+    viewboxParams = `&viewbox=${currentLocation.lng - 0.5},${currentLocation.lat - 0.5},${currentLocation.lng + 0.5},${currentLocation.lat + 0.5}&bounded=1`;
+  }
+
+  // ArcGISのURL：locationとproximityを指定して現在地周辺を優先
+  const urlArcGIS = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodedQuery}&maxLocations=5&outFields=Match_addr${locationParams}&proximity=${currentLocation ? currentLocation.lng + ',' + currentLocation.lat : ''}`;
+  
+  // NominatimのURL：viewboxで現在地周辺を優先
+  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=5&addressdetails=1${viewboxParams}`;
 
   let facilityResults = []; 
   let addressResults = [];  
