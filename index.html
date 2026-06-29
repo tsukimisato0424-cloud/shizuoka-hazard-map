@@ -555,16 +555,23 @@ async function executeHybridSearch(query) {
 
 // --- ここから追加する並び替えロジック ---
     const keyword = query.toLowerCase();
-    combinedResults.sort((a, b) => {
-      const nameA = a.name.toLowerCase();
-      const nameB = b.name.toLowerCase();
+        // --- 距離と重要度を組み合わせた並び替えロジック ---
+    if (currentLocation) {
+      combinedResults.sort((a, b) => {
+        // 重要施設判定関数（キーワードが含まれていれば優先度を高くする）
+        const getPriorityAdjustment = (item) => {
+          const name = item.name.toLowerCase();
+          // 「本社」や「工場」などのキーワードが含まれていれば、距離から 5km分マイナスして優先度アップ
+          if (name.includes("本社") || name.includes("工場") || name.includes("本部")) return -5000;
+          return 0;
+        };
 
-      // 「本社」という文字が含まれる方を優先する（スコアを上げる）
-      const scoreA = nameA.includes("本社") ? 10 : (nameA.includes(keyword) ? 5 : 0);
-      const scoreB = nameB.includes("本社") ? 10 : (nameB.includes(keyword) ? 5 : 0);
+        const distA = currentLocation.distanceTo(L.latLng(a.lat, a.lng)) + getPriorityAdjustment(a);
+        const distB = currentLocation.distanceTo(L.latLng(b.lat, b.lng)) + getPriorityAdjustment(b);
 
-      return scoreB - scoreA; // スコアが高い順（降順）に並べる
-    });
+        return distA - distB; // 距離と重要度の合計が小さい順（＝近い/重要度が高い順）に並ぶ
+      });
+    }
     
     if (combinedResults.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round">error_outline</span>一致する施設・住所がありません</div>`;
