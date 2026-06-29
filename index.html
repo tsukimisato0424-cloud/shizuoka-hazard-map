@@ -778,23 +778,25 @@ function changeMap(type) {
 }
 
 document.getElementById("refreshBtn").onclick = () => {
-
-  // ハザードレイヤーを更新
+  // 1. ハザードレイヤーを更新 (URLにタイムスタンプを付与してキャッシュを回避)
   Object.values(layers).forEach(group => {
     group.forEach(layer => {
       if (map.hasLayer(layer)) {
-        //　現在のURLを取得し、タイムスタンプを付与して再セットする
-        const oldUrl('${oldUrl}?t=${new Data().getTime()}`);
+        // 現在のURLを取得してクエリを除去
+        const oldUrl = layer._url.split('?')[0];
+        // タイムスタンプを付与してURLを再設定
+        layer.setUrl(`${oldUrl}?t=${new Date().getTime()}`);
       }
     });
   });
 
-  // 避難所表示も更新
+  // 2. 避難所表示も更新
   if (shelterActive) {
+    // 避難所データの取得時もキャッシュを回避するためにタイムスタンプを付与
     fetchAndShowShelters(destination || currentLocation || map.getCenter());
   }
-
-};  
+};
+  
 </script>
 </body>
 </html>
