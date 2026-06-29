@@ -164,23 +164,20 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 #statusPanel {
   position: absolute; 
   bottom: 20px; 
-  right: 10px; /* 左から右へ変更 */
-  width: calc(100% - 20px); /* 基本幅 */
-  max-width: 320px; /* 右側で大きくなりすぎないように制限 */
+  right: 10px;
+  width: 300px; /* 固定幅にすると安定します */
   z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px; 
   padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 畳んだ時の挙動：右に隠す */
+/* 畳んだ時は右側にスライドして隠す */
 #statusPanel:not([open]) {
-  transform: translateX(calc(100% + 20px)); /* 右に隠れる */
-  opacity: 0;
-  pointer-events: none; /* 隠れている時はクリック反応させない */
+  transform: translateX(110%);
 }
   
 /* 上段：海抜とルートタイトルの行 */
@@ -336,15 +333,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <details id="statusPanel" open>
-  <summary style="display:none;"><>/summary> 
-  <div class="status-header">...</div>
+  <summary style="display:none;"></summary>
+  <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
-  
-  <div id="routeSection" class="route-section">...</div>
-  </details>
-    
+  <div id="routeSection" class="route-section">
     <div class="route-modes">
       <div class="route-mode-box">
         <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
@@ -363,6 +357,10 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
     </div>
   </div>
 </details>
+
+<button id="openStatusBtn" style="position:absolute; right:16px; bottom:20px; z-index:1400; width:50px; height:50px; border-radius:50%; background:#fff; color:#1a73e8; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+  <span class="material-icons-round">info</span>
+</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -697,22 +695,23 @@ document.getElementById('statusPanel').addEventListener('click', function(e) {
 const statusPanel = document.getElementById('statusPanel');
 const openBtn = document.getElementById('openStatusBtn');
 
-// パネル自体をクリックしたら閉じる（折りたたむ）
+// パネルをタップ（クリック）したら畳む
 statusPanel.addEventListener('click', function(e) {
   if (e.target.tagName === 'BUTTON') return;
   statusPanel.open = false; 
 });
 
-// フローティングボタンを押したらパネルを開く
+// infoボタンを押したら開く
 openBtn.addEventListener('click', function() {
   statusPanel.open = true;
 });
 
-// 地図タップ時も開く
+// 地図をタップした時はパネルを開く
 map.on('click', async function(e) {
-  document.getElementById('statusPanel').open = true;  
-  // パネルを強制的に開く処理を追加
-  document.getElementById('statusPanel').open = true;
+  document.getElementById('customSuggestions').style.display = 'none';
+  
+  // 地図クリック時はパネルを自動で開く
+  statusPanel.open = true;
   
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
