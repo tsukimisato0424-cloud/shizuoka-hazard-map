@@ -14,23 +14,13 @@
 <style>
 html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0f2f5; }
 
-/* 1. Google風スタイリッシュ検索バー (青系縁取り) */
-#searchContainer { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 99999 !important; }
+/* --- 検索バーとメニューのスタイル (統合版) --- */
 .custom-search-bar {
   display: flex; align-items: center; background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px); border-radius: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.15), inset 0 0 0 1.5px #1a73e8; padding: 2px 8px;
 }
-.custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 14px 12px; background: transparent; color: #202124; }
-.search-icon-btn { background: none; border: none; color: #1a73e8; cursor: pointer; padding: 8px; display: flex; align-items: center; }
 
-#customSuggestions { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-top: 6px; max-height: 260px; overflow-y: auto; display: none; }
-.suggestion-item { display: flex; align-items: center; padding: 12px 16px; font-size: 14px; color: #3c4043; cursor: pointer; border-bottom: 1px solid #f1f3f4; transition: background 0.2s; }
-.suggestion-item:last-child { border-bottom: none; }
-.suggestion-item:hover { background-color: #f8f9fa; }
-.suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
-
-/* 2. ハザード操作カード (アコーディオン式) */
 #hazardAccordion {
   position: absolute; top: 75px; right: 10px; z-index: 2000;
   background: rgba(255, 255, 255, 0.95); border-radius: 16px;
@@ -41,27 +31,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 #hazardDetails summary {
   list-style: none; padding: 12px; cursor: pointer; color: #1a73e8; 
-  display: flex; justify-content: center;
+  display: flex; justify-content: center; align-items: center;
 }
-#hazardDetails summary::-webkit-details-marker { display: none; }
+#hazardAccordion[open-state="false"] summary::after { content: 'water'; font-family: 'Material Icons Round'; }
+#hazardAccordion[open-state="true"] summary::after { content: 'chevron_right'; font-family: 'Material Icons Round'; }
 
-#hazardMenuCard {
-  display: flex; gap: 6px; padding: 0 10px 10px 10px;
-}
-.hazard-btn {
-  flex: 1; border-radius: 12px; padding: 8px 2px;
-  background: #fff; color: #5f6368; font-size: 11px; font-weight: bold;
-  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
-  border: 1.5px solid #d1d9e6; transition: all 0.2s ease;
-}
-.hazard-btn:active { transform: translateY(1px); box-shadow: 0 0 8px #1a73e8; border-color: #1a73e8; }
-.hazard-btn.active { border-color: #1a73e8 !important; box-shadow: 0 0 10px rgba(26, 115, 232, 0.4); }
-
-.hazard-btn.active[data-type="flood"] { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
-.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
-.hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
-.hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
-  
+#hazardMenuCard { display: flex; gap: 6px; padding: 0 10px 10px 10px; }
 .hazard-btn {
   flex: 1; border-radius: 12px; padding: 8px 2px;
   background: #fff; color: #5f6368; font-size: 11px; font-weight: bold;
@@ -225,7 +200,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 
 <div id="hazardAccordion" open-state="true">
   <details id="hazardDetails" open>
-    <summary><span class="material-icons-round">water</span></summary>
+    <summary></summary>
     <div id="hazardMenuCard">
       <button class="hazard-btn" data-type="flood"><span class="material-icons-round">water</span>洪水想定</button>
       <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
@@ -442,6 +417,11 @@ document.getElementById('legendDetails').addEventListener('toggle', function(e) 
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
+const hazardCard = document.getElementById('hazardAccordion');
+document.getElementById('hazardDetails').addEventListener('toggle', function(e) {
+  hazardCard.setAttribute('open-state', this.open ? 'true' : 'false');
+});
+  
 const hazardCard = document.getElementById('hazardAccordion');
 document.getElementById('hazardDetails').addEventListener('toggle', function(e) {
   hazardCard.setAttribute('open-state', this.open ? 'true' : 'false');
