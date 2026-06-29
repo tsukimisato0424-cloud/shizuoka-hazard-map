@@ -160,23 +160,27 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* 5. ステータスパネル（よりスリムに） */
+/* 5. ステータスパネル（右収納式） */
 #statusPanel {
-  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  position: absolute; 
+  bottom: 20px; 
+  right: 10px; /* 左から右へ変更 */
+  width: calc(100% - 20px); /* 基本幅 */
+  max-width: 320px; /* 右側で大きくなりすぎないように制限 */
+  z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px; padding: 10px 14px;
+  border-radius: 12px; 
+  padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-/* 開いている時だけの調整（必要あれば） */
-#statusPanel[open] { padding-bottom: 14px; }
-
-/* 閉じる時の見た目 */
+/* 畳んだ時の挙動：右に隠す */
 #statusPanel:not([open]) {
-  padding: 8px 14px;
-  border-radius: 20px;
+  transform: translateX(calc(100% + 20px)); /* 右に隠れる */
+  opacity: 0;
+  pointer-events: none; /* 隠れている時はクリック反応させない */
 }
   
 /* 上段：海抜とルートタイトルの行 */
@@ -321,6 +325,10 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
 </div>
 
+<button id="openStatusBtn" style="position:absolute; right:16px; bottom:20px; z-index:1400; width:50px; height:50px; border-radius:50%; background:#fff; color:#1a73e8; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
+  <span class="material-icons-round">info</span>
+</button>
+  
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
 <button id="refreshBtn">
@@ -328,13 +336,15 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <details id="statusPanel" open>
-  <summary></summary> 
-  <div class="status-header">
+  <summary style="display:none;"><>/summary> 
+  <div class="status-header">...</div>
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
   
-  <div id="routeSection" class="route-section">
+  <div id="routeSection" class="route-section">...</div>
+  </details>
+    
     <div class="route-modes">
       <div class="route-mode-box">
         <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
@@ -685,14 +695,22 @@ document.getElementById('statusPanel').addEventListener('click', function(e) {
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
 const statusPanel = document.getElementById('statusPanel');
+const openBtn = document.getElementById('openStatusBtn');
+
+// パネル自体をクリックしたら閉じる（折りたたむ）
 statusPanel.addEventListener('click', function(e) {
   if (e.target.tagName === 'BUTTON') return;
-  statusPanel.open = !statusPanel.open;
+  statusPanel.open = false; 
 });
-  
+
+// フローティングボタンを押したらパネルを開く
+openBtn.addEventListener('click', function() {
+  statusPanel.open = true;
+});
+
+// 地図タップ時も開く
 map.on('click', async function(e) {
-  document.getElementById('customSuggestions').style.display = 'none';
-  
+  document.getElementById('statusPanel').open = true;  
   // パネルを強制的に開く処理を追加
   document.getElementById('statusPanel').open = true;
   
