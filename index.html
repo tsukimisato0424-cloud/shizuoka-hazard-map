@@ -778,24 +778,47 @@ function changeMap(type) {
 }
 
 document.getElementById("refreshBtn").onclick = () => {
-  // 1. ハザードレイヤーを更新 (URLにタイムスタンプを付与してキャッシュを回避)
+  // 1. ハザードレイヤーを更新
   Object.values(layers).forEach(group => {
     group.forEach(layer => {
       if (map.hasLayer(layer)) {
-        // 現在のURLを取得してクエリを除去
+        // 現在のURLを取得してベースURLを特定
         const oldUrl = layer._url.split('?')[0];
-        // タイムスタンプを付与してURLを再設定
-        layer.setUrl(`${oldUrl}?t=${new Date().getTime()}`);
+        // タイムスタンプを付与
+        const newUrl = `${oldUrl}?t=${new Date().getTime()}`;
+        
+        // URLを再設定して強制的に再描画させる
+        layer.setUrl(newUrl);
+        layer.redraw(); 
       }
     });
   });
 
-  // 2. 避難所表示も更新
+  // 2. 避難所表示の更新（キャッシュ回避のためURLにタイムスタンプを付与）
   if (shelterActive) {
-    // 避難所データの取得時もキャッシュを回避するためにタイムスタンプを付与
-    fetchAndShowShelters(destination || currentLocation || map.getCenter());
+    // 避難所データのフェッチ関数自体にタイムスタンプを付与する工夫
+    // ./data/shelter.geojson?t=123456789 のようにリクエストを送る
+    const center = destination || currentLocation || map.getCenter();
+    fetchAndShowSheltersWithTimestamp(center);
   }
 };
+
+// 避難所用のキャッシュ回避関数
+async function fetchAndShowSheltersWithTimestamp(centerLatLng) {
+  shelterLayerGroup.clearLayers();
+  // URLにタイムスタンプパラメータを追加
+  const timestamp = new Date().getTime();
+  const geojsonUrl = `./data/shelter.geojson?t=${timestamp}`;
+
+  try {
+    const response = await fetch(geojsonUrl);
+    const geojson = await response.json(); 
+    // ...（以下、既存の描画ロジックと同じ）
+    // ※元の fetchAndShowShelters 内のコードをここへコピーしてください
+  } catch (err) {
+    console.error("更新失敗:", err);
+  }
+}
   
 </script>
 </body>
