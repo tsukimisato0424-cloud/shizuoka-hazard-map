@@ -367,8 +367,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 // 静岡駅周辺を初期位置に設定
 const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
 
-L.control.zoom({ position: 'bottomright' }).addTo(map);
-
 // 複数の地図を扱うための設定
 const baseLayers = {
   pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
