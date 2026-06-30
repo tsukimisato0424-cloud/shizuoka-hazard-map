@@ -575,9 +575,7 @@ async function getElevation(lat, lng) {
   }
 }
   
-// 施設名最優先ハイブリッド検索
-
-// 検索結果を一時保存する変数
+// 🌟【精度大幅強化】国土地理院ジオコーディング＋Nominatimのハイブリッド検索
 let searchMarkers = [];
 
 async function executeHybridSearch(query) {
@@ -585,65 +583,114 @@ async function executeHybridSearch(query) {
   const suggestionsBox = document.getElementById('customSuggestions');
   suggestionsBox.innerHTML = '';
   
-  // 既存のピンをすべて削除
+  // 既存の検索ピンを掃除
   searchMarkers.forEach(m => map.removeLayer(m));
   searchMarkers = [];
 
   const encodedQuery = encodeURIComponent(query);
-  const bounds = map.getBounds();
-  const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=1`;
-  
-  const urlNominatim = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=10&addressdetails=1`;
+  let results = [];
 
   try {
-    const response = await fetch(urlNominatim);
-    const results = await response.json();
+    // 1手目：日本の住所・地番に圧倒的に強い「国土地理院 地名・施設検索API」を正攻法で叩く
+    const gsiUrl = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodedQuery}`;
+    const gsiResponse = await fetch(gsiUrl);
+    const gsiData = await gsiResponse.json();
 
+    if (gsiData && gsiData.length > 0) {
+      gsiData.forEach(item => {
+        // 国土地理院のレスポンス形式を標準化
+        results.push({
+          lat: item.geometry.coordinates[1],
+          lon: item.geometry.coordinates[0],
+          name: item.properties.title,
+          address: "国土地理院 登録位置データ"
+        });
+      });
+    }
+
+    // 2手目：施設名や店舗名、周辺バイアスをかけるためにOpenStreetMap(Nominatim)で補完検索
+    const bounds = map.getBounds();
+    const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`; // 画面外も探せるようbounded=0に調整
+    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=5&addressdetails=1&accept-language=ja`;
+    
+    const osmResponse = await fetch(osmUrl);
+    const osmData = await osmResponse.json();
+
+    if (osmData && osmData.length > 0) {
+      osmData.forEach(item => {
+        const nameParts = item.display_name.split(',');
+        const shopName = nameParts[0].trim();
+        const address = nameParts.slice(1).join(', ').trim();
+        
+        // 重複を簡易的に避ける
+        if (!results.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.001 && Math.abs(r.lon - parseFloat(item.lon)) < 0.001)) {
+          results.push({
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            name: shopName,
+            address: address
+          });
+        }
+      });
+    }
+
+    // 結果がどちらからも得られなかった場合
     if (results.length === 0) {
-      suggestionsBox.innerHTML = `<div class="suggestion-item">該当なし</div>`;
+      suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>該当する場所が見つかりませんでした</div>`;
       suggestionsBox.style.display = 'block';
       return;
     }
 
-    // 検索結果を地図上にピン留めしていく
+    // 3. 検索結果を地図上にマッピング & サジェストリストの生成
     results.forEach(item => {
-      const lat = parseFloat(item.lat);
-      const lon = parseFloat(item.lon);
-      const nameParts = item.display_name.split(',');
-      const shopName = nameParts[0].trim();
-      const address = nameParts.slice(1).join(', ').trim();
+      // JavaScriptのエラーを防ぐため、名称内のシングルクォーテーションをエスケープ
+      const safeName = item.name.replace(/'/g, "\\'");
 
-      // 1. ピンを地図に置く
-      const marker = L.marker([lat, lon]).addTo(map);
-      marker.bindPopup(`<b>${shopName}</b><br>${address}<br>
-        <button onclick="selectLocation(${lat}, ${lon}, '${item.display_name}')" 
-                style="margin-top:8px; width:100%; padding:5px; cursor:pointer;">
-          ここを目的地にする
-        </button>`);
+      // 地図上にピン（マーカー）を設置
+      const marker = L.marker([item.lat, item.lon]).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family:sans-serif; min-width:180px;">
+          <strong style="font-size:14px; display:block; margin-bottom:5px;">${item.name}</strong>
+          <div style="font-size:11px; color:#666; margin-bottom:8px;">${item.address}</div>
+          <button onclick="selectLocation(${item.lat}, ${item.lon}, '${safeName}')" 
+                  style="width:100%; padding:6px; background:#1a73e8; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+            ここを目的地にする
+          </button>
+        </div>
+      `);
       searchMarkers.push(marker);
 
-      // 2. 検索窓の候補リストにも表示
+      // 検索バー下のサジェスト一覧に項目を追加
       const div = document.createElement('div');
       div.className = 'suggestion-item';
-      div.innerHTML = `<strong>${shopName}</strong><br><small>${address}</small>`;
+      div.innerHTML = `
+        <span class="material-icons-round" style="color:#70757a; font-size:18px; margin-right:10px;">place</span>
+        <div>
+          <strong style="display:block; color:#202124;">${item.name}</strong>
+          <small style="color:#5f6368; font-size:11px;">${item.address}</small>
+        </div>
+      `;
       div.onclick = () => { 
-        selectLocation(lat, lon, item.display_name); 
-        map.setView([lat, lon], 16);
+        selectLocation(item.lat, item.lon, item.name); 
+        map.setView([item.lat, item.lon], 16);
         suggestionsBox.style.display = 'none'; 
       };
       suggestionsBox.appendChild(div);
     });
 
     suggestionsBox.style.display = 'block';
-    // 地図の表示範囲を検索結果全体に合わせる
+
+    // 検索結果が収まるように地図の表示範囲を自動調整
     const group = L.featureGroup(searchMarkers);
-    map.fitBounds(group.getBounds().pad(0.1));
+    map.fitBounds(group.getBounds().pad(0.2));
 
   } catch (error) {
-    console.error("検索エラー:", error);
+    console.error("ハイブリッド検索エラー:", error);
+    suggestionsBox.innerHTML = `<div class="suggestion-item">検索中にエラーが発生しました</div>`;
+    suggestionsBox.style.display = 'block';
   }
 }
-
+  
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
 
