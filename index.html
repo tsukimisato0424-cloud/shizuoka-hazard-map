@@ -173,8 +173,11 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 9999 !important;
+  transform: translateX(0); /*　表示状態　*/
 }
-#statusPanel.closed { transform: translateX(110%); }
+#statusPanel.closed {
+  transform: translateX(110%);
+}
 
 /* infoボタン */
 #openStatusBtn {
@@ -268,7 +271,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </style>
 </head> 
 <body>
-<div id="statusPanel" class="open">
+<div id="statusPanel">
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
@@ -709,8 +712,14 @@ const statusPanel = document.getElementById('statusPanel');
 const openBtn = document.getElementById('openStatusBtn');
 
 // パネル開閉関数
-function closePanel() { statusPanel.classList.add('closed'); }
-function openPanel() { statusPanel.classList.remove('closed'); }
+
+  function closePanel() { document.getElementById('statusPanel').classList.add('closed'); }
+function openPanel() { document.getElementById('statusPanel').classList.remove('closed'); }
+
+// ページ読み込み時に必ず開いた状態にする
+window.addEventListener('DOMContentLoaded', () => {
+    openPanel();
+});
 
 // パネルクリックで閉じる
 statusPanel.addEventListener('click', function(e) {
