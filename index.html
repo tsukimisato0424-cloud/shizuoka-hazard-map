@@ -337,10 +337,13 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
   
   <div class="status-header">
-    <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
+    <span style="font-weight:bold; color:#5f6368;">地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
   
+  <div id="addressDisplay" style="font-size:12px; color:#333; margin-bottom:5px; font-weight:bold;">住所: 取得中...</div>
+  <div id="latLngDisplay" style="font-size:11px; color:#777; margin-bottom:8px;">緯度: --, 経度: --</div>
+
   <div id="statusContent">
     <div id="routeSection" class="route-section">
       <div class="route-modes">
@@ -843,20 +846,41 @@ function selectLocation(lat, lng, label) {
   }
 }
 
-// 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
+// 住所を取得する関数（逆ジオコーディング）
+async function getAddress(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ja`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.address ? data.display_name : "住所情報が見つかりません";
+  } catch (error) {
+    return "住所取得失敗";
+  }
+}
 
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
   
-  // 標高取得と表示
-  const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
+  const lat = e.latlng.lat;
+  const lng = e.latlng.lng;
+
+  // 1. パネルに座標を表示
+  document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
+
+  // 2. 標高取得と表示
+  const elevation = await getElevation(lat, lng);
   document.getElementById('elevationDisplay').innerText = elevation;
+
+  // 3. 住所取得と表示
+  document.getElementById('addressDisplay').innerText = "住所: 取得中...";
+  const address = await getAddress(lat, lng);
+  document.getElementById('addressDisplay').innerText = `住所: ${address}`;
   
-  // 目的地設定とルート表示
-  selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
+  // 4. 目的地設定とルート表示
+  selectLocation(lat, lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
 });
-
+  
 const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
 
