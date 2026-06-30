@@ -40,36 +40,56 @@ html, body { height: 100%; margin: 0; padding: 0; }
 /* 2. ハザード操作カード (修正部分) */
 #hazardMenuCard {
   position: absolute;
-  top: 75px; left: 10px; right: 10px;
+  top: 75px;
+  left: 10px;
+  right: 10px;
   z-index: 2000;
-  background: rgba(255, 255, 255, 0.95);
+
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
+
   border-radius: 16px;
-  padding: 8px 4px; /* パディングを少し抑える */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 0 0 1.5px #1a73e8;
-  display: flex;
-  justify-content: flex-start; /* 左寄せで均等配置 */
-  gap: 2px; /* ボタン間の隙間を一定にする */
-  overflow-x: auto; /* 万が一はみ出た場合に備える */
+  padding: 8px;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.1),
+    inset 0 0 0 1.5px #1a73e8;
+
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
 }
   
 .hazard-btn {
-  flex: 1; /* すべてのボタンが均等な幅になるように設定 */
-  min-width: 0; /* flexアイテムが文字幅で広がらないようにする */
-  border-radius: 8px; 
-  padding: 6px 2px;
-  background: #fff; 
-  color: #5f6368; 
-  font-size: 10px; /* 少し文字を小さくして収まりを良くする */
+  width: 100%;
+  min-width: 0;
+
+  border: 1.5px solid #d1d9e6;
+  border-radius: 12px;
+
+  background: #fff;
+  color: #5f6368;
+
+  padding: 8px 2px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 4px;
+
+  font-size: 11px;
   font-weight: bold;
-  cursor: pointer; 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  gap: 2px;
-  border: 1.5px solid #d1d9e6; 
+  line-height: 1.2;
+  text-align: center;
+
+  cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap; /* 改行を防ぐ */
+}
+
+.hazard-btn .material-icons-round{
+  font-size:22px;
 }
   
 .hazard-btn:active { transform: translateY(1px); box-shadow: 0 0 8px #1a73e8; border-color: #1a73e8; }
@@ -315,7 +335,7 @@ html, body { height: 100%; margin: 0; padding: 0; }
   <button class="hazard-btn" data-type="kikikuru_inundation">
   <span class="material-icons-round">emergency_share</span>浸水キキクル
 　</button>
-　　<button class="hazard-btn" data-type="kikikuru_landslide">
+　<button class="hazard-btn" data-type="kikikuru_landslide">
   <span class="material-icons-round">landscape</span>土砂キキクル
 </button>
 <button class="hazard-btn" data-type="kikikuru_flood">
