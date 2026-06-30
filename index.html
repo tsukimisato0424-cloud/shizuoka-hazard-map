@@ -576,7 +576,7 @@ async function getElevation(lat, lng) {
 }
   
 
-// 【高度なスコアリング機能付き】ハイブリッド検索
+// 【サジェスト視認性向上＋距離優先強化】ハイブリッド検索
 let searchMarkers = [];
 
 async function executeHybridSearch(query) {
@@ -612,7 +612,7 @@ async function executeHybridSearch(query) {
     // 2手目：OpenStreetMap (Nominatim) で補完
     const bounds = map.getBounds();
     const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
-    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=15&addressdetails=1&accept-language=ja`;
+    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=20&addressdetails=1&accept-language=ja`;
     
     const osmResponse = await fetch(osmUrl);
     const osmData = await osmResponse.json();
@@ -621,9 +621,9 @@ async function executeHybridSearch(query) {
       osmData.forEach(item => {
         const nameParts = item.display_name.split(',');
         const shopName = nameParts[0].trim();
-        const address = nameParts.slice(1).join(', ').trim();
+        // 英語表記や冗長な国名などを削り、日本国内の住所として見やすくクリーンアップ
+        const address = nameParts.slice(1).join(', ').replace(/日本, /g, '').replace(/, \d{3}-\d{4}/g, '').trim();
         
-        // 重複排除
         if (!rawResults.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.0005 && Math.abs(r.lon - parseFloat(item.lon)) < 0.0005)) {
           rawResults.push({
             lat: parseFloat(item.lat),
@@ -642,51 +642,51 @@ async function executeHybridSearch(query) {
       return;
     }
 
-    // 🌟【最重要】リランキング（並び替え）ロジックの実装
-    const baseLocation = currentLocation || map.getCenter(); // 現在地、なければマップの中心を基準にする
+    // 基準点の決定
+    const baseLocation = currentLocation || map.getCenter();
 
+    // 🌟スコアリングと距離バイアスの超強化
     rawResults.forEach(item => {
       let score = 0;
 
-      // ① 完全合致ボーナス
+      // ① 名前の一致度
       if (item.name === query) {
-        score += 10000;
+        score += 5000; // 完全一致
       } else if (item.name.includes(query)) {
-        score += 1000; // 部分一致ボーナス
+        score += 1000; // 部分一致
       }
 
-      // ② 主要施設キーワードボーナス（駅、市役所、本社、病院など）
+      // ② 主要施設キーワード
       const priorityKeywords = ["駅", "役所", "役場", "本社", "合同庁舎", "病院", "警察", "消防", "学校", "センター"];
       priorityKeywords.forEach(keyword => {
-        if (item.name.includes(keyword)) {
-          score += 500;
-        }
+        if (item.name.includes(keyword)) score += 500;
       });
 
-      // ③ 現在地（または基準点）からの距離減点（近ければ近いほどスコアが高くなる）
+      // ③ 【強化】現在地からの距離バイアス（近さを最優先にするため配点を大幅アップ）
       if (baseLocation) {
         const itemLatLng = L.latLng(item.lat, item.lon);
         const distanceMeter = baseLocation.distanceTo(itemLatLng);
         
-        // 10km以内であれば距離に応じたボーナス（近いほど高得点）
-        if (distanceMeter < 10000) {
-          score += (10000 - distanceMeter) * 0.5; 
+        // 半径30km以内なら距離ポイントを付与（近ければ近いほど数万点プラスされ、名前一致より距離が勝るように調整）
+        if (distanceMeter < 30000) {
+          score += (30000 - distanceMeter) * 2.0; 
         }
       }
 
       item.finalScore = score;
     });
 
-    // スコアの高い順にソート
+    // スコア順（＝事実上の現在地から近い順）にソート
     rawResults.sort((a, b) => b.finalScore - a.finalScore);
 
-    // 最大10件に絞って描画
+    // 上位10件を表示
     const displayResults = rawResults.slice(0, 10);
 
     // 3. マップへのピン留め & サジェストリスト生成
     displayResults.forEach(item => {
       const safeName = item.name.replace(/'/g, "\\'");
 
+      // マップ上のポップアップ
       const marker = L.marker([item.lat, item.lon]).addTo(map);
       marker.bindPopup(`
         <div style="font-family:sans-serif; min-width:180px;">
@@ -700,20 +700,26 @@ async function executeHybridSearch(query) {
       `);
       searchMarkers.push(marker);
 
-      // アイコンの選定（主要施設なら星マーク、それ以外はピン）
+      // 主要施設かコンビニ・一般店舗かでアイコンを変更
       const isPriority = ["駅", "役所", "本社", "病院"].some(k => item.name.includes(k));
-      const iconName = isPriority ? "stars" : "place";
-      const iconColor = isPriority ? "#fbbc05" : "#70757a";
+      const iconName = isPriority ? "stars" : "storefront";
+      const iconColor = isPriority ? "#fbbc05" : "#1a73e8";
 
+      // 🌟サジェストUIの改善：完全に2段に分けて可読性を担保
       const div = document.createElement('div');
       div.className = 'suggestion-item';
+      div.style.display = 'flex';
+      div.style.alignItems = 'center';
+      div.style.padding = '10px 14px';
+      
       div.innerHTML = `
-        <span class="material-icons-round" style="color:${iconColor}; font-size:18px; margin-right:10px;">${iconName}</span>
-        <div>
-          <strong style="display:block; color:#202124;">${item.name}</strong>
-          <small style="color:#5f6368; font-size:11px;">${item.address}</small>
+        <span class="material-icons-round" style="color:${iconColor}; font-size:20px; margin-right:12px; flex-shrink: 0;">${iconName}</span>
+        <div style="display: flex; flex-direction: column; overflow: hidden;">
+          <strong style="color:#202124; font-size:14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong>
+          <span style="color:#5f6368; font-size:11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.address}</span>
         </div>
       `;
+      
       div.onclick = () => { 
         selectLocation(item.lat, item.lon, item.name); 
         map.setView([item.lat, item.lon], 16);
@@ -724,17 +730,16 @@ async function executeHybridSearch(query) {
 
     suggestionsBox.style.display = 'block';
 
-    // 上位の結果が見えるように地図の表示範囲を調整
+    // 検索結果のピンが収まるように地図をフィット
     const group = L.featureGroup(searchMarkers);
     map.fitBounds(group.getBounds().pad(0.2));
 
   } catch (error) {
-    console.error("ハイブリッドスコアリング検索エラー:", error);
+    console.error("検索エラー:", error);
     suggestionsBox.innerHTML = `<div class="suggestion-item">検索中にエラーが発生しました</div>`;
     suggestionsBox.style.display = 'block';
   }
 }
-
   
   
 function selectLocation(lat, lng, label) {
