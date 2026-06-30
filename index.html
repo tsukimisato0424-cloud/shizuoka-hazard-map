@@ -167,12 +167,18 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: height 0.3s ease; /アニメーション追加　*/
+  transition: all 0.3s ease; /
+  overflow: hidden;
 }
 
-#statusContent {
-  overflow: hidden;
-  transition: all 0.3s ease;
+/* 最小化状態 */
+#statusPanel[data-state="minimized"] {
+  height: 40px;
+}
+#statusPanel[data-state="minimized"] #addressDisplay,
+#statusPanel[data-state="minimized"] #latLngDisplay,
+#statusPanel[data-state="minimized"] #statusContent {
+  display: none;
 }
 
 /* 上段：海抜とルートタイトルの行 */
@@ -331,7 +337,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <span class="material-icons-round">refresh</span>
 </button>
   
-<div id="statusPanel">
+<div id="statusPanel" data-state="full">
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="position:absolute; right:10px; top:10px; border:none; background:none; cursor:pointer;">
     <span class="material-icons-round" id="toggleIcon">expand_more</span>
   </button>
@@ -902,14 +908,17 @@ function toggleMenu() {
 }
 
 function toggleStatusPanel() {
-  const content = document.getElementById('statusContent');
+  const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('toggleIcon');
-  
-  if (content.style.display === 'none') {
-    content.style.display = 'block';
+  const isMinimized = panel.getAttribute('data-state') === 'minimized';
+
+  if (isMinimized) {
+    // 最小 → 全表示
+    panel.setAttribute('data-state', 'full');
     icon.innerText = 'expand_more';
   } else {
-    content.style.display = 'none';
+    // 全表示 → 最小
+    panel.setAttribute('data-state', 'minimized');
     icon.innerText = 'expand_less';
   }
 }
