@@ -444,24 +444,19 @@ const allFeatures = responses.flatMap(data => data.features || []);
 
         const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
             
-marker.on('click', async function() {
-  const elev = await getElevation(lat, lng);
-  this.setPopupContent(`
-    <div style="font-family:sans-serif; min-width:220px;">
-      <strong style="font-size:15px; display:block; margin-bottom:5px;">${name}</strong>
-      <div style="font-size:12px; color:#d35400; font-weight:bold;">海抜: ${elev}</div>
-      <div style="font-size:12px; color:#555;">住所: ${address}</div>
-      <div style="font-size:12px; margin-top:5px;">避難場所: ${isEmergencySite}</div>
-      ${hazardDisplay}
-      <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
-              style="margin-top:12px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer;">
-        ルート検索を開始
-      </button>
-    </div>
-  `);
-});
-
-shelterLayerGroup.addLayer(marker);
+        marker.bindPopup(`
+          <div style="font-family:sans-serif; min-width:220px;">
+            <strong style="font-size:15px; display:block; margin-bottom:5px;">${name}</strong>
+            <div style="font-size:12px; color:#555;">住所: ${address}</div>
+            <div style="font-size:12px; margin-top:5px;">避難場所: ${isEmergencySite}</div>
+            ${hazardDisplay}
+            <button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" 
+                    style="margin-top:12px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer;">
+              ルート検索を開始
+            </button>
+          </div>
+        `);
+        shelterLayerGroup.addLayer(marker);
       }
     });    
   } catch (err) {
@@ -811,17 +806,11 @@ async function executeHybridSearch(query) {
 }
 
   
-async function selectLocation(lat, lng, label) {
+function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
 
-  // 1. 標高を取得
-  const elevation = await getElevation(lat, lng);
-  // 2. パネルに表示
-  document.getElementById('elevationDisplay').innerText = elevation;
-
-  // 3. マーカーのポップアップにも表示させる
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}<br>海抜: ${elevation}`).openPopup();
+  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
   
   if (currentLocation) {
     drawRoute();
@@ -830,7 +819,7 @@ async function selectLocation(lat, lng, label) {
     map.setView(destination, 15);
   }
 
-  // 4. 避難所を表示
+  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
