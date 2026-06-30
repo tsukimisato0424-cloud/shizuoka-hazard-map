@@ -160,13 +160,27 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* 5. ステータスパネル（よりスリムに） */
+/* 5. ステータスパネル */
 #statusPanel {
-  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  position: absolute; bottom: 20px; z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  /* 変更部分: 右側へ収納 */
+  width: calc(100% - 20px);
+  right: -100%; 
+  transition: right 0.3s ease-out;
+}
+#statusPanel.open {
+  right: 10px;
+}
+/* 開閉ハンドル */
+#panelHandle {
+  position: absolute; left: -30px; top: 10px;
+  width: 30px; height: 50px; background: rgba(255,255,255,0.9);
+  border-radius: 8px 0 0 8px; display: flex; align-items: center; justify-content: center;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.1); cursor: pointer;
 }
 
 /* 上段：海抜とルートタイトルの行 */
@@ -318,9 +332,13 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <div id="statusPanel">
+  <div id="panelHandle" onclick="toggleStatusPanel()">
+    <span class="material-icons-round" id="handleIcon">chevron_left</span>
+  </div>
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
+  </div>
   </div>
   
   <div id="routeSection" class="route-section">
@@ -805,7 +823,6 @@ async function executeHybridSearch(query) {
   map.fitBounds(group.getBounds().pad(0.2));
 }
 
-  
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
 
@@ -819,24 +836,29 @@ function selectLocation(lat, lng, label) {
     map.setView(destination, 15);
   }
 
-  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
+  // 【避難所を表示する処理（既存）】
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
+  
+function toggleStatusPanel() {
+  const panel = document.getElementById('statusPanel');
+  const icon = document.getElementById('handleIcon');
+  panel.classList.toggle('open');
+  icon.innerText = 'chevron_right';
 }
-
+  
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
-  
-  // 標高取得と表示
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
-  
-  // 目的地設定とルート表示
+
   selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
+  document.getElementById('statusPanel').classList.add('open');
+  document.getElementById('handleIcon').innerText = 'chevron_right';
 });
 
 const searchInput = document.getElementById('customSearchInput');
