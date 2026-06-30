@@ -173,12 +173,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   /* 変更部分: 右側へ収納 */
   left: 10px;
   right: 10px;
-  transform: translateY(150%); 
+  transform: translateY(105%); 
   transition: transform 0.3s ease-out;
 }
   
 #statusPanel.open {
-  transition: translateY(0);
+  transform: translateY(0);
 }
   
 /* 開閉ハンドル */
@@ -852,7 +852,7 @@ function selectLocation(lat, lng, label) {
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('handleIcon');
   panel.classList.toggle('open');
-  icon.innerText = 'chevron_right';
+  icon.innerText = panel.classList.contains('open') ? 'chevron_right' ; 'chevron_left';
 }
   
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
