@@ -176,7 +176,15 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 }
 
 /* 上段：海抜とルートタイトルの行 */
-.status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  padding-right: 35px; /トグルボタンと被らないように右に余白を確保　*/
+}
+  
 #elevationDisplay { font-weight: bold; color: #d35400; }
 
 /* 下段：ルート情報の行 */
