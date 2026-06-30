@@ -162,19 +162,25 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   
 /* 5. ステータスパネル */
 #statusPanel {
-  position: absolute; bottom: 20px; z-index: 1500;
+  position: absolute;
+  bottom: 20px;
+  z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px; padding: 10px 14px;
+  border-radius: 12px;
+  padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
   /* 変更部分: 右側へ収納 */
-  width: calc(100% - 20px);
-  right: -100%; 
-  transition: right 0.3s ease-out;
-}
-#statusPanel.open {
+  left: 10px;
   right: 10px;
+  transform: translateY(150%); 
+  transition: transform 0.3s ease-out;
 }
+  
+#statusPanel.open {
+  transition: translateY(0);
+}
+  
 /* 開閉ハンドル */
 #panelHandle {
   position: absolute; left: -30px; top: 10px;
