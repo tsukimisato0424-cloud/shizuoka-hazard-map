@@ -37,7 +37,7 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .suggestion-item:hover { background-color: #f8f9fa; }
 .suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
-/* 2. ハザード操作カード */
+/* 2. ハザード操作カード (修正部分) */
 #hazardMenuCard {
   position: absolute;
   top: 75px; left: 10px; right: 10px;
@@ -45,22 +45,31 @@ html, body { height: 100%; margin: 0; padding: 0; }
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 16px;
-  padding: 8px 4px; /* 内部余白 */
+  padding: 8px 4px; /* パディングを少し抑える */
   box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 0 0 1.5px #1a73e8;
   display: flex;
-  justify-content: center;
-  gap: 2px; /* 間を詰める */
+  justify-content: flex-start; /* 左寄せで均等配置 */
+  gap: 2px; /* ボタン間の隙間を一定にする */
+  overflow-x: auto; /* 万が一はみ出た場合に備える */
 }
   
 .hazard-btn {
-  flex: 1; 
-  max-width: 14%; /* 横並びが崩れないようにボタン幅を制限 */
+  flex: 1; /* すべてのボタンが均等な幅になるように設定 */
+  min-width: 0; /* flexアイテムが文字幅で広がらないようにする */
   border-radius: 8px; 
   padding: 6px 2px;
-  background: #fff; color: #5f6368; font-size: 10px; font-weight: bold;
-  cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  border: 1.5px solid #d1d9e6; transition: all 0.2s ease;
-  white-space: nowrap; /* テキストの折り返し防止 */
+  background: #fff; 
+  color: #5f6368; 
+  font-size: 10px; /* 少し文字を小さくして収まりを良くする */
+  font-weight: bold;
+  cursor: pointer; 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 2px;
+  border: 1.5px solid #d1d9e6; 
+  transition: all 0.2s ease;
+  white-space: nowrap; /* 改行を防ぐ */
 }
   
 .hazard-btn:active { transform: translateY(1px); box-shadow: 0 0 8px #1a73e8; border-color: #1a73e8; }
