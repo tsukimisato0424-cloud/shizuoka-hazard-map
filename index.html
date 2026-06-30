@@ -167,20 +167,36 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: height 0.3s ease; /アニメーション追加　*/
+  display: flex;
+  align-items: center;
+  transition: width 0.3s ease;
+  overflow: hidden;
+  max-width: calc(100vw - 20px);
 }
 
 #statusContent {
-  overflow: hidden;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
 }
 
-/* 上段：海抜とルートタイトルの行 */
+/* トグルボタンの位置調整 */
+#toggleStatusBtn {
+  position: relative;
+  margin-right: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+  
+/* ヘッダーのレイアウト調整 */
 .status-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 15px;
   font-size: 13px;
   padding-right: 35px; /トグルボタンと被らないように右に余白を確保　*/
 }
@@ -877,16 +893,21 @@ function toggleMenu() {
   menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
 }
 
-function toggleStatusPanel() {
+  function toggleStatusPanel() {
+  const panel = document.getElementById('statusPanel');
   const content = document.getElementById('statusContent');
   const icon = document.getElementById('toggleIcon');
   
   if (content.style.display === 'none') {
-    content.style.display = 'block';
-    icon.innerText = 'expand_more';
+    // 展開
+    content.style.display = 'flex';
+    icon.innerText = 'chevron_left'; // たたむ向きを左に変更
+    panel.style.width = 'auto';
   } else {
+    // 格納
     content.style.display = 'none';
-    icon.innerText = 'expand_less';
+    icon.innerText = 'chevron_right'; // 開く向きを右に変更
+    panel.style.width = '50px'; // ボタンだけの幅にする
   }
 }
   
