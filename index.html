@@ -65,9 +65,15 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
 .hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
 .hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_inundation"] { background: linear-gradient(135deg, #a8c0ff, #3f2b96); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_landslide"] { background: linear-gradient(135deg, #f794a4, #d32f2f); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_flood"] { background: linear-gradient(135deg, #74ebd5, #007ba1); color: #fff; }
+.hazard-btn.active[data-type="kikikuru_inundation"] { 
+  background: linear-gradient(135deg, #a8c0ff, #3f2b96); 
+  color: #fff; 
+}
+.hazard-btn.active[data-type="kikikuru_landslide"] { 
+  background: linear-gradient(135deg, #f794a4, #d32f2f); color: #fff; 
+}
+.hazard-btn.active[data-type="kikikuru_flood"] { 
+  background: linear-gradient(135deg, #74ebd5, #007ba1); color: #fff; 
 }
  
 /* 3. 凡例 */
@@ -413,11 +419,6 @@ const layers = {
   kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
   kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
   kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
-};
-    opacity: 0.7, 
-    maxZoom: 17,
-    attribution: '気象庁：浸水キキクル'
-  })]
 };
 
 //透過表示用の色別標高図レイヤーを定義
