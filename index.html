@@ -575,7 +575,8 @@ async function getElevation(lat, lng) {
   }
 }
   
-// 🌟【精度大幅強化】国土地理院ジオコーディング＋Nominatimのハイブリッド検索
+
+// 【高度なスコアリング機能付き】ハイブリッド検索
 let searchMarkers = [];
 
 async function executeHybridSearch(query) {
@@ -588,30 +589,30 @@ async function executeHybridSearch(query) {
   searchMarkers = [];
 
   const encodedQuery = encodeURIComponent(query);
-  let results = [];
+  let rawResults = [];
 
   try {
-    // 1手目：日本の住所・地番に圧倒的に強い「国土地理院 地名・施設検索API」を正攻法で叩く
+    // 1手目：国土地理院 地名・施設検索API
     const gsiUrl = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodedQuery}`;
     const gsiResponse = await fetch(gsiUrl);
     const gsiData = await gsiResponse.json();
 
     if (gsiData && gsiData.length > 0) {
       gsiData.forEach(item => {
-        // 国土地理院のレスポンス形式を標準化
-        results.push({
+        rawResults.push({
           lat: item.geometry.coordinates[1],
           lon: item.geometry.coordinates[0],
           name: item.properties.title,
-          address: "国土地理院 登録位置データ"
+          address: "国土地理院 登録位置データ",
+          source: "gsi"
         });
       });
     }
 
-    // 2手目：施設名や店舗名、周辺バイアスをかけるためにOpenStreetMap(Nominatim)で補完検索
+    // 2手目：OpenStreetMap (Nominatim) で補完
     const bounds = map.getBounds();
-    const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`; // 画面外も探せるようbounded=0に調整
-    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=5&addressdetails=1&accept-language=ja`;
+    const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
+    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=15&addressdetails=1&accept-language=ja`;
     
     const osmResponse = await fetch(osmUrl);
     const osmData = await osmResponse.json();
@@ -622,31 +623,70 @@ async function executeHybridSearch(query) {
         const shopName = nameParts[0].trim();
         const address = nameParts.slice(1).join(', ').trim();
         
-        // 重複を簡易的に避ける
-        if (!results.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.001 && Math.abs(r.lon - parseFloat(item.lon)) < 0.001)) {
-          results.push({
+        // 重複排除
+        if (!rawResults.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.0005 && Math.abs(r.lon - parseFloat(item.lon)) < 0.0005)) {
+          rawResults.push({
             lat: parseFloat(item.lat),
             lon: parseFloat(item.lon),
             name: shopName,
-            address: address
+            address: address,
+            source: "osm"
           });
         }
       });
     }
 
-    // 結果がどちらからも得られなかった場合
-    if (results.length === 0) {
+    if (rawResults.length === 0) {
       suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>該当する場所が見つかりませんでした</div>`;
       suggestionsBox.style.display = 'block';
       return;
     }
 
-    // 3. 検索結果を地図上にマッピング & サジェストリストの生成
-    results.forEach(item => {
-      // JavaScriptのエラーを防ぐため、名称内のシングルクォーテーションをエスケープ
+    // 🌟【最重要】リランキング（並び替え）ロジックの実装
+    const baseLocation = currentLocation || map.getCenter(); // 現在地、なければマップの中心を基準にする
+
+    rawResults.forEach(item => {
+      let score = 0;
+
+      // ① 完全合致ボーナス
+      if (item.name === query) {
+        score += 10000;
+      } else if (item.name.includes(query)) {
+        score += 1000; // 部分一致ボーナス
+      }
+
+      // ② 主要施設キーワードボーナス（駅、市役所、本社、病院など）
+      const priorityKeywords = ["駅", "役所", "役場", "本社", "合同庁舎", "病院", "警察", "消防", "学校", "センター"];
+      priorityKeywords.forEach(keyword => {
+        if (item.name.includes(keyword)) {
+          score += 500;
+        }
+      });
+
+      // ③ 現在地（または基準点）からの距離減点（近ければ近いほどスコアが高くなる）
+      if (baseLocation) {
+        const itemLatLng = L.latLng(item.lat, item.lon);
+        const distanceMeter = baseLocation.distanceTo(itemLatLng);
+        
+        // 10km以内であれば距離に応じたボーナス（近いほど高得点）
+        if (distanceMeter < 10000) {
+          score += (10000 - distanceMeter) * 0.5; 
+        }
+      }
+
+      item.finalScore = score;
+    });
+
+    // スコアの高い順にソート
+    rawResults.sort((a, b) => b.finalScore - a.finalScore);
+
+    // 最大10件に絞って描画
+    const displayResults = rawResults.slice(0, 10);
+
+    // 3. マップへのピン留め & サジェストリスト生成
+    displayResults.forEach(item => {
       const safeName = item.name.replace(/'/g, "\\'");
 
-      // 地図上にピン（マーカー）を設置
       const marker = L.marker([item.lat, item.lon]).addTo(map);
       marker.bindPopup(`
         <div style="font-family:sans-serif; min-width:180px;">
@@ -660,11 +700,15 @@ async function executeHybridSearch(query) {
       `);
       searchMarkers.push(marker);
 
-      // 検索バー下のサジェスト一覧に項目を追加
+      // アイコンの選定（主要施設なら星マーク、それ以外はピン）
+      const isPriority = ["駅", "役所", "本社", "病院"].some(k => item.name.includes(k));
+      const iconName = isPriority ? "stars" : "place";
+      const iconColor = isPriority ? "#fbbc05" : "#70757a";
+
       const div = document.createElement('div');
       div.className = 'suggestion-item';
       div.innerHTML = `
-        <span class="material-icons-round" style="color:#70757a; font-size:18px; margin-right:10px;">place</span>
+        <span class="material-icons-round" style="color:${iconColor}; font-size:18px; margin-right:10px;">${iconName}</span>
         <div>
           <strong style="display:block; color:#202124;">${item.name}</strong>
           <small style="color:#5f6368; font-size:11px;">${item.address}</small>
@@ -680,16 +724,18 @@ async function executeHybridSearch(query) {
 
     suggestionsBox.style.display = 'block';
 
-    // 検索結果が収まるように地図の表示範囲を自動調整
+    // 上位の結果が見えるように地図の表示範囲を調整
     const group = L.featureGroup(searchMarkers);
     map.fitBounds(group.getBounds().pad(0.2));
 
   } catch (error) {
-    console.error("ハイブリッド検索エラー:", error);
+    console.error("ハイブリッドスコアリング検索エラー:", error);
     suggestionsBox.innerHTML = `<div class="suggestion-item">検索中にエラーが発生しました</div>`;
     suggestionsBox.style.display = 'block';
   }
 }
+
+  
   
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
