@@ -129,35 +129,21 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   border-bottom: 1px solid #f1f3f4;
 }
 .map-type-item:hover { background: #f8f9fa; }  
-/* 4. フローティング現在地ボタン */
-#locationBtn {
-  position: absolute; right: 16px; bottom: 180px; z-index: 1500;
-  width: 50px; height: 50px; border: none; border-radius: 50%;
-  background: #ffffff; color: #1a73e8; cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
-}
-#locationBtn .material-icons-round { font-size: 24px; }
 
-#refreshBtn {
-  position: absolute;
-  right: 16px;
-  bottom: 120px;   /* 現在地ボタンより60px下 */
-  z-index: 1500;
-  width: 50px;
-  height: 50px;
-  border: none;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #1a73e8;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* 新しいボタン用スタイル */
+.panel-icon-btn {
+  width: 36px; height: 36px; border: none; border-radius: 50%;
+  background: #f8f9fa; color: #1a73e8; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+.panel-icon-btn:hover { background: #e8f0fe; }
 
-#refreshBtn .material-icons-round {
-  font-size: 24px;
+/* パネル上のメニュー位置調整 */
+#mapTypeMenu {
+  display: none; position: absolute; bottom: 85px; right: 10px;
+  background: white; border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 120px; z-index: 2000;
 }
   
 /* 5. ステータスパネル（よりスリムに） */
@@ -185,18 +171,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   
 /* 避難所レイヤー用最前面ペイン */
 .leaflet-shelter-pane { z-index: 400 !important; }
-
-/* --- 地図タイプ切り替えメニューのスタイル --- */
-#mapTypeContainer {
-  position: absolute; right: 16px; bottom: 240px; z-index: 1500;
-  width: 50px;
-}
-
-#mapTypeBtn {
-  width: 50px; height: 50px; border: none; border-radius: 50%;
-  background: #ffffff; color: #1a73e8; cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
-}
 
 #mapTypeMenu {
   display: none; /* 初期状態は非表示 */
@@ -300,22 +274,45 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </details>
 </div>
 
-<div id="mapTypeContainer">
+<div id="statusPanel">
   <div id="mapTypeMenu">
     <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
     <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
     <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
   </div>
-  <button id="mapTypeBtn" onclick="toggleMenu()">
-    <span class="material-icons-round">layers</span>
-  </button>
+
+  <div class="status-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
+      <span style="margin-left:10px;">海抜: <span id="elevationDisplay">-- m</span></span>
+    </div>
+    
+    <div id="controlsGroup" style="display:flex; gap:8px;">
+      <button id="mapTypeBtn" onclick="toggleMenu()" class="panel-icon-btn"><span class="material-icons-round">layers</span></button>
+      <button id="locationBtn" class="panel-icon-btn"><span class="material-icons-round">my_location</span></button>
+      <button id="refreshBtn" class="panel-icon-btn"><span class="material-icons-round">refresh</span></button>
+    </div>
+  </div>
+  
+  <div id="routeSection" class="route-section">
+    <div class="route-modes">
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="walkTime">-- 分</span>
+          <span class="route-dist" id="walkDist">-- km</span>
+        </div>
+      </div>
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="carTime">-- 分</span>
+          <span class="route-dist" id="carDist">-- km</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
-
-<button id="locationBtn"><span class="material-icons-round">my_location</span></button>
-
-<button id="refreshBtn">
-  <span class="material-icons-round">refresh</span>
-</button>
   
 <div id="statusPanel">
   <div class="status-header">
