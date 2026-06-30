@@ -167,36 +167,20 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  transition: width 0.3s ease;
-  overflow: hidden;
-  max-width: calc(100vw - 20px);
+  transition: height 0.3s ease; /アニメーション追加　*/
 }
 
 #statusContent {
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  transition: opacity 0.3s ease;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-/* トグルボタンの位置調整 */
-#toggleStatusBtn {
-  position: relative;
-  margin-right: 8px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-}
-  
-/* ヘッダーのレイアウト調整 */
+/* 上段：海抜とルートタイトルの行 */
 .status-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 15px;
+  margin-bottom: 8px;
   font-size: 13px;
   padding-right: 35px; /トグルボタンと被らないように右に余白を確保　*/
 }
@@ -348,8 +332,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <div id="statusPanel">
-  <button id="toggleStatusBtn" onclick="toggleStatusPanel()" ...>
-    <span class="material-icons-round" id="toggleIcon">chevron_left</span>
+  <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="position:absolute; right:10px; top:10px; border:none; background:none; cursor:pointer;">
+    <span class="material-icons-round" id="toggleIcon">expand_more</span>
   </button>
   
   <div class="status-header">
@@ -893,21 +877,16 @@ function toggleMenu() {
   menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
 }
 
-  function toggleStatusPanel() {
-  const panel = document.getElementById('statusPanel');
+function toggleStatusPanel() {
   const content = document.getElementById('statusContent');
   const icon = document.getElementById('toggleIcon');
   
   if (content.style.display === 'none') {
-    // 展開
-    content.style.display = 'flex';
-    icon.innerText = 'chevron_left'; // たたむ向きを左に変更
-    panel.style.width = 'auto';
+    content.style.display = 'block';
+    icon.innerText = 'expand_more';
   } else {
-    // 格納
     content.style.display = 'none';
-    icon.innerText = 'chevron_right'; // 開く向きを右に変更
-    panel.style.width = '50px'; // ボタンだけの幅にする
+    icon.innerText = 'expand_less';
   }
 }
   
