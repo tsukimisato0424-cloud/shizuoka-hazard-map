@@ -167,6 +167,12 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   backdrop-filter: blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  transition: height 0.3s ease; /アニメーション追加　*/
+}
+
+#statusContent {
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
 /* 上段：海抜とルートタイトルの行 */
@@ -318,25 +324,31 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <div id="statusPanel">
+  <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="position:absolute; right:10px; top:10px; border:none; background:none; cursor:pointer;">
+    <span class="material-icons-round" id="toggleIcon">expand_more</span>
+  </button>
+  
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
   
-  <div id="routeSection" class="route-section">
-    <div class="route-modes">
-      <div class="route-mode-box">
-        <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
-        <div class="route-text-data">
-          <span class="route-time" id="walkTime">-- 分</span>
-          <span class="route-dist" id="walkDist">-- km</span>
+  <div id="statusContent">
+    <div id="routeSection" class="route-section">
+      <div class="route-modes">
+        <div class="route-mode-box">
+          <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+          <div class="route-text-data">
+            <span class="route-time" id="walkTime">-- 分</span>
+            <span class="route-dist" id="walkDist">-- km</span>
+          </div>
         </div>
-      </div>
-      <div class="route-mode-box">
-        <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
-        <div class="route-text-data">
-          <span class="route-time" id="carTime">-- 分</span>
-          <span class="route-dist" id="carDist">-- km</span>
+        <div class="route-mode-box">
+          <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
+          <div class="route-text-data">
+            <span class="route-time" id="carTime">-- 分</span>
+            <span class="route-dist" id="carDist">-- km</span>
+          </div>
         </div>
       </div>
     </div>
@@ -859,6 +871,19 @@ function toggleMenu() {
   menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
 }
 
+function toggleStatusPanel() {
+  const content = document.getElementById('statusContent');
+  const icon = document.getElementById('toggleIcon');
+  
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    icon.innerText = 'expand_more';
+  } else {
+    content.style.display = 'none';
+    icon.innerText = 'expand_less';
+  }
+}
+  
 function changeMap(type) {
   // 現在表示中のベースマップを一旦消す
   if (currentBaseLayer) {
