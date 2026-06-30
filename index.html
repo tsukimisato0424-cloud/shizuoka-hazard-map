@@ -160,37 +160,13 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* 5. ステータスパネル */
+/* 5. ステータスパネル（よりスリムに） */
 #statusPanel {
-  position: absolute;
-  bottom: 10px;
-  z-index: 9999;
-  background: rgba(255, 255, 255, 0.98);
+  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  /* 変更部分: 右側へ収納 */
-  transform: translateY(110%); 
-  transition: transform 0.3s ease-out;
-  pointer-events: auto;
-}
-  
-#statusPanel.open {
-  transform: translateY(0);
-}
-  
-/* 開閉ハンドル */
-#panelHandle {
-  position: absolute;
-  left: 10px;
-  top: -40px;
-  width: 50px; height: 40px;
-  background: rgba(255,255,255,0.9);
-  border-radius: 8px 8px 0 0;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-  cursor: pointer;
+  border-radius: 12px; padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 /* 上段：海抜とルートタイトルの行 */
@@ -342,10 +318,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </button>
   
 <div id="statusPanel">
-  <div id="panelHandle" onclick="toggleStatusPanel()">
-    <span class="material-icons-round" id="handleIcon">expand_less</span>
-  </div>
-  
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
@@ -369,14 +341,16 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       </div>
     </div>
   </div>
-</div> ```
-  
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
 // 静岡駅周辺を初期位置に設定
 const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 // 複数の地図を扱うための設定
 const baseLayers = {
@@ -831,6 +805,7 @@ async function executeHybridSearch(query) {
   map.fitBounds(group.getBounds().pad(0.2));
 }
 
+  
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
 
@@ -844,33 +819,24 @@ function selectLocation(lat, lng, label) {
     map.setView(destination, 15);
   }
 
-  // 【避難所を表示する処理（既存）】
+  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
-
-    document.getElementById('statusPanel').classList.add('open');
-  document.getElementById('handleIcon').innerText = 'chevron_right';
-  }
-  
-  function toggleStatusPanel() {
-  const panel = document.getElementById('statusPanel');
-  const icon = document.getElementById('handleIcon');
-  panel.classList.toggle('open');
-  icon.innerText = panel.classList.contains('open') ? 'chevron_right' ; 'chevron_left';
 }
-  
+
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
+  
+  // 標高取得と表示
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
-
+  
+  // 目的地設定とルート表示
   selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
-  document.getElementById('statusPanel').classList.add('open');
-  document.getElementById('handleIcon').innerText = 'chevron_right';
 });
 
 const searchInput = document.getElementById('customSearchInput');
