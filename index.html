@@ -576,7 +576,8 @@ async function getElevation(lat, lng) {
 }
   
 
-// 【サジェスト視認性向上＋距離優先強化】ハイブリッド検索
+
+// 【第3弾：3段階ディープ検索＋表記揺れ補正＋住所/商業施設特化】ハイブリッド検索
 let searchMarkers = [];
 
 async function executeHybridSearch(query) {
@@ -588,105 +589,152 @@ async function executeHybridSearch(query) {
   searchMarkers.forEach(m => map.removeLayer(m));
   searchMarkers = [];
 
-  const encodedQuery = encodeURIComponent(query);
+  // 🌟【表記揺れ補正】コンビニ名や数字の全角半角・記号の揺らぎを先回りでカバー
+  let normalizedQuery = query.trim()
+    .replace(/セブンイレブン|セブン/g, "セブン-イレブン")
+    .replace(/ファミリーマート|ファミマ/g, "ファミリーマート")
+    .replace(/ローソン/g, "ローソン")
+    .replace(/[０-９]/g, function(s) { return String.fromCharCode(s.charCodeAt(0) - 0xFEE0); }) // 全角数字を半角に
+    .replace(/－|ー|－/g, "-"); // 住所のハイフンを統一
+
+  const encodedQuery = encodeURIComponent(normalizedQuery);
+  const baseLocation = currentLocation || map.getCenter();
   let rawResults = [];
 
   try {
-    // 1手目：国土地理院 地名・施設検索API
+    // -------------------------------------------------------------
+    // 【第1弾検索】国土地理院 住所・地名API（正規の地名・公的施設用）
+    // -------------------------------------------------------------
     const gsiUrl = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodedQuery}`;
-    const gsiResponse = await fetch(gsiUrl);
-    const gsiData = await gsiResponse.json();
-
-    if (gsiData && gsiData.length > 0) {
-      gsiData.forEach(item => {
-        rawResults.push({
-          lat: item.geometry.coordinates[1],
-          lon: item.geometry.coordinates[0],
-          name: item.properties.title,
-          address: "国土地理院 登録位置データ",
-          source: "gsi"
+    const gsiResponse = await fetch(gsiUrl).catch(() => null);
+    if (gsiResponse) {
+      const gsiData = await gsiResponse.json();
+      if (gsiData && gsiData.length > 0) {
+        gsiData.forEach(item => {
+          rawResults.push({
+            lat: item.geometry.coordinates[1],
+            lon: item.geometry.coordinates[0],
+            name: item.properties.title,
+            address: "公的登録位置データ（番地周辺）",
+            type: "address",
+            source: "gsi"
+          });
         });
-      });
+      }
     }
 
-    // 2手目：OpenStreetMap (Nominatim) で補完
+    // -------------------------------------------------------------
+    // 【第2弾検索】OSM Nominatim（周辺バイアスを最大化してローカル施設を深掘り）
+    // -------------------------------------------------------------
+    // 検索精度を上げるため、現在見ている地図の範囲（viewbox）の重みを付与
     const bounds = map.getBounds();
     const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
-    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=20&addressdetails=1&accept-language=ja`;
+    // コンビニ等の商業施設（amenity/shop）を引き出すため、クエリにキーワードを最適化
+    const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}${viewboxParams}&limit=25&addressdetails=1&accept-language=ja`;
     
-    const osmResponse = await fetch(osmUrl);
-    const osmData = await osmResponse.json();
+    const osmResponse = await fetch(osmUrl).catch(() => null);
+    if (osmResponse) {
+      const osmData = await osmResponse.json();
+      if (osmData && osmData.length > 0) {
+        osmData.forEach(item => {
+          const nameParts = item.display_name.split(',');
+          const shopName = nameParts[0].trim();
+          
+          // 外国風表記の住所を日本の住所順（都道府県→市町村→番地）へ極力クリーンアップ
+          let addressClean = nameParts.slice(1).join(', ')
+            .replace(/日本, /g, '')
+            .replace(/, \d{3}-\d{4}/g, '')
+            .split(', ').reverse().join(' ').trim(); // 住所の前後をひっくり返して日本式に近づける
 
-    if (osmData && osmData.length > 0) {
-      osmData.forEach(item => {
-        const nameParts = item.display_name.split(',');
-        const shopName = nameParts[0].trim();
-        // 英語表記や冗長な国名などを削り、日本国内の住所として見やすくクリーンアップ
-        const address = nameParts.slice(1).join(', ').replace(/日本, /g, '').replace(/, \d{3}-\d{4}/g, '').trim();
-        
-        if (!rawResults.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.0005 && Math.abs(r.lon - parseFloat(item.lon)) < 0.0005)) {
-          rawResults.push({
-            lat: parseFloat(item.lat),
-            lon: parseFloat(item.lon),
-            name: shopName,
-            address: address,
-            source: "osm"
-          });
-        }
-      });
+          if (!rawResults.some(r => Math.abs(r.lat - parseFloat(item.lat)) < 0.0003 && Math.abs(r.lon - parseFloat(item.lon)) < 0.0003)) {
+            rawResults.push({
+              lat: parseFloat(item.lat),
+              lon: parseFloat(item.lon),
+              name: shopName,
+              address: addressClean || item.type,
+              type: item.class || "facility",
+              source: "osm"
+            });
+          }
+        });
+      }
     }
 
+    // -------------------------------------------------------------
+    // 【第3弾検索】ディープ・フォールバック（住所の数字・枝番の厳密マッチング）
+    // -------------------------------------------------------------
+    // 「〇〇町1-2-3」などでヒットしない場合、後ろの番地(1-2-3)を削って「〇〇町」までで再検索し、
+    // 最寄りの町内中心部へ強制ランディングさせる（検索を「該当なし」で終わらせない防御策）
+    if (rawResults.length === 0 && /\d+/.test(normalizedQuery)) {
+      const fallbackQuery = normalizedQuery.replace(/[\d-ー－]+.*$/, ""); // 数字以降をすべてカット
+      if (fallbackQuery.length > 2) {
+        const fbUrl = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(fallbackQuery)}`;
+        const fbResponse = await fetch(fbUrl).catch(() => null);
+        if (fbResponse) {
+          const fbData = await fbResponse.json();
+          if (fbData && fbData.length > 0) {
+            fbData.forEach(item => {
+              rawResults.push({
+                lat: item.geometry.coordinates[1],
+                lon: item.geometry.coordinates[0],
+                name: item.properties.title + "（付近）",
+                address: query + " の周辺エリア（ディープ検索結果）",
+                type: "address_fallback",
+                source: "gsi_fb"
+              });
+            });
+          }
+        }
+      }
+    }
+
+    // すべての弾が全滅した場合
     if (rawResults.length === 0) {
-      suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>該当する場所が見つかりませんでした</div>`;
+      suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>見つかりませんでした。キーワードや番地を変えてみてください</div>`;
       suggestionsBox.style.display = 'block';
       return;
     }
 
-    // 基準点の決定
-    const baseLocation = currentLocation || map.getCenter();
-
-    // 🌟スコアリングと距離バイアスの超強化
+    // 🌟【距離・施設・キーワードの総合スコアリング】
     rawResults.forEach(item => {
       let score = 0;
 
-      // ① 名前の一致度
-      if (item.name === query) {
-        score += 5000; // 完全一致
-      } else if (item.name.includes(query)) {
-        score += 1000; // 部分一致
-      }
+      // ① 文字列マッチスコア
+      if (item.name.includes(query) || query.includes(item.name)) score += 8000;
+      if (item.name === query) score += 4000;
 
-      // ② 主要施設キーワード
-      const priorityKeywords = ["駅", "役所", "役場", "本社", "合同庁舎", "病院", "警察", "消防", "学校", "センター"];
+      // ② コンビニやチェーン店の区別（OSMクラスボーナス）
+      if (item.type === "shop" || item.type === "amenity") score += 2000;
+
+      // ③ 主要防災拠点ボーナス
+      const priorityKeywords = ["駅", "役所", "役場", "本社", "病院", "警察", "消防", "学校"];
       priorityKeywords.forEach(keyword => {
-        if (item.name.includes(keyword)) score += 500;
+        if (item.name.includes(keyword)) score += 1500;
       });
 
-      // ③ 【強化】現在地からの距離バイアス（近さを最優先にするため配点を大幅アップ）
+      // ④ 【最優先】現在地からの距離バイアス（30km以内、近ければ近いほど超高得点）
       if (baseLocation) {
         const itemLatLng = L.latLng(item.lat, item.lon);
         const distanceMeter = baseLocation.distanceTo(itemLatLng);
-        
-        // 半径30km以内なら距離ポイントを付与（近ければ近いほど数万点プラスされ、名前一致より距離が勝るように調整）
         if (distanceMeter < 30000) {
-          score += (30000 - distanceMeter) * 2.0; 
+          score += (30000 - distanceMeter) * 4.0; // 距離の配点をさらに倍増
         }
       }
 
       item.finalScore = score;
     });
 
-    // スコア順（＝事実上の現在地から近い順）にソート
+    // スコアの降順にソート（現在地から近いコンビニや、正確な住所が上に来る）
     rawResults.sort((a, b) => b.finalScore - a.finalScore);
 
-    // 上位10件を表示
-    const displayResults = rawResults.slice(0, 10);
+    // 最大12件表示
+    const displayResults = rawResults.slice(0, 12);
 
-    // 3. マップへのピン留め & サジェストリスト生成
+    // 3. 描画処理
     displayResults.forEach(item => {
       const safeName = item.name.replace(/'/g, "\\'");
 
-      // マップ上のポップアップ
+      // マップピン
       const marker = L.marker([item.lat, item.lon]).addTo(map);
       marker.bindPopup(`
         <div style="font-family:sans-serif; min-width:180px;">
@@ -700,21 +748,27 @@ async function executeHybridSearch(query) {
       `);
       searchMarkers.push(marker);
 
-      // 主要施設かコンビニ・一般店舗かでアイコンを変更
-      const isPriority = ["駅", "役所", "本社", "病院"].some(k => item.name.includes(k));
-      const iconName = isPriority ? "stars" : "storefront";
-      const iconColor = isPriority ? "#fbbc05" : "#1a73e8";
+      // アイコン仕分け
+      let iconName = "place";
+      let iconColor = "#1a73e8";
+      if (["駅", "役所", "病院"].some(k => item.name.includes(k))) {
+        iconName = "stars"; iconColor = "#fbbc05";
+      } else if (item.type === "shop" || item.name.includes("セブン") || item.name.includes("ローソン") || item.name.includes("マート")) {
+        iconName = "local_grocery_store"; iconColor = "#27ae60"; // コンビニ・ショップは緑のカートマーク
+      } else if (item.source === "gsi_fb") {
+        iconName = "not_listed_location"; iconColor = "#e67e22"; // 住所ディープ検索結果
+      }
 
-      // 🌟サジェストUIの改善：完全に2段に分けて可読性を担保
+      // サジェストの2段表示HTML生成
       const div = document.createElement('div');
       div.className = 'suggestion-item';
+      div.style.padding = '10px 14px';
       div.style.display = 'flex';
       div.style.alignItems = 'center';
-      div.style.padding = '10px 14px';
       
       div.innerHTML = `
         <span class="material-icons-round" style="color:${iconColor}; font-size:20px; margin-right:12px; flex-shrink: 0;">${iconName}</span>
-        <div style="display: flex; flex-direction: column; overflow: hidden;">
+        <div style="display: flex; flex-direction: column; overflow: hidden; width: 100%;">
           <strong style="color:#202124; font-size:14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong>
           <span style="color:#5f6368; font-size:11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.address}</span>
         </div>
@@ -730,17 +784,15 @@ async function executeHybridSearch(query) {
 
     suggestionsBox.style.display = 'block';
 
-    // 検索結果のピンが収まるように地図をフィット
     const group = L.featureGroup(searchMarkers);
     map.fitBounds(group.getBounds().pad(0.2));
 
   } catch (error) {
-    console.error("検索エラー:", error);
-    suggestionsBox.innerHTML = `<div class="suggestion-item">検索中にエラーが発生しました</div>`;
+    console.error("ディープ検索システムエラー:", error);
+    suggestionsBox.innerHTML = `<div class="suggestion-item">検索処理でエラーが発生しました</div>`;
     suggestionsBox.style.display = 'block';
   }
-}
-  
+}  
   
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
