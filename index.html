@@ -235,68 +235,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 /* ルート検索の不要な吹き出しを隠す */
 .leaflet-routing-container { display: none !important; }
 .leaflet-marker-pane .leaflet-popup { display: none !important; }
-
-/* ==========================================
-   既存のデザインを上書きして立体感を出す設定
-   ========================================== */
-
-/* 検索バーを立体的に */
-.search-container {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
-  border: 1px solid #dcdcdc !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s ease !important;
-}
-.search-container:focus-within {
-  border-color: #1a73e8 !important;
-  box-shadow: 0 4px 24px rgba(26, 115, 232, 0.15), 0 1px 4px rgba(26, 115, 232, 0.1) !important;
-}
-
-/* サジェストリストの陰影 */
-#customSuggestions {
-  background: #ffffff !important;
-  border: 1px solid #e0e0e0 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
-}
-.suggestion-item:hover {
-  background: linear-gradient(90deg, #f1f3f4 0%, #ffffff 100%) !important;
-}
-
-/* ハザードカードを立体的に */
-.hazard-card, .card {
-  background: linear-gradient(180deg, #ffffff 0%, #fcfcfc 100%) !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
-  transition: all 0.2s ease !important;
-}
-.hazard-card:hover, .card:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04) !important;
-}
-
-/* 各種ボタンをぷっくりした立体ボタンに */
-.map-toggle-btn, .location-btn, .refresh-btn, .control-btn {
-  background: linear-gradient(180deg, #ffffff 0%, #f1f3f4 100%) !important;
-  color: #3c4043 !important;
-  border: 1px solid #c4c7c5 !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
-  transition: all 0.15s ease !important;
-}
-.map-toggle-btn:hover, .location-btn:hover, .refresh-btn:hover, .control-btn:hover {
-  background: linear-gradient(180deg, #f8f9fa 0%, #e8eaed 100%) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
-}
-.map-toggle-btn:active, .location-btn:active, .refresh-btn:active, .control-btn:active {
-  background: #e8eaed !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(1px) !important;
-}
-/* ボタンが選択されている状態 */
-.map-toggle-btn.active, .control-btn.active {
-  background: linear-gradient(180deg, #1a73e8 0%, #1557b0 100%) !important;
-  color: #ffffff !important;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2), 0 2px 4px rgba(26, 115, 232, 0.3) !important;
-}
   
 </style>
 </head>
