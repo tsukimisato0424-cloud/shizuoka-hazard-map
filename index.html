@@ -262,8 +262,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .leaflet-marker-pane .leaflet-popup { display: none !important; }
   
 </style>
-</head>
-
+</head> 
+<body>
 <div id="statusPanel" class="open">
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
@@ -293,8 +293,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   <span class="material-icons-round">info</span>
 </button>
   
-<body>
-
 <div id="map"></div>
 
 <div id="searchContainer">
@@ -365,10 +363,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
     <span class="material-icons-round">layers</span>
   </button>
 </div>
-
-<button id="openStatusBtn" style="position:absolute; right:16px; bottom:20px; z-index:1400; width:50px; height:50px; border-radius:50%; background:#fff; color:#1a73e8; border:none; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center;">
-  <span class="material-icons-round">info</span>
-</button>
   
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
@@ -791,6 +785,9 @@ document.getElementById("refreshBtn").onclick = () => {
   // trueを指定するとキャッシュを無視してサーバーから再取得します
   location.reload(true);
 };
+
+//　ページ読み込み時にパネルを確実に開いた状態にする
+openPanel();
   
 </script>
 </body>
