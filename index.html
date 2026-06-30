@@ -811,14 +811,17 @@ async function executeHybridSearch(query) {
 }
 
   
-function selectLocation(lat, lng, label) {
+async function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
 
-  const elebation = await getElevation(lat, lng) {
-  document.getElementById('elevationDisplay').innerText = elevation:
+  // 1. 標高を取得
+  const elevation = await getElevation(lat, lng);
+  // 2. パネルに表示
+  document.getElementById('elevationDisplay').innerText = elevation;
 
+  // 3. マーカーのポップアップにも表示させる
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}<br>海抜: ${elevation}`).openPopup();
   
   if (currentLocation) {
     drawRoute();
@@ -827,7 +830,7 @@ function selectLocation(lat, lng, label) {
     map.setView(destination, 15);
   }
 
-  // 【機能追加】検索した目的地が決定した時、その場所を中心に避難所を即時展開
+  // 4. 避難所を表示
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
