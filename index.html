@@ -160,47 +160,15 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   font-size: 24px;
 }
   
-/* ステータスパネル */
+/* 5. ステータスパネル（よりスリムに） */
 #statusPanel {
-  position: absolute; 
-  bottom: 20px;
-  right: 10px;
-  width: 300px;
+  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 10px 14px;
+  border-radius: 12px; padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 9999 !important;
-  transform: translateX(0); /*　表示状態　*/
-}
-#statusPanel.closed {
-  transform: translateX(110%);
 }
 
-/* infoボタン */
-#openStatusBtn {
-  position: absolute; right: 16px; bottom: 20px;
-  width: 50px; height: 90px;
-  border-radius: 12px; border: none;
-  background: #fff; color: #1a73e8;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  cursor: pointer; z-index: 2000;
-  display: flex; align-items: center; justify-content: center;
-}
-
-/* パネルが閉じている時だけボタンを表示 */
-#statusPanel:not([open]) ~ #openStatusBtn {
-  opacity: 1;
-  pointer-events: auto;
-}
-  
-/* 畳んだ時は右側にスライドして隠す */
-#statusPanel:not([open]) {
-  transform: translateX(110%);
-}
-  
 /* 上段：海抜とルートタイトルの行 */
 .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
 #elevationDisplay { font-weight: bold; color: #d35400; }
@@ -269,37 +237,9 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .leaflet-marker-pane .leaflet-popup { display: none !important; }
   
 </style>
-</head> 
+</head>
 <body>
-<div id="statusPanel">
-  <div class="status-header">
-    <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
-    <span>海抜: <span id="elevationDisplay">-- m</span></span>
-  </div>
-  <div id="routeSection" class="route-section">
-    <div class="route-modes">
-      <div class="route-mode-box">
-        <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
-        <div class="route-text-data">
-          <span class="route-time" id="walkTime">-- 分</span>
-          <span class="route-dist" id="walkDist">-- km</span>
-        </div>
-      </div>
-      <div class="route-mode-box">
-        <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
-        <div class="route-text-data">
-          <span class="route-time" id="carTime">-- 分</span>
-          <span class="route-dist" id="carDist">-- km</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
-<button id="openStatusBtn">
-  <span class="material-icons-round">info</span>
-</button>
-  
 <div id="map"></div>
 
 <div id="searchContainer">
@@ -370,22 +310,49 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
     <span class="material-icons-round">layers</span>
   </button>
 </div>
-  
+
 <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
 
 <button id="refreshBtn">
   <span class="material-icons-round">refresh</span>
 </button>
   
+<div id="statusPanel">
+  <div class="status-header">
+    <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
+    <span>海抜: <span id="elevationDisplay">-- m</span></span>
+  </div>
+  
+  <div id="routeSection" class="route-section">
+    <div class="route-modes">
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="walkTime">-- 分</span>
+          <span class="route-dist" id="walkDist">-- km</span>
+        </div>
+      </div>
+      <div class="route-mode-box">
+        <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
+        <div class="route-text-data">
+          <span class="route-time" id="carTime">-- 分</span>
+          <span class="route-dist" id="carDist">-- km</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
 // 静岡駅周辺を初期位置に設定
-// zoomControl: false にすることでデフォルトのボタンを非表示にします
 const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
 
-  // 複数の地図を扱うための設定
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// 複数の地図を扱うための設定
 const baseLayers = {
   pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
   ort: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg', {attribution: ' © 国土地理院' }),
@@ -535,15 +502,9 @@ document.getElementById('legendDetails').addEventListener('toggle', function(e) 
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
-// 現在地ボタンを押した時に呼ばれる関数
 function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(async pos => {
+  navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    
-    // 現在地取得後に海抜を取得して表示
-    const elevation = await getElevation(currentLocation.lat, currentLocation.lng);
-    document.getElementById('elevationDisplay').innerText = elevation;
-    
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
@@ -551,6 +512,7 @@ function updateCurrentLocation(isInitial = false) {
       map.setView(currentLocation, 14);
     }
     
+    // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
     if (shelterActive) {
       fetchAndShowShelters(currentLocation);
     }
@@ -558,9 +520,13 @@ function updateCurrentLocation(isInitial = false) {
     if (destination) drawRoute();
   }, err => {
     console.error("現在地取得失敗", err);
+    // 位置情報が取れない場合のフォールバック
+    if (isInitial) {
+      currentLocation = map.getCenter();
+      if (shelterActive) fetchAndShowShelters(currentLocation);
+    }
   }, { enableHighAccuracy: true });
 }
-  
 updateCurrentLocation(true);
 
 function drawRoute() {
@@ -697,51 +663,20 @@ function selectLocation(lat, lng, label) {
   }
 }
 
-// パネルをタップで開閉するイベントを追加
-document.getElementById('statusPanel').addEventListener('click', function(e) {
-  // すでに開いている場合、クリックで閉じられるようにする（標準動作）
-});
-
-// もし「タップ時に必ず閉じる」などの挙動を制御したい場合は以下のように追記
-// map.on('click', ...) の中に以下を入れると、地図をタップした時にパネルが閉じるようになります
-// document.getElementById('statusPanel').open = true; // 開いたままにする場合
-  
 // 🌟【機能追加】地図上のタップ（クリック）した場所を中心に避難所を表示するロジック
 
-const statusPanel = document.getElementById('statusPanel');
-const openBtn = document.getElementById('openStatusBtn');
-
-// パネル開閉関数
-
-  function closePanel() { document.getElementById('statusPanel').classList.add('closed'); }
-function openPanel() { document.getElementById('statusPanel').classList.remove('closed'); }
-
-// ページ読み込み時に必ず開いた状態にする
-window.addEventListener('DOMContentLoaded', () => {
-    openPanel();
-});
-
-// パネルクリックで閉じる
-statusPanel.addEventListener('click', function(e) {
-  if (e.target.tagName === 'BUTTON') return;
-  closePanel();
-});
-
-// infoボタンクリックで開く
-openBtn.addEventListener('click', openPanel);
-
-// 地図クリックで開く＋情報更新
 map.on('click', async function(e) {
   document.getElementById('customSuggestions').style.display = 'none';
-  openPanel();
   
+  // 標高取得と表示
   const elevation = await getElevation(e.latlng.lat, e.latlng.lng);
   document.getElementById('elevationDisplay').innerText = elevation;
   
+  // 目的地設定とルート表示
   selectLocation(e.latlng.lat, e.latlng.lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
 });
-  
+
 const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
 
@@ -798,9 +733,6 @@ document.getElementById("refreshBtn").onclick = () => {
   // trueを指定するとキャッシュを無視してサーバーから再取得します
   location.reload(true);
 };
-
-//　ページ読み込み時にパネルを確実に開いた状態にする
-openPanel();
   
 </script>
 </body>
