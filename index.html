@@ -339,7 +339,6 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
   </div>
-  </div>
   
   <div id="routeSection" class="route-section">
     <div class="route-modes">
@@ -840,8 +839,12 @@ function selectLocation(lat, lng, label) {
   if (shelterActive) {
     setTimeout(() => { fetchAndShowShelters(destination); }, 500);
   }
+
+    document.getElementById('statusPanel').classList.add('open');
+  document.getElementById('handleIcon').innerText = 'chevron_right';
+  }
   
-function toggleStatusPanel() {
+  function toggleStatusPanel() {
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('handleIcon');
   panel.classList.toggle('open');
