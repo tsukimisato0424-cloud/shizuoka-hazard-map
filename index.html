@@ -166,29 +166,33 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   bottom: 20px; 
   right: 10px;
   width: 300px;
+  /* 高さを固定せず、内容に応じて自動調整する */
   z-index: 1500;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px; 
   padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  /* transitionで変化させるプロパティをtransformのみに限定 */
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: right bottom;
 }
 
-/* 閉じた時：右側に隠す */
+/* 閉じた時の動き：位置のズレをなくす */
 #statusPanel:not([open]) {
   transform: translateX(110%);
 }
 
-/* 呼び出しボタン */
+/* 呼び出しボタンのスタイル */
 #openStatusBtn {
   position: absolute; 
   right: 16px; 
   bottom: 20px; 
   z-index: 2000; 
   width: 50px; 
+  /* パネルの平均的な高さに合わせる */
   height: 90px; 
-  border-radius: 12%; 
+  border-radius: 12px;
   background: #fff; 
   color: #1a73e8; 
   border: none; 
