@@ -61,7 +61,13 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 .hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
 .hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 .hazard-btn.active[data-type="kikikuru_inundation"] { 
-  background: linear-gradient(135deg, #a8c0ff, #3f2b96); 
+  background: linear-gradient(135deg, #a8c0ff, #3f2b96);
+.hazard-btn.active[data-type="kikikuru_landslide"] { 
+  background: linear-gradient(135deg, #f794a4, #d32f2f); color: #fff; 
+}
+.hazard-btn.active[data-type="kikikuru_flood"] { 
+  background: linear-gradient(135deg, #74ebd5, #007ba1); color: #fff; 
+}
   color: #fff; 
 }
   
@@ -289,7 +295,14 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   </button>
   <button class="hazard-btn" data-type="kikikuru_inundation">
   <span class="material-icons-round">emergency_share</span>浸水キキクル
+　</button>
+　　<button class="hazard-btn" data-type="kikikuru_landslide">
+  <span class="material-icons-round">landscape</span>土砂キキクル
 </button>
+<button class="hazard-btn" data-type="kikikuru_flood">
+  <span class="material-icons-round">water_drop</span>洪水キキクル
+</button>
+  
 </div>
 
 <div id="legendAccordion" open-state="false">
@@ -307,7 +320,7 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
       <span class="legend-section-title">【キキクル】</span>
-<div class="legend-item"><div class="legend-color" style="background:#5e2a84;"></div>紫：浸水警戒</div>
+<div class="legend-item"><div class="legend-color" style="background:#5e2a84;"></div>紫：極めて危険</div>
 <div class="legend-item"><div class="legend-color" style="background:#a557a5;"></div>赤：危険</div>
 <div class="legend-item"><div class="legend-color" style="background:#e4905d;"></div>黄：注意</div>
       
@@ -399,6 +412,9 @@ const layers = {
   ],
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { 
+  kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
+  kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
+};
     opacity: 0.7, 
     maxZoom: 17,
     attribution: '気象庁：浸水キキクル'
