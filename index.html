@@ -163,18 +163,17 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 /* 5. ステータスパネル */
 #statusPanel {
   position: absolute;
-  bottom: 20px;
-  z-index: 1500;
-  background: rgba(255, 255, 255, 0.95);
+  bottom: 10px;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 10px 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   /* 変更部分: 右側へ収納 */
-  left: 10px;
-  right: 10px;
-  transform: translateY(105%); 
+  transform: translateY(110%); 
   transition: transform 0.3s ease-out;
+  pointer-events: auto;
 }
   
 #statusPanel.open {
@@ -183,10 +182,15 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   
 /* 開閉ハンドル */
 #panelHandle {
-  position: absolute; left: -30px; top: 10px;
-  width: 30px; height: 50px; background: rgba(255,255,255,0.9);
-  border-radius: 8px 0 0 8px; display: flex; align-items: center; justify-content: center;
-  box-shadow: -2px 0 5px rgba(0,0,0,0.1); cursor: pointer;
+  position: absolute;
+  left: 10px;
+  top: -40px;
+  width: 50px; height: 40px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 8px 8px 0 0;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
 }
 
 /* 上段：海抜とルートタイトルの行 */
@@ -339,8 +343,9 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
   
 <div id="statusPanel">
   <div id="panelHandle" onclick="toggleStatusPanel()">
-    <span class="material-icons-round" id="handleIcon">chevron_left</span>
+    <span class="material-icons-round" id="handleIcon">expand_less</span>
   </div>
+  
   <div class="status-header">
     <span style="font-weight:bold; color:#5f6368;">経路・地点情報</span>
     <span>海抜: <span id="elevationDisplay">-- m</span></span>
@@ -364,8 +369,8 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
       </div>
     </div>
   </div>
-</div>
-
+</div> ```
+  
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
