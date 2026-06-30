@@ -240,6 +240,14 @@ html, body, #map { height: 100%; margin: 0; font-family: 'Helvetica Neue', Arial
 </head>
 <body>
 
+<div id="warningDetailArea" style="display:none; margin-bottom:10px; padding:12px; border-radius:12px; font-size:14px; font-weight:bold; text-align:center;">
+  警報情報はありません
+</div>
+
+<div id="statusPanel">
+  ...
+</div>
+  
 <div id="map"></div>
 
 <div id="searchContainer">
@@ -895,6 +903,65 @@ document.getElementById("refreshBtn").onclick = () => {
   // trueを指定するとキャッシュを無視してサーバーから再取得します
   location.reload(true);
 };
+
+function updateAppStyle(level, msg) {
+    const body = document.body;
+    const panel = document.getElementById('statusPanel');
+    const warningArea = document.getElementById('warningDetailArea');
+
+    warningArea.innerText = msg;
+    warningArea.style.display = (level > 0) ? 'block' : 'none';
+
+    switch(level) {
+        case 3: // 特別警報
+            body.style.backgroundColor = "#ffebeb";
+            panel.style.border = "3px solid #a30000";
+            warningArea.style.backgroundColor = "#ff4d4f";
+            warningArea.style.color = "#ffffff";
+            break;
+        case 2: // 警報
+            body.style.backgroundColor = "#fff7e6";
+            panel.style.border = "3px solid #fa8c16";
+            warningArea.style.backgroundColor = "#fa8c16";
+            warningArea.style.color = "#ffffff";
+            break;
+        case 1: // 注意報
+            body.style.backgroundColor = "#f9f9f9";
+            panel.style.border = "1px solid #d1d9e6";
+            warningArea.style.backgroundColor = "#fffbe6";
+            warningArea.style.color = "#8c6800";
+            break;
+        default:
+            body.style.backgroundColor = "#f0f2f5";
+            panel.style.border = "none";
+    }
+}
+
+async function checkWeatherWarnings() {
+    try {
+        // 浜松市のコード 2213000 を例として使用
+        const res = await fetch("https://www.jma.go.jp/bosai/warning/data/warning/2213000.json");
+        const data = await res.json();
+        
+        // 【簡易判定】警報の種類をチェック（実運用時は data.warningTypes を精査）
+        let level = 0;
+        let msg = "現在、発表中の警報・注意報はありません。";
+        
+        if (data.warningTypes && data.warningTypes.length > 0) {
+            level = 2; // 警報ありと仮定
+            msg = "【注意】気象警報が発表されています。詳細は気象庁サイトを確認してください。";
+        }
+        
+        updateAppStyle(level, msg);
+    } catch (e) {
+        console.error("情報取得失敗", e);
+    }
+}
+
+// 5分ごとに自動更新
+setInterval(checkWeatherWarnings, 300000);
+checkWeatherWarnings();
+// 【追加】ここまで
   
 </script>
 </body>
