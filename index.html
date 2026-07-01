@@ -374,23 +374,28 @@ html, body { height: 100%; margin: 0; padding: 0; }
 }
 .tab-content.active { display: block; }
   
+/* トグルボタンの背景をどの状態でも強制的に透明にする */
 #toggleStatusBtn {
-  position: absolute; 
-  top: 10px; 
-  right: 10px;
+  position: absolute !important; 
+  top: 5px !important; 
+  right: 5px !important;
   background: transparent !important; /* 背景を透明に */
   border: none !important;            /* 枠線を削除 */
-  color: #202124 !important;           /* アイコンの色を黒に */
+  color: #202124 !important;          /* アイコンの色を黒に */
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 4px !important;
+  box-shadow: none !important;        /* 影も削除 */
+  outline: none !important;           /* フォーカス時の輪郭線も削除 */
 }
 
-/* ボタンにマウスを乗せたときも背景を出さないようにする */
-#toggleStatusBtn:hover {
-  background: rgba(0, 0, 0, 0.05) !important; /* ほんの少しだけ色を変えるならこれ */
+/* ホバーやクリック時も背景色がつかないようにする */
+#toggleStatusBtn:hover, 
+#toggleStatusBtn:active, 
+#toggleStatusBtn:focus {
+  background: transparent !important;
 }
   
 /* 最小化状態 */
