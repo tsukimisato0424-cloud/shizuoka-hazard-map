@@ -214,8 +214,9 @@ html, body { height: 100%; margin: 0; padding: 0; }
 /* 5. ステータスパネル  */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);  backdrop-filter:blur(10px);
   border-radius: 12px; padding: 10px 14px;
   box-shadow:
     0 8px 30px rgba(0,0,0,.20),
