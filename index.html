@@ -621,7 +621,26 @@ let currentLocation = null, destination = null, routingControl = null, currentMa
 
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
-    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+  currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+
+  // ステータスを現在地情報へ更新
+document.getElementById('latLngDisplay').innerText =
+  `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
+
+document.getElementById('addressDisplay').innerText =
+  "住所: 取得中...";
+
+getElevation(currentLocation.lat, currentLocation.lng)
+  .then(elevation=>{
+    document.getElementById('elevationDisplay').innerText=elevation;
+  });
+
+getAddress(currentLocation.lat, currentLocation.lng)
+  .then(address=>{
+    document.getElementById('addressDisplay').innerText=
+      `住所: ${address}`;
+  });
+    
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
