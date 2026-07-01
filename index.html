@@ -1251,27 +1251,23 @@ document.getElementById("locationBtn").onclick = () => {
 };
   
 function changeMap(type) {
-  // 1. 現在のベースレイヤーと標高図レイヤーを地図から削除
+  // 1. 現在表示されているベースレイヤーと標高図をすべて削除
   if (currentBaseLayer) map.removeLayer(currentBaseLayer);
   if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
 
   // 2. 指定されたモードでレイヤーを追加
   if (type === 'relief_overlay') {
-    // 航空写真(ort)をベースレイヤーとしてセット
-    currentBaseLayer = baseLayers.ort.addTo(map);
-    // 標高図(reliefOverlay)を重ねて追加
-    reliefOverlay.addTo(map);
-    
-    // レイヤーの重なり順を調整（両方とも背面に送る）
-    currentBaseLayer.bringToBack();
-    reliefOverlay.bringToBack();
+    // 標高図単体を表示
+    currentBaseLayer = reliefOverlay.addTo(map);
   } else {
-    // 標準地図または航空写真の通常切り替え
+    // 標準地図または航空写真を表示
     currentBaseLayer = baseLayers[type].addTo(map);
-    currentBaseLayer.bringToBack();
   }
   
-  // 3. メニューを閉じる処理
+  // 3. レイヤーの重なり順を一番後ろに調整
+  currentBaseLayer.bringToBack();
+  
+  // 4. メニューを閉じる
   const details = document.getElementById('mapTypeDetails');
   details.open = false;
   document.getElementById('mapTypeContainer').setAttribute('open-state', 'false');
