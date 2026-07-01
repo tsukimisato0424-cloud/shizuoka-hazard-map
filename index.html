@@ -295,6 +295,27 @@ html, body { height: 100%; margin: 0; padding: 0; }
   font-size: 24px;
 }
 
+/* 右下のボタンを縦に並べる設定 */
+#mapTypeContainer {
+  top: auto;
+  bottom: 360px; /* 一番上：地図切替 */
+}
+
+#legendAccordion {
+  top: auto;
+  bottom: 300px; /* 上から2番目：凡例 */
+}
+
+#locationBtn {
+  top: auto;
+  bottom: 240px; /* 上から3番目：現在地 */
+}
+
+#refreshBtn {
+  top: auto;
+  bottom: 180px; /* 一番下：更新ボタン */
+}
+  
 /* 神々しく光るアニメーション */
 @keyframes glowing {
   0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px #1a73e8; }
