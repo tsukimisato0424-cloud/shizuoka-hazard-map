@@ -320,15 +320,18 @@ html, body { height: 100%; margin: 0; padding: 0; }
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(26, 115, 232, 0.45); /* パネルの枠線 */
+  /* 上辺を少し空けるか、タブのz-indexと調整して線を隠す */
+  border: 1px solid rgba(26, 115, 232, 0.45);
   border-radius: 12px;
   overflow: visible;
+  /* パネルの上辺の線を消すことで、タブの下辺と重なるようにする */
+  border-top: none;
 }
 
-/* タブコンテナ */
+/* タブコンテナを少し上に配置 */
 .tab-container {
   position: absolute;
-  top: -37px;
+  top: -38px; /* パネルの上辺と隙間なく設置 */
   left: 10px;
   display: flex;
   gap: 4px;
@@ -342,25 +345,24 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
-  /* 枠線を上・右・左に設定し、下はパネルと一体化させるために透明にする */
+  /* 青い枠線 */
   border: 1px solid rgba(26, 115, 232, 0.45);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.95); /* パネルの色と合わせて隠す */
   background: #e0e0e0;
   color: #777;
   transition: all 0.2s;
   z-index: 1;
-  margin-bottom: -1px; /* 枠線を少し下げてパネルと重なりを調整 */
+  /* 下辺をパネルと繋げるために、重なりを消す */
+  margin-bottom: -1px;
 }
 
 /* アクティブタブ */
 .tab-btn.active {
   background: rgba(255,255,255,0.95);
   color: #1a73e8;
-  /* パネル本体の枠線と完全に繋げる */
+  /* パネルと繋がっているように見せるため下辺を透明に */
   border-bottom: 2px solid rgba(255,255,255,0.95);
-  z-index: 2;
-  transform: translateY(-1px); /* わずかに浮かせる */
-  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+  z-index: 3; /* 前面に出す */
+  transform: translateY(1px); /* パネルの境目に重ねる */
 }
 
 /* パネル本体の上部境界線を消す（重なりを綺麗にするため） */
