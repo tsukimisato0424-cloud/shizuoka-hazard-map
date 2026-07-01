@@ -329,18 +329,25 @@ html, body { height: 100%; margin: 0; padding: 0; }
 
 /* 飛び出るタブのコンテナ */
 .tab-container {
-  position: absolute; top: -38px; left: 0;
-  display: flex; gap: 2px;
+  position: absolute; top: -38px; left: 0; right: 0;
+  display: flex; gap: 0; /* 隙間をなくす */
 }
 
 .tab-btn {
-  padding: 8px 20px;
-  background: rgba(255,255,255,0.8);
+  flex: 1; /* 幅を均等に */
+  padding: 8px 0;
+  text-align: center;
+  background: #e0e0e0; /* 非アクティブ時はグレー */
   border-radius: 10px 10px 0 0;
-  cursor: pointer; font-size: 13px; font-weight: bold; color: #777;
-  border: 1px solid #ddd; border-bottom: none;
+  cursor: pointer; 
+  font-size: 13px; font-weight: bold; color: #5f6368;
+  border: 1px solid #ccc; border-bottom: none;
 }
-.tab-btn.active { background: rgba(255,255,255,0.95); color: #1a73e8; }
+.tab-btn.active { 
+  background: rgba(255,255,255,0.95); /* アクティブ時は白 */
+  color: #1a73e8; 
+  border-bottom: 1px solid rgba(255,255,255,0.95); /* 境界線を隠す */
+}
 
 /* 中身の高さ固定 */
 .tab-content {
@@ -633,8 +640,8 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
 <div id="statusPanel" data-state="full">
   <!-- 飛び出るタブ -->
   <div class="tab-container">
-    <div class="tab-btn active" onclick="switchTab(1)">地点情報</div>
-    <div class="tab-btn" onclick="switchTab(2)">ルート</div>
+    <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
+    <div class="tab-btn" onclick="switchTab(2)">サブ</div>
   </div>
 
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
