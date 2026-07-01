@@ -320,16 +320,15 @@ html, body { height: 100%; margin: 0; padding: 0; }
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(26, 115, 232, 0.45); /* 縁取り */
+  border: 1px solid rgba(26, 115, 232, 0.45); /* パネルの枠線 */
   border-radius: 12px;
-  overflow: visible; 
-  padding-top: 0; /* 余計な隙間を削除 */
+  overflow: visible;
 }
 
 /* タブコンテナ */
 .tab-container {
   position: absolute;
-  top: -37px; /* パネルの外へ飛び出させる */
+  top: -37px;
   left: 10px;
   display: flex;
   gap: 4px;
@@ -343,25 +342,25 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
+  /* パネルと同じ色で枠線を設定 */
   border: 1px solid rgba(26, 115, 232, 0.45);
-  background: #e0e0e0; /* 非アクティブ時の色 */
+  /* 境界を消すため、あえて下線を描画 */
+  border-bottom: 1px solid rgba(26, 115, 232, 0.45); 
+  background: #e0e0e0;
   color: #777;
   transition: all 0.2s;
   z-index: 1;
-  /* ここを修正：非アクティブでも枠線にピッタリ合わせる */
-  margin-bottom: -1px; 
-  border-bottom: 1px solid rgba(26, 115, 232, 0.45);
 }
-  
-/* アクティブタブ：パネルと完全に繋げる */
+
+/* アクティブタブ：沈み込みを解消し、線をパネルと繋げる */
 .tab-btn.active {
   background: rgba(255,255,255,0.95);
   color: #1a73e8;
-  /* 境界を完全に隠す工夫 */
-  margin-bottom: -1px; 
-  border-bottom: 2px solid rgba(255,255,255,0.95); 
+  /* 枠線を上書きしてパネル本体と連結 */
+  border-bottom: 2px solid rgba(255,255,255,0.95);
+  margin-bottom: -1px;
   z-index: 2;
-  transform: translateY(-2px); /* 浮かせる */
+  transform: translateY(-2px); /* 浮かせて立体的に */
   box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
 }
 
