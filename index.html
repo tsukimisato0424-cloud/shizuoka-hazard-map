@@ -24,7 +24,11 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .custom-search-bar {
   display: flex; align-items: center; background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px); border-radius: 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15), inset 0 0 0 1.5px #1a73e8; 
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30),
+    0 0 28px rgba(26,115,232,.18);
   padding: 2px 4px; /* 内部余白を調整 */
 }
   
@@ -51,9 +55,12 @@ backdrop-filter: blur(22px) saturate(180%);
   border-radius:16px;
   padding:8px;
 
-  box-shadow:0 4px 12px rgba(0,0,0,.1),
-             inset 0 0 0 1.5px #1a73e8;
-
+box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30),
+    0 0 28px rgba(26,115,232,.18);
+  
   display:grid;
   grid-template-columns:repeat(7,1fr);
   gap:4px;
@@ -215,8 +222,12 @@ backdrop-filter: blur(22px) saturate(180%);
 
   border: 1.5px solid #1a73e8;
 
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30),
+    0 0 28px rgba(26,115,232,.18);
+  
   transition: all 0.3s ease;
   overflow: hidden;
 }
