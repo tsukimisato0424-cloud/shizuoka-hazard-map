@@ -989,7 +989,35 @@ searchBtn.onclick = function() {
   executeHybridSearch(searchInput.value);
 };
 
-document.getElementById("locationBtn").onclick = () => updateCurrentLocation(false);
+// 現在地ボタンのアクション //
+document.getElementById("locationBtn").onclick = () => {
+
+  // ルートを削除
+  if (routingControl) {
+    map.removeControl(routingControl);
+    routingControl = null;
+  }
+
+  // 目的地マーカーを削除
+  if (destMarker) {
+    map.removeLayer(destMarker);
+    destMarker = null;
+  }
+
+  // 目的地をクリア
+  destination = null;
+
+  // ルート表示を初期化
+  document.getElementById("walkTime").innerText = "-- 分";
+  document.getElementById("walkDist").innerText = "-- km";
+  document.getElementById("carTime").innerText = "-- 分";
+  document.getElementById("carDist").innerText = "-- km";
+
+  // 現在地へ移動
+  updateCurrentLocation(false);
+
+};
+  
 
 // --- メニュー型切り替えロジック ---
 function toggleMenu() {
