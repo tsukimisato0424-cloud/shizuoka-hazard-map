@@ -320,49 +320,54 @@ html, body { height: 100%; margin: 0; padding: 0; }
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px; /* パネル本体は丸く */
+  border-radius: 12px;
   box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
   transition: all 0.3s ease;
-  overflow: visible; /* タブをはみ出させる */
+  overflow: visible; /* タブを外側に表示するために必須 */
+  padding-top: 10px;
 }
 
-/* タブのコンテナ：パネルの上に配置 */
+/* タブコンテナをパネルの左上に配置 */
 .tab-container {
+  position: absolute;
+  top: -38px; /* パネルの外へ飛び出させる距離 */
+  left: 10px;
   display: flex;
-  margin-bottom: -1px; /* パネル本体との境界線を重ねる */
-  padding-left: 10px;
+  gap: 4px;
 }
 
+/* タブのボタン形状 */
 .tab-btn {
-  width: 90px; /* タブの横幅を固定 */
-  padding: 8px 10px;
+  width: 90px;
+  padding: 8px 12px;
   text-align: center;
-  cursor: pointer; 
+  cursor: pointer;
   font-size: 13px; font-weight: bold;
+  border-radius: 12px 12px 0 0; /* 上部だけ角丸 */
   border: 1px solid #ddd;
-  border-radius: 10px 10px 0 0; /* 上側だけ角丸 */
+  border-bottom: none;
   color: #777;
-  background: #f0f0f0; /* 非アクティブはグレー */
-  margin-right: 4px;
+  background: #f0f0f0;
+  transition: all 0.2s;
 }
 
 /* アクティブタブのスタイル */
-.tab-btn.active { 
-  background: rgba(255,255,255,0.95); /* アクティブは白 */
+.tab-btn.active {
+  background: rgba(255,255,255,0.95);
   color: #1a73e8;
-  border-bottom: 1px solid rgba(255,255,255,0.95); /* 境界を消す */
-  position: relative;
+  border: 1px solid rgba(255,255,255,0.95); /* パネルと一体化 */
+  border-bottom: none;
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* 浮き上がり感 */
 }
 
-/* 中身の高さ固定 */
+/* コンテンツエリアの高さ固定 */
 .tab-content {
   display: none; padding: 15px;
-  height: 80px; /* 3行分程度の高さを維持 */
+  height: 80px; 
   overflow: hidden;
-  border-top: 1px solid #ddd; /* パネル本体の区切り */
 }
 .tab-content.active { display: block; }
-
+  
 /* トグルボタン位置調整 */
 #toggleStatusBtn {
   position: absolute; top: 10px; right: 10px;
