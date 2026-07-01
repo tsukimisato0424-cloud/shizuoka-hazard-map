@@ -454,6 +454,32 @@ const layers = {
   kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
 };
 
+function refreshKikikuruLayers() {
+
+  ["kikikuru_inundation", "kikikuru_landslide", "kikikuru_flood"].forEach(type => {
+
+    const oldLayer = layers[type][0];
+    const wasVisible = map.hasLayer(oldLayer);
+
+    if (wasVisible) {
+      map.removeLayer(oldLayer);
+    }
+
+    const newUrl = oldLayer._url.split("?")[0] + "?t=" + Date.now();
+
+    layers[type][0] = L.tileLayer(newUrl, {
+      opacity: oldLayer.options.opacity,
+      maxZoom: oldLayer.options.maxZoom,
+      attribution: oldLayer.options.attribution
+    });
+
+    if (wasVisible) {
+      layers[type][0].addTo(map);
+    }
+
+  });
+
+}
 //透過表示用の色別標高図レイヤーを定義
 const reliefOverlay = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png', {
   opacity: 0.5,
@@ -1006,9 +1032,7 @@ function changeMap(type) {
 }
 
 document.getElementById("refreshBtn").onclick = () => {
-  // ブラウザの再読み込みを強制する
-  // trueを指定するとキャッシュを無視してサーバーから再取得します
-  location.reload(true);
+  refreshKikikuruLayers();
 };
   
 </script>
