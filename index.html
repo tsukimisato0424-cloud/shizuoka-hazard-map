@@ -374,11 +374,25 @@ html, body { height: 100%; margin: 0; padding: 0; }
 }
 .tab-content.active { display: block; }
   
-/* トグルボタン位置調整 */
 #toggleStatusBtn {
-  position: absolute; top: 10px; right: 10px;
+  position: absolute; 
+  top: 10px; 
+  right: 10px;
+  background: transparent !important; /* 背景を透明に */
+  border: none !important;            /* 枠線を削除 */
+  color: #202124 !important;           /* アイコンの色を黒に */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
 }
 
+/* ボタンにマウスを乗せたときも背景を出さないようにする */
+#toggleStatusBtn:hover {
+  background: rgba(0, 0, 0, 0.05) !important; /* ほんの少しだけ色を変えるならこれ */
+}
+  
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
   height: 40px;
