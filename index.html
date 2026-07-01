@@ -328,13 +328,14 @@ html, body { height: 100%; margin: 0; padding: 0; }
   border-top: none;
 }
 
-/* タブコンテナを少し上に配置 */
+/* タブコンテナ */
 .tab-container {
   position: absolute;
-  top: -38px; /* パネルの上辺と隙間なく設置 */
-  left: 10px;
+  top: -37px;
+  left: 0; /* 10pxから0に変更：親の#statusPanelの左端と揃えるため */
   display: flex;
   gap: 4px;
+  padding-left: 10px; /* パネル本体の左端余白に合わせて調整 */
 }
 
 /* タブボタン */
