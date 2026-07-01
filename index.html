@@ -1251,36 +1251,29 @@ document.getElementById("locationBtn").onclick = () => {
 };
   
 function changeMap(type) {
-  // 現在表示中のベースマップを消す
-  if (currentBaseLayer) {
-    map.removeLayer(currentBaseLayer);
-  }
-  // 重ね合わせレイヤーを消す
-  if (map.hasLayer(reliefOverlay)) {
-    map.removeLayer(reliefOverlay);
-  }
+  // 1. 現在のベースレイヤーと重ね合わせレイヤーを削除
+  if (currentBaseLayer) map.removeLayer(currentBaseLayer);
+  if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
 
-  // 指定されたモードで表示
+  // 2. 指定されたモードでレイヤーを追加
   if (type === 'relief_overlay') {
-    // 【重ね合わせモード】
-    baseLayers.pale.addTo(map);            // 下に標準地図
-    reliefOverlay.addTo(map);              // 上に半透明の標高図
+    // 標準地図をベースにし、その上に半透明の標高図を重ねる
+    baseLayers.pale.addTo(map);
+    reliefOverlay.addTo(map);
     currentBaseLayer = baseLayers.pale;
-  } else if (type === 'pale') {
-    // 【標準地図】
-    currentBaseLayer = baseLayers.pale.addTo(map);
-  } else if (type === 'ort') {
-    // 【航空写真】
-    currentBaseLayer = baseLayers.ort.addTo(map);
+  } else {
+    // それ以外は通常の切り替え
+    currentBaseLayer = baseLayers[type].addTo(map);
   }
   
   // 地図を一番後ろ（他のアイコンの下）に送る
-  if (currentBaseLayer) currentBaseLayer.bringToBack();
+  currentBaseLayer.bringToBack();
   if (map.hasLayer(reliefOverlay)) reliefOverlay.bringToBack();
   
-  // メニューを閉じる処理（IDを修正）
-  document.getElementById('mapTypeDetails').open = false; 
-  mapTypeCard.setAttribute('open-state', 'false');
+  // 3. メニューを閉じる処理（Detailsタグを閉じる）
+  const details = document.getElementById('mapTypeDetails');
+  details.open = false;
+  document.getElementById('mapTypeContainer').setAttribute('open-state', 'false');
 }
 
 document.getElementById("refreshBtn").onclick = async () => {
