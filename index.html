@@ -1,135 +1,936 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>防災ハザードマップ (Fixed)</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-  <script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>防災ハザードマップ (Fixed)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script src="https://unpkg.com/shpjs@latest/dist/shp.js"></script>
 
+
+  
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; }
-    #map { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+#map { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+  
+/* 1. Google風スタイリッシュ検索バー */
+#searchContainer { 
+  position: absolute; top: 10px; left: 0; right: 0; 
+  padding: 0 10px; z-index: 99999 !important; 
+}
+.custom-search-bar {
+  display: flex; align-items: center; background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px); border-radius: 14px;
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30),
+    0 0 28px rgba(26,115,232,.18);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter:blur(10px);  padding: 2px 4px;
+}
+  
+.custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 14px 12px; background: transparent; color: #202124; }
+.search-icon-btn { background: none; border: none; color: #1a73e8; cursor: pointer; padding: 8px; display: flex; align-items: center; }
 
-    /* 検索バー */
-    #searchContainer { position: absolute; top: 10px; left: 0; right: 0; padding: 0 10px; z-index: 99999; }
-    .custom-search-bar { display: flex; align-items: center; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.2); padding: 2px 4px; }
-    .custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 14px 12px; background: transparent; }
-    .search-icon-btn { background: none; border: none; color: #1a73e8; cursor: pointer; padding: 8px; display: flex; align-items: center; }
-    #customSuggestions { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-top: 6px; max-height: 260px; overflow-y: auto; display: none; }
-    .suggestion-item { display: flex; align-items: center; padding: 12px 16px; font-size: 14px; color: #3c4043; cursor: pointer; border-bottom: 1px solid #f1f3f4; }
-    .suggestion-item:hover { background-color: #f8f9fa; }
+#customSuggestions { background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-top: 6px; max-height: 260px; overflow-y: auto; display: none; }
+.suggestion-item { display: flex; align-items: center; padding: 12px 16px; font-size: 14px; color: #3c4043; cursor: pointer; border-bottom: 1px solid #f1f3f4; transition: background 0.2s; }
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background-color: #f8f9fa; }
+.suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
-    /* ハザードメニュー */
-    #hazardMenuCard { position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border-radius: 16px; padding: 8px; box-shadow: 0 8px 30px rgba(0,0,0,.2); display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .hazard-btn { height: 74px; border: 1px solid #d1d9e6; border-radius: 12px; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px; color: #5f6368; cursor: pointer; }
-    .hazard-btn .material-icons-round { font-size: 22px; margin-bottom: 2px; }
-    .hazard-btn.active { border-color: #1a73e8; background: #1a73e8; color: #fff; animation: glowing 1.5s infinite; }
-    @keyframes glowing { 0%, 100% { box-shadow: 0 0 5px #1a73e8; } 50% { box-shadow: 0 0 20px #1a73e8; } }
+/* ハザードメニュー */
+#hazardMenuCard {
+  position: absolute;
+  top: 75px;
+  left: 10px;
+  right: 10px;
+  z-index: 2000;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+  
+.hazard-btn{
+  width:100%;
+  height:74px;
+  border:1px solid #d1d9e6;
+  border-radius:12px;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  font-size:10px;
+  font-weight:700;
+  line-height:1.15;
+  padding:4px 2px;
+  color:#5f6368;
+  transition:.2s;
+}
 
-    /* その他UI */
-    #rightControlContainer { position: absolute; top: 170px; right: 10px; z-index: 1500; display: flex; flex-direction: column; gap: 10px; }
-    .side-btn { width: 50px; height: 50px; border-radius: 50%; background: #fff; border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); color: #1a73e8; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    
-    #statusPanel { position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; box-shadow: 0 8px 30px rgba(0,0,0,.2); }
-    .custom-shelter-icon { background: #27ae60; border: 2px solid #fff; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.hazard-btn .material-icons-round{
+  font-size:22px;
+  margin-bottom:2px;
+}
+  
+.hazard-btn:active { transform: translateY(1px); box-shadow: 0 0 8px #1a73e8; border-color: #1a73e8; }
+.hazard-btn.active { border-color: #1a73e8 !important; box-shadow: 0 0 10px rgba(26, 115, 232, 0.4); }
+
+.hazard-btn.active[data-type="flood"] { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
+.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
+.hazard-btn.active[data-type="tsunami"] { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+.hazard-btn.active[data-type="shelter"] { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
+.hazard-btn.active[data-type="kikikuru_inundation"] { 
+  background: linear-gradient(135deg, #a8c0ff, #3f2b96); 
+  color: #fff; 
+}
+.hazard-btn.active[data-type="kikikuru_landslide"] { 
+  background: linear-gradient(135deg, #f794a4, #d32f2f); color: #fff; 
+}
+.hazard-btn.active[data-type="kikikuru_flood"] { 
+  background: linear-gradient(135deg, #74ebd5, #007ba1); color: #fff; 
+}
+ 
+/* 3. 凡例（フローティングサークル化） */
+#legendAccordion {
+  z-index: 1500;
+  width: 52px;
+  height: 52px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2); 
+  overflow: hidden;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.28s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-radius 0.28s ease;
+}
+
+#legendAccordion[open-state="true"] {
+  width: 240px;
+  height: 340px;
+  border-radius: 16px;
+}
+
+#legendAccordion details {
+  border: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+#legendAccordion summary {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  list-style: none;
+  transition: background 0.2s;
+}
+#legendAccordion summary::-webkit-details-marker { display: none; }
+#legendAccordion summary:hover { background-color: #f8f9fa; }
+
+#legendAccordion summary .legend-icon {
+  font-size: 20px;
+  color: #1a73e8;
+  margin: 0;
+}
+
+#legendAccordion summary .legend-text {
+  font-size: 10px;
+  font-weight: bold;
+  color: #3c4043;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+#legendAccordion summary .legend-arrow {
+  display: none;
+  font-size: 20px;
+  color: #70757a;
+  transition: transform 0.2s ease;
+}
+
+#legendAccordion[open-state="true"] summary {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  flex-direction: row;
+  justify-content: flex-start;
+  border-bottom: 1px solid #f1f3f4;
+  background: #ffffff;
+}
+
+#legendAccordion[open-state="true"] summary .legend-text {
+  font-size: 14px;
+  margin-top: 0;
+  margin-left: 8px;
+  flex: 1;
+  color: #202124;
+}
+
+#legendAccordion[open-state="true"] summary .legend-arrow {
+  display: block;
+}
+
+#legendAccordion details[open] summary .legend-arrow {
+  transform: rotate(180deg);
+}
+
+.legend-content { 
+  padding: 4px 14px 14px 14px; 
+  height: calc(100% - 48px);
+  overflow-y: auto; 
+  font-size: 12px; 
+  color: #3c4043; 
+  line-height: 1.6; 
+  box-sizing: border-box;
+}
+
+.legend-section-title { font-weight: bold; color: #202124; margin: 12px 0 6px 0; display: block; }
+.legend-item { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; color: #5f6368; }
+.legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+
+.custom-shelter-icon {
+  background: #27ae60 !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+#mapTypeMenu {
+  display: none;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  margin-bottom: 8px;
+  overflow: hidden;
+  width: 120px;
+}
+
+.map-type-item {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #3c4043;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3f4;
+}
+.map-type-item:hover { background: #f8f9fa; }  
+
+#locationBtn {
+  z-index: 1500;
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  background: #ffffff; color: #1a73e8; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
+}
+#locationBtn .material-icons-round { font-size: 24px; }
+
+#refreshBtn {
+  z-index: 1500;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #1a73e8;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#refreshBtn .material-icons-round {
+  font-size: 24px;
+}
+
+#rightControlContainer {
+  position: absolute;
+  top: 170px;
+  right: 10px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#mapTypeContainer,
+#legendAccordion,
+#locationBtn,
+#refreshBtn {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+}
+  
+@keyframes glowing {
+  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px #1a73e8; }
+  50% { box-shadow: 0 0 10px rgba(255, 255, 255, 1), 0 0 20px rgba(26, 115, 232, 0.8), 0 0 30px #1a73e8; }
+  100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px #1a73e8; }
+}
+
+.hazard-btn.active {
+  animation: glowing 1.5s infinite ease-in-out;
+  border-color: #fff !important;
+  border-width: 2px;
+}
+  
+#statusPanel {
+  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);  backdrop-filter:blur(10px);
+  border-radius: 12px; padding: 10px 14px;
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30),
+    0 0 28px rgba(26,115,232,.18);  
+  transition: all 0.3s ease; 
+  overflow: hidden;
+}
+
+#statusPanel[data-state="minimized"] {
+  height: 40px;
+}
+#statusPanel[data-state="minimized"] #addressDisplay,
+#statusPanel[data-state="minimized"] #latLngDisplay,
+#statusPanel[data-state="minimized"] #statusContent {
+  display: none;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  padding-right: 35px;
+}
+  
+#elevationDisplay { font-weight: bold; color: #d35400; }
+
+.route-section { display: flex; flex-direction: row; gap: 8px; border-top: 1px solid #eee; padding-top: 8px; margin: 0; }
+.route-title { display: none; }
+.route-modes { display: flex; gap: 8px; flex: 1; }
+.route-mode-box { flex: 1; background: #f8f9fa; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+.route-icon-circle { width: 24px; height: 24px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; }
+.route-icon-circle .material-icons-round { font-size: 14px; }
+.route-time { font-size: 13px; font-weight: bold; color: #1a73e8; }
+.route-dist { font-size: 10px; color: #5f6368; }
+  
+.leaflet-shelter-pane { z-index: 400 !important; }
+
+#mapTypeContainer {
+  z-index: 1500;
+  width: 52px;
+  height: 52px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  overflow: hidden;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.28s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-radius 0.28s ease;
+}
+
+#mapTypeContainer[open-state="true"] {
+  width: 140px;
+  height: 200px;
+  border-radius: 16px;
+}
+
+#mapTypeContainer details { border: none; height: 100%; }
+
+#mapTypeContainer summary {
+  width: 52px; height: 52px; padding: 0; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  list-style: none;
+}
+#mapTypeContainer summary::-webkit-details-marker { display: none; }
+
+#mapTypeContainer summary .maptype-text {
+  font-size: 9px; font-weight: bold; color: #3c4043; line-height: 1.1; text-align: center;
+}
+#mapTypeContainer summary .maptype-icon { font-size: 20px; color: #1a73e8; }
+#mapTypeContainer summary .maptype-arrow { display: none; }
+
+#mapTypeContainer[open-state="true"] summary {
+  width: 100%; height: 48px; padding: 0 14px; flex-direction: row; justify-content: flex-start;
+  border-bottom: 1px solid #f1f3f4;
+}
+#mapTypeContainer[open-state="true"] summary .maptype-text { font-size: 14px; margin-left: 8px; flex: 1; }
+#mapTypeContainer[open-state="true"] summary .maptype-arrow { display: block; }
+
+.maptype-content { padding: 8px 0; }
+  
+#mapTypeBtn {
+  width: 50px; height: 50px; border: none; border-radius: 50%;
+  background: #ffffff; color: #1a73e8; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
+}
+
+.leaflet-popup-pane { pointer-events: none; }
+.leaflet-popup { pointer-events: auto; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button { pointer-events: auto; }
+
+.leaflet-routing-container { display: none !important; }
+.leaflet-marker-pane .leaflet-popup { display: none !important; }
+
+@keyframes spinRefresh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#refreshBtn.loading .material-icons-round {
+  animation: spinRefresh 0.8s linear infinite;
+}
+
+body {
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  color: #202124;
+  -webkit-font-smoothing: antialiased;
+}
+
+.leaflet-popup-content { font-size: 14px !important; line-height: 1.6 !important; color: #3c4043; }
+.leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+}
+
+input, .hazard-btn, .suggestion-item, .map-type-item { font-size: 15px !important; letter-spacing: 0.3px; }
+
+#statusPanel {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  color: #202124;
+}
+
+.legend-content { font-size: 13px !important; line-height: 1.8 !important; }
+
+.legend-section-title, .route-time { font-weight: 800 !important; color: #1a73e8 !important; }
+
+.hazard-btn { font-size: 11px !important; line-height: 1.3; }
+
   </style>
+
+
+  
 </head>
+
+
+
+
+  
 <body>
 
+
+
+
+  
   <div id="map"></div>
 
-  <div id="searchContainer">
-    <div class="custom-search-bar">
-      <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
-      <button class="search-icon-btn" id="customSearchBtn"><span class="material-icons-round">search</span></button>
+<div id="searchContainer">
+  <div class="custom-search-bar">
+    <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
+    <button class="search-icon-btn" id="customSearchBtn">
+      <span class="material-icons-round">search</span>
+    </button>
+  </div>
+  <div id="customSuggestions"></div>
+</div>
+
+<div id="hazardMenuCard">
+  <button class="hazard-btn" data-type="flood">
+    <span class="material-icons-round">water</span>洪水想定
+  </button>
+  <button class="hazard-btn" data-type="landslide">
+    <span class="material-icons-round">landscape</span>土砂災害
+  </button>
+  <button class="hazard-btn" data-type="tsunami">
+    <span class="material-icons-round">tsunami</span>津波浸水
+  </button>
+  <button class="hazard-btn" data-type="shelter">
+    <span class="material-icons-round">gite</span>避難所
+  </button>
+  <button class="hazard-btn" data-type="kikikuru_inundation">
+    <span class="material-icons-round">emergency_share</span>
+    浸水<br>キキクル
+  </button>
+  <button class="hazard-btn" data-type="kikikuru_landslide">
+    <span class="material-icons-round">landscape</span>
+    土砂<br>キキクル
+  </button>
+  <button class="hazard-btn" data-type="kikikuru_flood">
+    <span class="material-icons-round">water_drop</span>
+    洪水<br>キキクル
+  </button>
+</div>
+
+<div id="rightControlContainer">
+  <div id="legendAccordion" open-state="false">
+    <details id="legendDetails">
+      <summary>
+        <span class="material-icons-round legend-icon">format_list_bulleted</span>
+        <span class="legend-text">凡例</span>
+        <span class="material-icons-round legend-arrow">expand_more</span>
+      </summary>
+      <div class="legend-content">
+        <span class="legend-section-title">【洪水/津波 浸水深】</span>
+        <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
+        <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
+        <span class="legend-section-title">【土砂災害】</span>
+        <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
+        <span class="legend-section-title">【キキクル】</span>
+        <div class="legend-item"><div class="legend-color" style="background:#5e2a84;"></div>紫：極めて危険</div>
+        <div class="legend-item"><div class="legend-color" style="background:#a557a5;"></div>赤：危険</div>
+        <div class="legend-item"><div class="legend-color" style="background:#e4905d;"></div>黄：注意</div>
+        <span class="legend-section-title">【避難所】</span>
+        <div class="legend-item">
+          <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
+            <span class="material-icons-round" style="font-size:14px; color:#fff;">directions_run</span>
+          </div>
+          指定緊急避難場所 (緑アイコン)
+        </div>
+      </div>
+    </details>
+  </div>
+  <div id="mapTypeContainer">
+    <details id="mapTypeDetails">
+      <summary>
+        <span class="material-icons-round maptype-icon">layers</span>
+        <span class="maptype-text">地図<br>切替</span>
+        <span class="material-icons-round maptype-arrow">expand_more</span>
+      </summary>
+      <div class="maptype-content">
+        <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
+        <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
+        <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
+      </div>
+    </details>
+  </div>
+  <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
+  <button id="refreshBtn"><span class="material-icons-round">refresh</span></button>
+</div>
+  
+<div id="statusPanel" data-state="full">
+  <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="position:absolute; right:10px; top:10px; border:none; background:none; cursor:pointer;">
+    <span class="material-icons-round" id="toggleIcon">expand_more</span>
+  </button>
+  <div class="status-header">
+    <span style="font-weight:bold; color:#5f6368;">地点情報</span>
+    <span>海抜: <span id="elevationDisplay">-- m</span></span>
+  </div>
+  <div id="addressDisplay" style="font-size:12px; color:#333; margin-bottom:5px; font-weight:bold;">住所: 取得中...</div>
+  <div id="latLngDisplay" style="font-size:11px; color:#777; margin-bottom:8px;">緯度: --, 経度: --</div>
+  <div id="statusContent">
+    <div id="routeSection" class="route-section">
+      <div class="route-modes">
+        <div class="route-mode-box">
+          <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+          <div class="route-text-data">
+            <span class="route-time" id="walkTime">-- 分</span>
+            <span class="route-dist" id="walkDist">-- km</span>
+          </div>
+        </div>
+        <div class="route-mode-box">
+          <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
+          <div class="route-text-data">
+            <span class="route-time" id="carTime">-- 分</span>
+            <span class="route-dist" id="carDist">-- km</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="customSuggestions"></div>
   </div>
+</div>
 
-  <div id="hazardMenuCard">
-    <button class="hazard-btn" data-type="flood"><span class="material-icons-round">water</span>洪水想定</button>
-    <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
-    <button class="hazard-btn" data-type="tsunami"><span class="material-icons-round">tsunami</span>津波浸水</button>
-    <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
-    <button class="hazard-btn" data-type="kikikuru_inundation"><span class="material-icons-round">emergency_share</span>浸水<br>キキクル</button>
-    <button class="hazard-btn" data-type="kikikuru_landslide"><span class="material-icons-round">landscape</span>土砂<br>キキクル</button>
-    <button class="hazard-btn" data-type="kikikuru_flood"><span class="material-icons-round">water_drop</span>洪水<br>キキクル</button>
-  </div>
 
-  <div id="rightControlContainer">
-    <button class="side-btn" id="locationBtn"><span class="material-icons-round">my_location</span></button>
-    <button class="side-btn" id="refreshBtn"><span class="material-icons-round">refresh</span></button>
-  </div>
 
-  <div id="statusPanel" data-state="full">
-    <div class="status-header">地点情報: <span id="elevationDisplay">-- m</span></div>
-    <div id="addressDisplay" style="font-size:12px; margin:5px 0;">住所: 取得中...</div>
-    <div id="latLngDisplay" style="font-size:11px; color:#777;">緯度: --, 経度: --</div>
-    <div id="routeSection">
-      <span id="walkTime">--</span> / <span id="carTime">--</span>
-    </div>
-  </div>
 
+  
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-  <script>
-    const map = L.map('map', { zoomControl: false }).setView([34.9756, 138.3828], 13);
-    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {attribution: '© 国土地理院'}).addTo(map);
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
-    const layers = {
-      flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6 })],
-      landslide: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7 })],
-      tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6 })],
-      kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { opacity: 0.7 })],
-      kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png', { opacity: 0.7 })],
-      kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7 })]
-    };
+<script>
+const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
 
-    // ハザードボタン挙動
-    document.querySelectorAll('.hazard-btn').forEach(btn => {
-      btn.onclick = function() {
-        const type = this.getAttribute('data-type');
-        this.classList.toggle('active');
-        if (layers[type]) {
-          this.classList.contains('active') ? layers[type].forEach(l => l.addTo(map)) : layers[type].forEach(l => map.removeLayer(l));
-        }
-      };
+const baseLayers = {
+  pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
+  ort: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg', {attribution: ' © 国土地理院' }),
+  relief: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png', {attribution: ' © 国土地理院' })
+};
+
+let currentBaseLayer = baseLayers.pale.addTo(map);
+    
+const layers = {
+  flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
+  landslide: [
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
+    L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
+  ],
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
+  kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
+  kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
+  kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
+};
+
+const mapTypeCard = document.getElementById('mapTypeContainer');
+document.getElementById('mapTypeDetails').addEventListener('toggle', function(e) {
+  mapTypeCard.setAttribute('open-state', this.open ? 'true' : 'false');
+});
+
+function changeMap(type) {
+  document.getElementById('mapTypeDetails').open = false; 
+  mapTypeCard.setAttribute('open-state', 'false');
+}
+  
+function refreshKikikuruLayers() {
+  ["kikikuru_inundation", "kikikuru_landslide", "kikikuru_flood"].forEach(type => {
+    const oldLayer = layers[type][0];
+    const wasVisible = map.hasLayer(oldLayer);
+    if (wasVisible) { map.removeLayer(oldLayer); }
+    const newUrl = oldLayer._url.split("?")[0] + "?t=" + Date.now();
+    layers[type][0] = L.tileLayer(newUrl, {
+      opacity: oldLayer.options.opacity,
+      maxZoom: oldLayer.options.maxZoom,
+      attribution: oldLayer.options.attribution
     });
+    if (wasVisible) { layers[type][0].addTo(map); }
+  });
+}
 
-    // 検索ロジック (ハイブリッド)
-    async function executeHybridSearch(query) {
-      const suggestionsBox = document.getElementById('customSuggestions');
-      suggestionsBox.innerHTML = '';
-      const res = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      data.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.innerText = item.properties.title;
-        div.onclick = () => {
-          const lat = item.geometry.coordinates[1];
-          const lng = item.geometry.coordinates[0];
-          map.setView([lat, lng], 16);
-          suggestionsBox.style.display = 'none';
-        };
-        suggestionsBox.appendChild(div);
-      });
-      suggestionsBox.style.display = 'block';
+const reliefOverlay = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png', {
+  opacity: 0.5,
+  attribution: '© 国土地理院'
+});
+    
+map.createPane('shelterPane');
+map.getPane('shelterPane').style.zIndex = 9999; 
+
+const shelterLayerGroup = L.layerGroup().addTo(map);
+let shelterActive = false;
+let shelterCenterLatLng = null;
+
+async function fetchAndShowShelters(centerLatLng) {
+  shelterLayerGroup.clearLayers();
+  if (!shelterActive || !centerLatLng) return;
+  L.circle(centerLatLng, { color: '#27ae60', fillOpacity: 0.1, radius: 3000 }).addTo(shelterLayerGroup);
+  const geojsonUrls = ['./data/shelter_1.geojson', './data/shelter_2.geojson'];
+  try {
+    const responses = await Promise.all(geojsonUrls.map(url => fetch(url).then(r => r.json())));
+    const allFeatures = responses.flatMap(data => data.features || []);
+    allFeatures.forEach(feature => {
+      const lng = feature.geometry.coordinates[0];
+      const lat = feature.geometry.coordinates[1];
+      const props = feature.properties;
+      const shelterLatLng = L.latLng(lat, lng);
+      const distance = centerLatLng.distanceTo(shelterLatLng);
+      if (distance <= 3000) {
+        const name = props["施設・場所名"] || "名称不明";
+        const address = props["住所"] || "住所情報なし";
+        const isEmergencySite = props["指定緊急避難場所との住所同一"] === "1" ? '<span style="color:green; font-weight:bold;">●指定緊急避難場所</span>' : '<span style="color:gray;">－</span>';
+        let hazards = [];
+        if (props["洪水"] === "1") hazards.push("洪水");
+        if (props["津波"] === "1") hazards.push("津波");
+        if (props["地震"] === "1") hazards.push("地震");
+        if (props["崖崩れ、土石流及び地滑り"] === "1") hazards.push("土砂災害");
+        const hazardDisplay = hazards.length > 0 ? `<div style="font-size:11px; margin-top:5px; color:#d35400;">対応: ${hazards.join(', ')}</div>` : "";
+        const shelterIcon = L.divIcon({
+          className: 'custom-shelter-icon',
+          html: '<span class="material-icons-round" style="font-size:18px; color:#fff;">directions_run</span>',
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+        const marker = L.marker([lat, lng], { icon: shelterIcon, pane: 'shelterPane' });
+        marker.bindPopup(`<div style="font-family:sans-serif; min-width:220px;"><strong style="font-size:15px; display:block; margin-bottom:5px;">${name}</strong><div style="font-size:12px; color:#555;">住所: ${address}</div><div style="font-size:12px; margin-top:5px;">避難場所: ${isEmergencySite}</div>${hazardDisplay}<button onclick="triggerRouteToShelter(${lat}, ${lng}, '${name}')" style="margin-top:12px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer;">ルート検索を開始</button></div>`);
+        shelterLayerGroup.addLayer(marker);
+      }
+    });    
+  } catch (err) { console.error("Error:", err); }
+}
+  
+window.triggerRouteToShelter = function(lat, lng, name) {
+  map.closePopup();
+  selectLocation(lat, lng, name);
+};
+
+document.querySelectorAll('.hazard-btn').forEach(btn => {
+  btn.onclick = function() {
+    const type = this.getAttribute('data-type');
+    this.classList.toggle('active');
+    const isActive = this.classList.contains('active');
+    if (type === 'shelter') {
+      shelterActive = isActive;
+      if (shelterActive) {
+        const targetCenter = destination || currentLocation || map.getCenter();
+        fetchAndShowShelters(targetCenter);
+      } else {
+        shelterLayerGroup.clearLayers();
+        shelterCenterLatLng = null;
+      }
+    } else {
+      if (isActive) { layers[type].forEach(layer => layer.addTo(map)); } 
+      else { layers[type].forEach(layer => map.removeLayer(layer)); }
     }
+  };
+});
 
-    document.getElementById('customSearchBtn').onclick = () => executeHybridSearch(document.getElementById('customSearchInput').value);
+const legendCard = document.getElementById('legendAccordion');
+document.getElementById('legendDetails').addEventListener('toggle', function(e) {
+  legendCard.setAttribute('open-state', this.open ? 'true' : 'false');
+});
 
-    // 現在地とリフレッシュ
-    document.getElementById("locationBtn").onclick = () => {
-      navigator.geolocation.getCurrentPosition(pos => {
-        map.setView([pos.coords.latitude, pos.coords.longitude], 15);
-      });
-    };
-    document.getElementById("refreshBtn").onclick = () => location.reload();
-  </script>
+let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
+
+function toggleStatusPanel() {
+  const panel = document.getElementById('statusPanel');
+  const icon = document.getElementById('toggleIcon');
+  if (panel.getAttribute('data-state') === 'full') {
+    panel.setAttribute('data-state', 'minimized');
+    icon.innerText = 'expand_less';
+  } else {
+    panel.setAttribute('data-state', 'full');
+    icon.innerText = 'expand_more';
+  }
+}
+  
+function updateCurrentLocation(isInitial = false) {
+  navigator.geolocation.getCurrentPosition(pos => {
+  currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+  document.getElementById('latLngDisplay').innerText = `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
+  document.getElementById('addressDisplay').innerText = "住所: 取得中...";
+  getElevation(currentLocation.lat, currentLocation.lng).then(elevation=>{ document.getElementById('elevationDisplay').innerText=elevation; });
+  getAddress(currentLocation.lat, currentLocation.lng).then(address=>{ document.getElementById('addressDisplay').innerText=`住所: ${address}`; });
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    if (isInitial || !destination) { map.setView(currentLocation, 14); }
+    if (shelterActive) { fetchAndShowShelters(currentLocation); }
+    if (destination) drawRoute();
+  }, err => {
+    if (isInitial) { currentLocation = map.getCenter(); if (shelterActive) fetchAndShowShelters(currentLocation); }
+  }, { enableHighAccuracy: true });
+}
+updateCurrentLocation(true);
+
+function drawRoute() {
+  if (!currentLocation || !destination) return;
+  if (routingControl) map.removeControl(routingControl);
+  routingControl = L.Routing.control({
+    waypoints: [currentLocation, destination],
+    routeWhileDragging: false, addWaypoints: false, draggableWaypoints: false, show: false,
+    lineOptions: { styles: [{ color: '#1a73e8', opacity: 0.8, weight: 5 }] }
+  }).addTo(map);
+  routingControl.on('routesfound', function(e) {
+    const summary = e.routes[0].summary; 
+    const distanceKm = (summary.totalDistance / 1000).toFixed(1);
+    const walkMinutes = Math.round((summary.totalDistance / 80));
+    const carMinutes = Math.round(summary.totalTime / 60);
+    document.getElementById('walkDist').innerText = `${distanceKm} km`;
+    document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
+    document.getElementById('carDist').innerText = `${distanceKm} km`;
+    document.getElementById('carTime').innerText = `${carMinutes} 分`;
+  });
+}
+
+async function getElevation(lat, lng) {
+  try {
+    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.elevation !== undefined ? data.elevation.toFixed(1) + " m" : "標高データなし";
+  } catch (error) { return "取得失敗"; }
+}
+  
+let searchMarkers = [];
+async function executeHybridSearch(query) {
+  if (!query) return;
+  const suggestionsBox = document.getElementById('customSuggestions');
+  suggestionsBox.innerHTML = '';
+  searchMarkers.forEach(m => map.removeLayer(m));
+  searchMarkers = [];
+  let cleanQuery = query.trim().replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/－|ー|－/g, "-");
+  const queryTokens = cleanQuery.split(/[\s　]+/).filter(t => t.length > 0);
+  if (queryTokens.length === 0) return;
+  const baseLocation = currentLocation || map.getCenter();
+  let masterRegistry = [];
+  const searchPromises = [];
+  searchPromises.push(
+    fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(queryTokens[0])}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+        data.forEach(item => {
+          masterRegistry.push({ lat: item.geometry.coordinates[1], lon: item.geometry.coordinates[0], name: item.properties.title, address: "公的登録位置データ", category: "government" });
+        });
+      }).catch(() => {})
+  );
+  const bounds = map.getBounds();
+  const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
+  const osmQuery = queryTokens.join(' ');
+  searchPromises.push(
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}${viewboxParams}&limit=30&addressdetails=1&accept-language=ja`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+        data.forEach(item => {
+          const nameParts = item.display_name.split(',');
+          const shopName = nameParts[0].trim();
+          let addressClean = nameParts.slice(1).join(', ').replace(/日本, /g, '').replace(/, \d{3}-\d{4}/g, '').split(', ').reverse().join(' ').trim();
+          masterRegistry.push({ lat: parseFloat(item.lat), lon: parseFloat(item.lon), name: shopName, address: addressClean || item.type, category: item.class || "facility" });
+        });
+      }).catch(() => {})
+  );
+  await Promise.all(searchPromises);
+  let uniqueResults = [];
+  masterRegistry.forEach(item => {
+    let duplicate = uniqueResults.find(r => Math.abs(r.lat - item.lat) < 0.0004 && Math.abs(r.lon - item.lon) < 0.0004);
+    if (!duplicate) { uniqueResults.push(item); } else { if (item.address.length > duplicate.address.length) duplicate.address = item.address; }
+  });
+  if (uniqueResults.length === 0) {
+    suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>検索にヒットしませんでした</div>`;
+    suggestionsBox.style.display = 'block';
+    return;
+  }
+  uniqueResults.forEach(item => {
+    let score = 0;
+    let matchTokenCount = 0;
+    queryTokens.forEach(token => {
+      const regex = new RegExp(token, 'i');
+      if (regex.test(item.name)) { score += 5000; matchTokenCount++; }
+      if (regex.test(item.address)) { score += 2000; }
+    });
+    if (matchTokenCount === queryTokens.length) score += 20000;
+    if (item.name === cleanQuery) score += 10000;
+    if (baseLocation) {
+      const distanceMeter = baseLocation.distanceTo(L.latLng(item.lat, item.lon));
+      if (distanceMeter < 40000) score += (40000 - distanceMeter) * 0.2; 
+    }
+    item.finalScore = score;
+  });
+  uniqueResults.sort((a, b) => b.finalScore - a.finalScore);
+  uniqueResults.slice(0, 12).forEach(item => {
+    const safeName = item.name.replace(/'/g, "\\'");
+    const marker = L.marker([item.lat, item.lon]).addTo(map);
+    marker.bindPopup(`<div style="font-family:sans-serif; min-width:180px;"><strong style="font-size:14px; display:block; margin-bottom:5px;">${item.name}</strong><div style="font-size:11px; color:#666; margin-bottom:8px;">${item.address}</div><button onclick="selectLocation(${item.lat}, ${item.lon}, '${safeName}')" style="width:100%; padding:6px; background:#1a73e8; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">ここを目的地にする</button></div>`);
+    searchMarkers.push(marker);
+    let iconName = "place", iconColor = "#1a73e8";
+    if (["駅", "役所", "病院"].some(k => item.name.includes(k))) { iconName = "stars"; iconColor = "#fbbc05"; }
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.style.padding = '10px 14px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.innerHTML = `<span class="material-icons-round" style="color:${iconColor}; font-size:20px; margin-right:12px;">${iconName}</span><div style="display: flex; flex-direction: column; overflow: hidden; width: 100%;"><strong style="color:#202124; font-size:14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong><span style="color:#5f6368; font-size:11px; margin-top: 2px;">${item.address}</span></div>`;
+    div.onclick = () => { selectLocation(item.lat, item.lon, item.name); map.setView([item.lat, item.lon], 16); suggestionsBox.style.display = 'none'; };
+    suggestionsBox.appendChild(div);
+  });
+  suggestionsBox.style.display = 'block';
+  map.fitBounds(L.featureGroup(searchMarkers).getBounds().pad(0.2));
+}
+  
+function selectLocation(lat, lng, label) {
+  destination = L.latLng(lat, lng); 
+  if (destMarker) map.removeLayer(destMarker);
+  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+  if (currentLocation) { drawRoute(); map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding: [80, 160] }); } 
+  else { map.setView(destination, 15); }
+  if (shelterActive) { setTimeout(() => { fetchAndShowShelters(destination); }, 500); }
+}
+
+async function getAddress(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ja`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return data.address ? data.display_name : "住所情報が見つかりません";
+  } catch (error) { return "住所取得失敗"; }
+}
+
+map.on('click', async function(e) {
+  document.getElementById('customSuggestions').style.display = 'none';
+  const lat = e.latlng.lat, lng = e.latlng.lng;
+  document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
+  const elevation = await getElevation(lat, lng);
+  document.getElementById('elevationDisplay').innerText = elevation;
+  document.getElementById('addressDisplay').innerText = "住所: 取得中...";
+  const address = await getAddress(lat, lng);
+  document.getElementById('addressDisplay').innerText = `住所: ${address}`;
+  selectLocation(lat, lng, "タップした地点");
+  if (shelterActive) fetchAndShowShelters(e.latlng);
+});
+  
+const searchInput = document.getElementById('customSearchInput');
+const searchBtn = document.getElementById('customSearchBtn');
+searchInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') executeHybridSearch(searchInput.value); });
+searchBtn.onclick = function() { executeHybridSearch(searchInput.value); };
+
+document.getElementById("locationBtn").onclick = () => {
+  if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+  if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+  destination = null;
+  document.getElementById("walkTime").innerText = "-- 分"; document.getElementById("walkDist").innerText = "-- km";
+  document.getElementById("carTime").innerText = "-- 分"; document.getElementById("carDist").innerText = "-- km";
+  updateCurrentLocation(false);
+};
+  
+function changeMap(type) {
+  if (currentBaseLayer) map.removeLayer(currentBaseLayer);
+  if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
+  if (type === 'relief_overlay') { baseLayers.pale.addTo(map); reliefOverlay.addTo(map); currentBaseLayer = baseLayers.pale; } 
+  else if (type === 'pale') { currentBaseLayer = baseLayers.pale.addTo(map); } 
+  else if (type === 'ort') { currentBaseLayer = baseLayers.ort.addTo(map); }
+  if (currentBaseLayer) currentBaseLayer.bringToBack();
+  const details = document.getElementById('mapTypeDetails');
+  details.open = false;
+  document.getElementById('mapTypeContainer').setAttribute('open-state', 'false');
+}
+  
+document.getElementById("refreshBtn").onclick = async () => {
+  const btn = document.getElementById("refreshBtn");
+  btn.classList.add("loading");
+  refreshKikikuruLayers();
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  btn.classList.remove("loading");
+};
+
+
+
+
+  
+</script>
+
+
+
+
+
 </body>
 </html>
