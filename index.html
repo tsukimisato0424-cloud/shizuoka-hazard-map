@@ -320,18 +320,40 @@ html, body { height: 100%; margin: 0; padding: 0; }
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
+  border-radius: 0 12px 12px 12px; /* タブが飛び出すため左上の角を直角に */
   box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
   transition: all 0.3s ease;
-  overflow: hidden;
+  overflow: visible; /* タブをはみ出させるためにvisibleに */
+  padding-top: 40px; /* タブの飛び出し分 */
 }
 
-/* タブのスタイル */
-.tab-container { display: flex; border-bottom: 1px solid #ddd; background: #f0f0f0; }
-.tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: bold; color: #5f6368; }
-.tab-btn.active { background: white; color: #1a73e8; border-bottom: 2px solid #1a73e8; }
-.tab-content { display: none; padding: 10px; }
+/* 飛び出るタブのコンテナ */
+.tab-container {
+  position: absolute; top: -38px; left: 0;
+  display: flex; gap: 2px;
+}
+
+.tab-btn {
+  padding: 8px 20px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 10px 10px 0 0;
+  cursor: pointer; font-size: 13px; font-weight: bold; color: #777;
+  border: 1px solid #ddd; border-bottom: none;
+}
+.tab-btn.active { background: rgba(255,255,255,0.95); color: #1a73e8; }
+
+/* 中身の高さ固定 */
+.tab-content {
+  display: none; padding: 15px;
+  height: 80px; /* 3行分相当を固定 */
+  overflow: hidden;
+}
 .tab-content.active { display: block; }
+
+/* トグルボタンの配置調整 */
+#toggleStatusBtn {
+  position: absolute; top: 10px; right: 10px;
+}
 
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
@@ -609,16 +631,17 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
 </div>
   
 <div id="statusPanel" data-state="full">
-  <!-- タブ部分 -->
+  <!-- 飛び出るタブ -->
   <div class="tab-container">
-    <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
-    <div class="tab-btn" onclick="switchTab(2)">補助</div>
-    <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="margin-left:auto; border:none; background:none; cursor:pointer; display:flex; align-items:center;">
-      <span class="material-icons-round" id="toggleIcon">expand_more</span>
-    </button>
+    <div class="tab-btn active" onclick="switchTab(1)">地点情報</div>
+    <div class="tab-btn" onclick="switchTab(2)">ルート</div>
   </div>
 
-  <!-- 1枚目：地点情報 -->
+  <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
+    <span class="material-icons-round" id="toggleIcon">expand_more</span>
+  </button>
+
+  <!-- 1枚目：地点情報（高さ固定） -->
   <div id="tab1" class="tab-content active">
     <div class="status-header">
       <span style="font-weight:bold;">地点情報</span>
@@ -628,9 +651,9 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
     <div id="latLngDisplay" style="font-size:11px; color:#777;">緯度: --, 経度: --</div>
   </div>
 
-  <!-- 2枚目：ルート情報 -->
+  <!-- 2枚目：ルート情報（高さ固定） -->
   <div id="tab2" class="tab-content">
-    <div class="route-section" style="border:none; margin:0; padding:0;">
+    <div class="route-section" style="border:none; margin:0;">
       <div class="route-modes">
         <div class="route-mode-box">
           <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
