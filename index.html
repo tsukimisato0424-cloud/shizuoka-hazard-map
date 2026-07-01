@@ -125,10 +125,10 @@ html, body { height: 100%; margin: 0; padding: 0; }
               border-radius 0.28s ease;
 }
 
-/* 開いた（展開した）ときのカード形状 */
+/* 開いた（展開した）ときのカード形状を少し小さく調整 */
 #legendAccordion[open-state="true"] {
   width: 240px;
-  height: 340px;
+  height: 280px; /* 小さくしました */
   border-radius: 16px;
 }
 
@@ -139,7 +139,7 @@ html, body { height: 100%; margin: 0; padding: 0; }
   flex-direction: column;
 }
 
-/* 閉じているときの丸いボタン（summary）のスタイル */
+/* 閉じているときのスタイルはそのまま */
 #legendAccordion summary {
   width: 52px;
   height: 52px;
@@ -157,37 +157,15 @@ html, body { height: 100%; margin: 0; padding: 0; }
 #legendAccordion summary::-webkit-details-marker { display: none; }
 #legendAccordion summary:hover { background-color: #f8f9fa; }
 
-/* 丸ボタンの中のアイコン */
-#legendAccordion summary .legend-icon {
-  font-size: 20px;
-  color: #1a73e8;
-  margin: 0;
-}
+#legendAccordion summary .legend-icon { font-size: 20px; color: #1a73e8; margin: 0; }
+#legendAccordion summary .legend-text { font-size: 10px; font-weight: bold; color: #3c4043; line-height: 1; margin-top: 2px; }
+#legendAccordion summary .legend-arrow { display: none; }
 
-/* 丸ボタンの中の「凡例」テキスト */
-#legendAccordion summary .legend-text {
-  font-size: 10px;
-  font-weight: bold;
-  color: #3c4043;
-  line-height: 1;
-  margin-top: 2px;
-}
-
-/* 閉じているときは右側の矢印を隠す */
-#legendAccordion summary .legend-arrow {
-  display: none;
-  font-size: 20px;
-  color: #70757a;
-  transition: transform 0.2s ease;
-}
-
-/* ----------------------------------
-   開いた（展開した）ときのアニメーション変化
----------------------------------- */
+/* 展開時 */
 #legendAccordion[open-state="true"] summary {
   width: 100%;
-  height: 48px;
-  padding: 0 14px;
+  height: 40px; /* 少し縮小 */
+  padding: 0 12px;
   flex-direction: row;
   justify-content: flex-start;
   border-bottom: 1px solid #f1f3f4;
@@ -195,37 +173,39 @@ html, body { height: 100%; margin: 0; padding: 0; }
 }
 
 #legendAccordion[open-state="true"] summary .legend-text {
-  font-size: 14px;
+  font-size: 13px; /* 少し縮小 */
   margin-top: 0;
   margin-left: 8px;
   flex: 1;
   color: #202124;
 }
 
+#legendAccordion summary .legend-arrow {
+  display: none;
+}
 #legendAccordion[open-state="true"] summary .legend-arrow {
-  display: block; /* 開いたら矢印を表示 */
+  display: block;
 }
 
-/* アコーディオンが開いているときは矢印を180度回転して上向きにする */
 #legendAccordion details[open] summary .legend-arrow {
   transform: rotate(180deg);
 }
 
-/* 中身のスクロールエリア */
+/* 中身のスクロールエリアを微調整 */
 .legend-content { 
-  padding: 4px 14px 14px 14px; 
-  height: calc(100% - 48px); /* ヘッダーの高さを引いた全域 */
+  padding: 6px 12px; /* 左右の余白を少し詰める */
+  height: calc(100% - 40px); 
   overflow-y: auto; 
-  font-size: 12px; 
+  font-size: 11px !important; /* 全体的に文字サイズを少し縮小 */
   color: #3c4043; 
-  line-height: 1.6; 
+  line-height: 1.4 !important; 
   box-sizing: border-box;
 }
 
-.legend-section-title { font-weight: bold; color: #202124; margin: 12px 0 6px 0; display: block; }
-.legend-item { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; color: #5f6368; }
-.legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
-
+.legend-section-title { font-weight: bold; color: #202124; margin: 6px 0 2px 0; display: block; }
+.legend-item { display: flex; align-items: center; margin-bottom: 3px; gap: 6px; color: #5f6368; }
+.legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+  
 /* 緑色の人が走っている避難所ピクトグラム CSSデザイン */
 .custom-shelter-icon {
   background: #27ae60 !important;
