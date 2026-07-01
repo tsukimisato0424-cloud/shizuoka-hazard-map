@@ -330,12 +330,12 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .tab-container {
   position: absolute;
   top: -37px;
-  left: 0; /* -1pxを削除 */
+  left: 0;
   display: flex;
   gap: 4px;
 }
 
-/* タブボタン */
+/* タブボタン（非アクティブ） */
 .tab-btn {
   width: 90px;
   padding: 8px 12px;
@@ -343,9 +343,9 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
-  border: 1px solid rgba(26, 115, 232, 0.45);
-  background: #d0e0f5; /* 非アクティブタブも青みがかった色に */
-  color: #555;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: #e0e0e0; /* 薄い灰色 */
+  color: #777; /* 暗い文字色 */
   transition: all 0.2s;
   z-index: 1;
   margin-bottom: -1px; 
@@ -357,18 +357,13 @@ html, body { height: 100%; margin: 0; padding: 0; }
   margin-left: 0px; /
 }
 
-/* アクティブタブ */
+/* タブボタン（アクティブ） */
 .tab-btn.active {
-  background: linear-gradient(135deg, #4da3ff, #1a73e8); /* 爽やかな青のグラデーション */
-  color: #fff; /* 文字色を白に */
-  border-bottom: 2px solid rgba(230, 240, 255, 0.95);
+  background: #ffffff; /* 白地 */
+  color: #1a73e8; /* 濃い文字色 */
+  border-bottom: 2px solid #ffffff; /* パネル境目を白で隠す */
   z-index: 3;
   transform: translateY(1px);
-}
-
-/* パネル本体の上部境界線を消す（重なりを綺麗にするため） */
-#tab1, #tab2 {
-  border-top: none; 
 }
 
 /* コンテンツエリアの高さ固定 */
