@@ -356,14 +356,14 @@ html, body { height: 100%; margin: 0; padding: 0; }
   border-left: 1px solid rgba(26, 115, 232, 0.45);
   margin-left: 0px; /
 }
+
 /* アクティブタブ */
 .tab-btn.active {
-  background: rgba(255,255,255,0.95);
-  color: #1a73e8;
-  /* パネルと繋がっているように見せるため下辺を透明に */
-  border-bottom: 2px solid rgba(255,255,255,0.95);
-  z-index: 3; /* 前面に出す */
-  transform: translateY(1px); /* パネルの境目に重ねる */
+  background: linear-gradient(135deg, #4da3ff, #1a73e8); /* 爽やかな青のグラデーション */
+  color: #fff; /* 文字色を白に */
+  border-bottom: 2px solid rgba(230, 240, 255, 0.95);
+  z-index: 3;
+  transform: translateY(1px);
 }
 
 /* パネル本体の上部境界線を消す（重なりを綺麗にするため） */
