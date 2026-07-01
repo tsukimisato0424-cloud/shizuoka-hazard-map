@@ -210,6 +210,20 @@ html, body { height: 100%; margin: 0; padding: 0; }
 #refreshBtn .material-icons-round {
   font-size: 24px;
 }
+
+/* 神々しく光るアニメーション */
+@keyframes glowing {
+  0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px #1a73e8; }
+  50% { box-shadow: 0 0 10px rgba(255, 255, 255, 1), 0 0 20px rgba(26, 115, 232, 0.8), 0 0 30px #1a73e8; }
+  100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5), 0 0 15px #1a73e8; }
+}
+
+/* アクティブな時に神々しく発光させる */
+.hazard-btn.active {
+  animation: glowing 1.5s infinite ease-in-out;
+  border-color: #fff !important;
+  border-width: 2px;
+}
   
 /* 5. ステータスパネル  */
 #statusPanel {
