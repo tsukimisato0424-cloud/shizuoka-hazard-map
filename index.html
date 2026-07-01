@@ -296,6 +296,19 @@ html, body { height: 100%; margin: 0; padding: 0; }
 /* ルート検索の不要な吹き出しを隠す */
 .leaflet-routing-container { display: none !important; }
 .leaflet-marker-pane .leaflet-popup { display: none !important; }
+
+@keyframes spinRefresh {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#refreshBtn.loading .material-icons-round {
+  animation: spinRefresh 0.8s linear infinite;
+}
   
 </style>
 </head>
@@ -1031,8 +1044,18 @@ function changeMap(type) {
   document.getElementById('mapTypeMenu').style.display = 'none';
 }
 
-document.getElementById("refreshBtn").onclick = () => {
+document.getElementById("refreshBtn").onclick = async () => {
+
+  const btn = document.getElementById("refreshBtn");
+
+  btn.classList.add("loading");
+
   refreshKikikuruLayers();
+
+  // 約1秒回転させる
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  btn.classList.remove("loading");
 };
   
 </script>
