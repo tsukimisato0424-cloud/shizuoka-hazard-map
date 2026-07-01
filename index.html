@@ -832,6 +832,19 @@ document.getElementById('legendDetails').addEventListener('toggle', function(e) 
 
 let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
 
+function toggleStatusPanel() {
+  const panel = document.getElementById('statusPanel');
+  const icon = document.getElementById('toggleIcon');
+  
+  if (panel.getAttribute('data-state') === 'full') {
+    panel.setAttribute('data-state', 'minimized');
+    icon.innerText = 'expand_less'; // 上向き矢印に変更
+  } else {
+    panel.setAttribute('data-state', 'full');
+    icon.innerText = 'expand_more'; // 下向き矢印に変更
+  }
+}
+  
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
   currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
