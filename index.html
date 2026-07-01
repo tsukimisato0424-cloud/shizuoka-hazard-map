@@ -355,6 +355,10 @@ html, body { height: 100%; margin: 0; padding: 0; }
   /* 下辺をパネルと繋げるために、重なりを消す */
   margin-bottom: -1px;
 }
+  /* 最初のタブの角をパネル本体の左端と合わせる */
+.tab-btn:first-child {
+  border-left: 1px solid rgba(26, 115, 232, 0.45);
+}
 
 /* アクティブタブ */
 .tab-btn.active {
