@@ -202,16 +202,24 @@ html, body { height: 100%; margin: 0; padding: 0; }
   
 /* 5. ステータスパネル  */
 #statusPanel {
-  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: rgba(255, 255, 255, 0.95);
+  position: absolute;
+  bottom: 20px;
+  left: 10px;
+  right: 10px;
+  z-index: 1500;
+  background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px; padding: 10px 14px;
+  border-radius: 12px;
+  padding: 10px 14px;
+
+  border: 1.5px solid #1a73e8;
+
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  inset 0 0 0 1.5px #1a73e8;
-  transition: all 0.3s ease; 
+
+  transition: all 0.3s ease;
   overflow: hidden;
 }
-
+  
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
   height: 40px;
