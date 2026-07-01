@@ -342,25 +342,24 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
-  /* パネルと同じ色で枠線を設定 */
+  /* 枠線を上・右・左に設定し、下はパネルと一体化させるために透明にする */
   border: 1px solid rgba(26, 115, 232, 0.45);
-  /* 境界を消すため、あえて下線を描画 */
-  border-bottom: 1px solid rgba(26, 115, 232, 0.45); 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.95); /* パネルの色と合わせて隠す */
   background: #e0e0e0;
   color: #777;
   transition: all 0.2s;
   z-index: 1;
+  margin-bottom: -1px; /* 枠線を少し下げてパネルと重なりを調整 */
 }
 
-/* アクティブタブ：沈み込みを解消し、線をパネルと繋げる */
+/* アクティブタブ */
 .tab-btn.active {
   background: rgba(255,255,255,0.95);
   color: #1a73e8;
-  /* 枠線を上書きしてパネル本体と連結 */
+  /* パネル本体の枠線と完全に繋げる */
   border-bottom: 2px solid rgba(255,255,255,0.95);
-  margin-bottom: -1px;
   z-index: 2;
-  transform: translateY(-2px); /* 浮かせて立体的に */
+  transform: translateY(-1px); /* わずかに浮かせる */
   box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
 }
 
