@@ -1291,7 +1291,9 @@ function changeMap(type) {
   if (currentBaseLayer) currentBaseLayer.bringToBack();
   
   // メニューを閉じる
-  document.getElementById('mapTypeMenu').style.display = 'none';
+  const details = document.getElementById('mapTypeDetails');
+  details.open = false;
+  document.getElementById('mapTypeContainer').setAttribute('open-state', 'false');
 }
   
 document.getElementById("refreshBtn").onclick = async () => {
