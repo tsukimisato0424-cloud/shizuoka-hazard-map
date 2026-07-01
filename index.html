@@ -29,7 +29,10 @@ html, body { height: 100%; margin: 0; padding: 0; }
     0 0 0 1px rgba(26,115,232,.45),
     0 0 12px rgba(26,115,232,.30),
     0 0 28px rgba(26,115,232,.18);
-  padding: 2px 4px; /* 内部余白を調整 */
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter:blur(10px);  padding: 2px 4px; /* 内部余白を調整 */
 }
   
 .custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 14px 12px; background: transparent; color: #202124; }
