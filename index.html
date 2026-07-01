@@ -208,13 +208,14 @@ html, body { height: 100%; margin: 0; padding: 0; }
 
 /* 中身のスクロールエリア */
 .legend-content { 
-  padding: 4px 14px 14px 14px; 
-  height: calc(100% - 48px); /* ヘッダーの高さを引いた全域 */
-  overflow-y: hidden; 
-  font-size: 11px !important; 
+  padding: 10px 12px; 
+  height: calc(100% - 48px); 
+  overflow-y: auto;
+  font-size: 12px; 
   color: #3c4043; 
-  line-height: 1.4 !important; 
-  box-sizing: border-box;
+  line-height: 1.5;
+  cursor: pointer; /* 閉じることができることを示すためポインタにする */
+  pointer-events: auto; /* クリックを確実に検知させる */
 }
 
 .legend-section-title { 
@@ -819,7 +820,25 @@ const reliefOverlay = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{
   opacity: 0.5,
   attribution: '© 国土地理院'
 });
-    
+
+  
+// 凡例エリア全体をタップした際に開閉をトグルする処理
+const legendDetails = document.getElementById('legendDetails');
+const legendCard = document.getElementById('legendAccordion');
+
+legendCard.addEventListener('click', function(e) {
+  // すでに開いている場合、クリックされたのが「summary以外」なら閉じる
+  if (legendDetails.open && e.target.closest('.legend-content')) {
+    legendDetails.open = false;
+    legendCard.setAttribute('open-state', 'false');
+  }
+});
+// 元のトグル同期処理（既存のものをそのまま利用）
+legendDetails.addEventListener('toggle', function(e) {
+  legendCard.setAttribute('open-state', this.open ? 'true' : 'false');
+});
+
+  
 // 最前面の描画用独立ペインを生成
 map.createPane('shelterPane');
 map.getPane('shelterPane').style.zIndex = 9999; 
