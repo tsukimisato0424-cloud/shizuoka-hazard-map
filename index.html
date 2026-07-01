@@ -121,8 +121,8 @@ html, body { height: 100%; margin: 0; padding: 0; }
 
 /* 開いた（展開した）ときのカード形状 */
 #legendAccordion[open-state="true"] {
-  width: 240px;
-  height: 340px;
+  width: 200px;        /* 少し幅を縮小 */
+  height: 280px;       /* 高さを固定してスクロールを回避 */
   border-radius: 16px;
 }
 
@@ -209,19 +209,40 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .legend-content { 
   padding: 4px 14px 14px 14px; 
   height: calc(100% - 48px); /* ヘッダーの高さを引いた全域 */
-  overflow-y: auto; 
-  font-size: 12px; 
+  overflow-y: hidden; 
+  font-size: 11px !important; 
   color: #3c4043; 
-  line-height: 1.6; 
+  line-height: 1.4 !important; 
   box-sizing: border-box;
 }
 
-.legend-section-title { font-weight: bold; color: #202124; margin: 12px 0 6px 0; display: block; }
-.legend-item { display: flex; align-items: center; margin-bottom: 6px; gap: 8px; color: #5f6368; }
-.legend-color { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.15); }
+.legend-section-title { 
+  font-weight: bold; 
+  color: #202124; 
+  margin: 6px 0 3px 0 !important; /* マージンを削減 */
+  display: block; 
+}
 
+.legend-item { 
+  display: flex; 
+  align-items: center; 
+  margin-bottom: 3px !important; /* 項目間の隙間を削減 */
+  gap: 6px; 
+  color: #5f6368; 
+}
+
+.legend-color { 
+  width: 12px; 
+  height: 12px; 
+  border-radius: 2px; 
+  flex-shrink: 0; 
+}
+  
 /* 緑色の人が走っている避難所ピクトグラム CSSデザイン */
 .custom-shelter-icon {
+  width: 18px !important; 
+  height: 18px !important;
+  font-size: 10px !important;
   background: #27ae60 !important;
   border: 2px solid #ffffff !important;
   border-radius: 50% !important;
