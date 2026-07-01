@@ -117,9 +117,6 @@ html, body { height: 100%; margin: 0; padding: 0; }
  
 /* 3. 凡例（フローティングサークル化） */
 #legendAccordion {
-  position: absolute; 
-  top: 220px; 
-  right: 16px; /* 右側の他のボタンと縦ラインを統一 */
   z-index: 1500;
   width: 52px;
   height: 52px;
@@ -265,7 +262,6 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .map-type-item:hover { background: #f8f9fa; }  
 /* 4. フローティング現在地ボタン */
 #locationBtn {
-  position: absolute; right: 16px; bottom: 240px; /* 180px -> 240px */
   z-index: 1500;
   width: 50px; height: 50px; border: none; border-radius: 50%;
   background: #ffffff; color: #1a73e8; cursor: pointer;
@@ -274,9 +270,6 @@ html, body { height: 100%; margin: 0; padding: 0; }
 #locationBtn .material-icons-round { font-size: 24px; }
 
 #refreshBtn {
-  position: absolute;
-  right: 16px;
-  bottom: 180px;   /* 120px -> 180px */
   z-index: 1500;
   width: 50px;
   height: 50px;
@@ -293,6 +286,34 @@ html, body { height: 100%; margin: 0; padding: 0; }
 
 #refreshBtn .material-icons-round {
   font-size: 24px;
+}
+
+/* 右上のボタン群を縦に並べるコンテナ */
+#rightControlContainer {
+  position: absolute;
+  top: 160px; /* ハザードメニューの下にくるように配置 */
+  right: 10px;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* ボタン同士の間隔 */
+}
+
+/* 個別のボタン・メニューの配置を親に合わせる */
+#mapTypeContainer,
+#legendAccordion,
+#locationBtn,
+#refreshBtn {
+  position: relative !important; /* 絶対配置を解除して親に従う */
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+}
+
+/* ハザードメニューカードをボタン群と被らないように少し左に寄せる */
+#hazardMenuCard {
+  right: 70px; /* 右側にボタン群のスペース(約60px)を確保 */
 }
   
 /* 神々しく光るアニメーション */
@@ -362,9 +383,6 @@ html, body { height: 100%; margin: 0; padding: 0; }
 
 /* --- 地図タイプ切り替えメニューのスタイル --- */
 #mapTypeContainer {
-  position: absolute;
-  top: 160px; /* ここを調整して配置してください */
-  right: 16px;
   z-index: 1500;
   width: 52px;
   height: 52px;
