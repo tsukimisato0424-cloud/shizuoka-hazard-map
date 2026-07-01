@@ -45,30 +45,26 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
 /* ハザードメニュー */
-#hazardMenuCard{
-  position:absolute;
-  top:75px;
-  left:10px;
-  right:10px;
-  z-index:2000;
+#hazardMenuCard {
+  position: absolute;
+  top: 75px;
+  left: 10px;
+  right: 10px; /* 画面端まで広げる */
+  z-index: 2000;
 
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);  backdrop-filter:blur(10px);
-  border-radius:16px;
-  padding:8px;
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-radius: 16px;
+  padding: 8px;
 
-  box-shadow:
-    0 8px 30px rgba(0,0,0,.20),
-    0 0 0 1px rgba(26,115,232,.45),
-    0 0 12px rgba(26,115,232,.30),
-    0 0 28px rgba(26,115,232,.18);
+  box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
   
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:4px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
 }
-
+  
 .hazard-btn{
   width:100%;
   height:74px;
