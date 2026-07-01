@@ -315,21 +315,23 @@ html, body { height: 100%; margin: 0; padding: 0; }
   border-width: 2px;
 }
   
-/* 5. ステータスパネル  */
+/* 5. ステータスパネル */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border-radius: 12px; padding: 10px 14px;
-  box-shadow:
-    0 8px 30px rgba(0,0,0,.20),
-    0 0 0 1px rgba(26,115,232,.45),
-    0 0 12px rgba(26,115,232,.30),
-    0 0 28px rgba(26,115,232,.18);
-  transition: all 0.3s ease; 
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
+  transition: all 0.3s ease;
   overflow: hidden;
 }
+
+/* タブのスタイル */
+.tab-container { display: flex; border-bottom: 1px solid #ddd; background: #f0f0f0; }
+.tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 13px; font-weight: bold; color: #5f6368; }
+.tab-btn.active { background: white; color: #1a73e8; border-bottom: 2px solid #1a73e8; }
+.tab-content { display: none; padding: 10px; }
+.tab-content.active { display: block; }
 
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
@@ -607,20 +609,28 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
 </div>
   
 <div id="statusPanel" data-state="full">
-  <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="position:absolute; right:10px; top:10px; border:none; background:none; cursor:pointer;">
-    <span class="material-icons-round" id="toggleIcon">expand_more</span>
-  </button>
-  
-  <div class="status-header">
-    <span style="font-weight:bold; color:#5f6368;">地点情報</span>
-    <span>海抜: <span id="elevationDisplay">-- m</span></span>
+  <!-- タブ部分 -->
+  <div class="tab-container">
+    <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
+    <div class="tab-btn" onclick="switchTab(2)">補助</div>
+    <button id="toggleStatusBtn" onclick="toggleStatusPanel()" style="margin-left:auto; border:none; background:none; cursor:pointer; display:flex; align-items:center;">
+      <span class="material-icons-round" id="toggleIcon">expand_more</span>
+    </button>
   </div>
-  
-  <div id="addressDisplay" style="font-size:12px; color:#333; margin-bottom:5px; font-weight:bold;">住所: 取得中...</div>
-  <div id="latLngDisplay" style="font-size:11px; color:#777; margin-bottom:8px;">緯度: --, 経度: --</div>
 
-  <div id="statusContent">
-    <div id="routeSection" class="route-section">
+  <!-- 1枚目：地点情報 -->
+  <div id="tab1" class="tab-content active">
+    <div class="status-header">
+      <span style="font-weight:bold;">地点情報</span>
+      <span>海抜: <span id="elevationDisplay">-- m</span></span>
+    </div>
+    <div id="addressDisplay" style="font-size:12px; font-weight:bold;">住所: 取得中...</div>
+    <div id="latLngDisplay" style="font-size:11px; color:#777;">緯度: --, 経度: --</div>
+  </div>
+
+  <!-- 2枚目：ルート情報 -->
+  <div id="tab2" class="tab-content">
+    <div class="route-section" style="border:none; margin:0; padding:0;">
       <div class="route-modes">
         <div class="route-mode-box">
           <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
@@ -1314,6 +1324,16 @@ document.getElementById("refreshBtn").onclick = async () => {
 
   btn.classList.remove("loading");
 };
+
+function switchTab(tabNumber) {
+  // 全てのタブとコンテンツのactiveを外す
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+  // 選択されたタブとコンテンツを有効化
+  document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
+  document.getElementById('tab' + tabNumber).classList.add('active');
+}
   
 </script>
 </body>
