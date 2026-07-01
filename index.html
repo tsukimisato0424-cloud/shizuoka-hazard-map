@@ -1250,35 +1250,12 @@ document.getElementById("locationBtn").onclick = () => {
 
 };
   
-
-// --- メニュー型切り替えロジック ---
-function toggleMenu() {
-  const menu = document.getElementById('mapTypeMenu');
-  menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
-}
-
-function toggleStatusPanel() {
-  const panel = document.getElementById('statusPanel');
-  const icon = document.getElementById('toggleIcon');
-  const isMinimized = panel.getAttribute('data-state') === 'minimized';
-
-  if (isMinimized) {
-    // 最小 → 全表示
-    panel.setAttribute('data-state', 'full');
-    icon.innerText = 'expand_more';
-  } else {
-    // 全表示 → 最小
-    panel.setAttribute('data-state', 'minimized');
-    icon.innerText = 'expand_less';
-  }
-}
-  
 function changeMap(type) {
-  // 現在表示中のベースマップを一旦消す
+  // 現在表示中のベースマップを消す
   if (currentBaseLayer) {
     map.removeLayer(currentBaseLayer);
   }
-  // 重ね合わせレイヤーも消す
+  // 重ね合わせレイヤーを消す
   if (map.hasLayer(reliefOverlay)) {
     map.removeLayer(reliefOverlay);
   }
@@ -1299,9 +1276,11 @@ function changeMap(type) {
   
   // 地図を一番後ろ（他のアイコンの下）に送る
   if (currentBaseLayer) currentBaseLayer.bringToBack();
+  if (map.hasLayer(reliefOverlay)) reliefOverlay.bringToBack();
   
-  // メニューを閉じる
-  document.getElementById('mapTypeMenu').style.display = 'none';
+  // メニューを閉じる処理（IDを修正）
+  document.getElementById('mapTypeDetails').open = false; 
+  mapTypeCard.setAttribute('open-state', 'false');
 }
 
 document.getElementById("refreshBtn").onclick = async () => {
