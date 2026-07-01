@@ -1251,21 +1251,26 @@ document.getElementById("locationBtn").onclick = () => {
 };
   
 function changeMap(type) {
-  // 1. 現在表示されているベースレイヤーと標高図をすべて削除
+  // 1. 現在のレイヤーをすべて削除
   if (currentBaseLayer) map.removeLayer(currentBaseLayer);
   if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
 
-  // 2. 指定されたモードでレイヤーを追加
+  // 2. タイプに応じてレイヤーを追加
   if (type === 'relief_overlay') {
-    // 標高図単体を表示
-    currentBaseLayer = reliefOverlay.addTo(map);
+    // 標準地図をベースにして追加
+    currentBaseLayer = baseLayers.pale.addTo(map);
+    // その上に透過設定された標高図を重ねる
+    reliefOverlay.addTo(map);
   } else {
-    // 標準地図または航空写真を表示
+    // それ以外（標準地図 or 航空写真）は通常通り追加
     currentBaseLayer = baseLayers[type].addTo(map);
   }
   
   // 3. レイヤーの重なり順を一番後ろに調整
   currentBaseLayer.bringToBack();
+  if (map.hasLayer(reliefOverlay)) {
+    reliefOverlay.bringToBack();
+  }
   
   // 4. メニューを閉じる
   const details = document.getElementById('mapTypeDetails');
