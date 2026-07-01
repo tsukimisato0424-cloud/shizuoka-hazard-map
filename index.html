@@ -227,9 +227,14 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .legend-item { 
   display: flex; 
   align-items: center; 
-  margin-bottom: 3px !important; /* 項目間の隙間を削減 */
+  margin-bottom: 2px !important; /* 項目間の隙間を削減 */
   gap: 6px; 
   color: #5f6368; 
+}
+  /* 凡例内の避難所項目を隠す */
+.legend-item:has(.custom-shelter-icon), 
+.legend-item:has(img[alt="避難所"]) {
+  display: none !important;
 }
 
 .legend-color { 
