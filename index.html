@@ -316,23 +316,21 @@ html, body { height: 100%; margin: 0; padding: 0; }
 }
   
 /* ステータスパネル */
+/* パネル本体 */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
-  /* 上辺を少し空けるか、タブのz-indexと調整して線を隠す */
-  border: 1px solid rgba(26, 115, 232, 0.45);
+  border: 1px solid rgba(26, 115, 232, 0.45); /* 全周に枠線 */
   border-radius: 12px;
   overflow: visible;
-  /* パネルの上辺の線を消すことで、タブの下辺と重なるようにする */
-  border-top: none;
 }
 
 /* タブコンテナ */
 .tab-container {
   position: absolute;
   top: -37px;
-  left: -1px;
+  left: 0; /* -1pxを削除 */
   display: flex;
   gap: 4px;
 }
@@ -345,20 +343,20 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
-  /* 青い枠線 */
   border: 1px solid rgba(26, 115, 232, 0.45);
   background: #e0e0e0;
   color: #777;
   transition: all 0.2s;
   z-index: 1;
-  /* 下辺をパネルと繋げるために、重なりを消す */
-  margin-bottom: -1px;
-}
-  /* 最初のタブの角をパネル本体の左端と合わせる */
-.tab-btn:first-child {
-  border-left: 1px solid rgba(26, 115, 232, 0.45);
+  /* 以下の調整でパネルとの隙間を埋める */
+  margin-bottom: -1px; 
 }
 
+/* 最初のタブの角をパネル本体の左端と合わせる */
+.tab-btn:first-child {
+  border-left: 1px solid rgba(26, 115, 232, 0.45);
+  margin-left: 10px; /* パネル本体の左端(left: 10px)に合わせるための調整 */
+}
 /* アクティブタブ */
 .tab-btn.active {
   background: rgba(255,255,255,0.95);
