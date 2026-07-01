@@ -24,28 +24,8 @@ html, body { height: 100%; margin: 0; padding: 0; }
 .custom-search-bar {
   display: flex; align-items: center; background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px); border-radius: 14px;
-  box-shadow:
-    0 8px 30px rgba(0,0,0,.20),
-    0 0 0 1px rgba(26,115,232,.45),
-    0 0 12px rgba(26,115,232,.30),
-    0 0 28px rgba(26,115,232,.18);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15), inset 0 0 0 1.5px #1a73e8; 
   padding: 2px 4px; /* 内部余白を調整 */
-  position: relative;
-overflow: hidden;
-::before{
-content:"";
-position:absolute;
-left:0;
-top:0;
-width:100%;
-height:45%;
-background:linear-gradient(
-180deg,
-rgba(255,255,255,.35),
-rgba(255,255,255,0)
-);
-pointer-events:none;
-}
 }
   
 .custom-search-bar input { flex: 1; border: none; outline: none; font-size: 16px; padding: 14px 12px; background: transparent; color: #202124; }
@@ -65,18 +45,14 @@ pointer-events:none;
   right:10px;
   z-index:2000;
 
-background: rgba(255,255,255,0.42);
-backdrop-filter: blur(22px) saturate(180%);
--webkit-backdrop-filter: blur(22px) saturate(180%);
+  background:rgba(255,255,255,.95);
+  backdrop-filter:blur(10px);
   border-radius:16px;
   padding:8px;
 
-box-shadow:
-    0 8px 30px rgba(0,0,0,.20),
-    0 0 0 1px rgba(26,115,232,.45),
-    0 0 12px rgba(26,115,232,.30),
-    0 0 28px rgba(26,115,232,.18);
-  
+  box-shadow:0 4px 12px rgba(0,0,0,.1),
+             inset 0 0 0 1.5px #1a73e8;
+
   display:grid;
   grid-template-columns:repeat(7,1fr);
   gap:4px;
@@ -226,28 +202,16 @@ box-shadow:
   
 /* 5. ステータスパネル  */
 #statusPanel {
-  position: absolute;
-  bottom: 20px;
-  left: 10px;
-  right: 10px;
-  z-index: 1500;
-  background: rgba(255,255,255,0.95);
+  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-radius: 12px;
-  padding: 10px 14px;
-
-  border: 1.5px solid #1a73e8;
-
-  box-shadow:
-    0 8px 30px rgba(0,0,0,.20),
-    0 0 0 1px rgba(26,115,232,.45),
-    0 0 12px rgba(26,115,232,.30),
-    0 0 28px rgba(26,115,232,.18);
-  
-  transition: all 0.3s ease;
+  border-radius: 12px; padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  inset 0 0 0 1.5px #1a73e8;
+  transition: all 0.3s ease; 
   overflow: hidden;
 }
-  
+
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
   height: 40px;
