@@ -315,28 +315,27 @@ html, body { height: 100%; margin: 0; padding: 0; }
   border-width: 2px;
 }
   
-/* 5. ステータスパネル */
+/* ステータスパネル */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(26, 115, 232, 0.45); /* 縁取り */
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.20), 0 0 0 1px rgba(26,115,232,.45);
-  transition: all 0.3s ease;
-  overflow: visible; /* タブを外側に表示するために必須 */
-  padding-top: 10px;
+  overflow: visible; 
+  padding-top: 0; /* 余計な隙間を削除 */
 }
 
-/* 飛び出るタブのコンテナ */
+/* タブコンテナ */
 .tab-container {
   position: absolute;
-  top: -36px;
+  top: -37px; /* パネルの外へ飛び出させる */
   left: 10px;
   display: flex;
   gap: 4px;
 }
 
-/* タブのボタン：基本形状 */
+/* タブボタン */
 .tab-btn {
   width: 90px;
   padding: 8px 12px;
@@ -344,31 +343,29 @@ html, body { height: 100%; margin: 0; padding: 0; }
   cursor: pointer;
   font-size: 13px; font-weight: bold;
   border-radius: 12px 12px 0 0;
-  /* パネルと合わせた縁取りに変更 */
-  border: 1px solid rgba(26, 115, 232, 0.2); 
-  border-bottom: none;
+  border: 1px solid rgba(26, 115, 232, 0.45);
+  border-bottom: none; /* 下線を消す */
+  background: #e0e0e0;
   color: #777;
-  background: #f8f9fa;
-  transition: all 0.3s ease;
+  transition: all 0.2s;
+  z-index: 1;
 }
 
-/* アクティブタブ：立体感とハイライト */
+/* アクティブタブ：パネルと完全に繋げる */
 .tab-btn.active {
   background: rgba(255,255,255,0.95);
   color: #1a73e8;
-  /* 浮かせて立体的に見せる */
-  transform: translateY(-2px); 
-  box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-  /* パネル本体の縁取りと一体化 */
-  border: 1px solid rgba(26, 115, 232, 0.45);
-  border-bottom: none;
+  /* 境界を完全に隠す工夫 */
+  margin-bottom: -1px; 
+  border-bottom: 2px solid rgba(255,255,255,0.95); 
   z-index: 2;
+  transform: translateY(-2px); /* 浮かせる */
+  box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
 }
 
-/* 非アクティブタブ：少し沈ませる */
-.tab-btn:not(.active) {
-  margin-top: 2px; /* 少し下に下げる */
-  background: #ececec;
+/* パネル本体の上部境界線を消す（重なりを綺麗にするため） */
+#tab1, #tab2 {
+  border-top: none; 
 }
 
 /* コンテンツエリアの高さ固定 */
