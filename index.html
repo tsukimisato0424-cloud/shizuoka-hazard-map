@@ -1107,25 +1107,24 @@ async function executeHybridSearch(query) {
   // 複数キーワードをOSMが認識しやすい形に結合
   const osmQuery = queryTokens.join(' ');
   searchPromises.push(
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}${viewboxParams}&limit=30&addressdetails=1&accept-language=ja`)
-      .then(res => res.json())
-      .then(data => {
-        if (!data) return;
-        data.forEach(item => {
-          const nameParts = item.display_name.split(',');
-          const shopName = nameParts[0].trim();
-          let addressClean = nameParts.slice(1).join(', ').replace(/日本, /g, '').replace(/, \d{3}-\d{4}/g, '').split(', ').reverse().join(' ').trim();
-
-          masterRegistry.push({
-            lat: parseFloat(item.lat),
-            lon: parseFloat(item.lon),
-            name: shopName,
-            address: addressClean || item.type,
-            category: item.class || "facility",
-            matchCount: 0
-          });
-        });
-      }).catch(() => {})
+   fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}&viewbox=${bounds.toBBoxString()}&bounded=1&limit=5&addressdetails=1&extratags=1`)
+  .then(res => res.json())
+  .then(data => {
+    data.forEach(item => {
+      // house_number がある場合、スコアを大幅に加算する
+      const hasHouseNumber = item.address && item.address.house_number;
+      let scoreBonus = hasHouseNumber ? 5000 : 0;
+      
+      masterRegistry.push({
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+        name: item.namedetails?.name || item.address?.road || item.display_name.split(',')[0],
+        address: item.display_name,
+        category: item.class,
+        scoreBonus: scoreBonus // スコア計算時に使用
+      });
+    });
+  });
   );
 
   // -------------------------------------------------------------
