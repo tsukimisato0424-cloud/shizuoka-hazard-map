@@ -1085,21 +1085,24 @@ async function getElevationValue(lat, lng) {
     }
 }
   
-// 周辺9地点をサンプリングして窪地判定を行う
+// 周辺50mの範囲を5x5グリッド（25点）でサンプリングして窪地判定を行う
 async function checkInundationRisk(lat, lng) {
-    const offset = 0.0045;
-    const points = [
-        [lat, lng], [lat + offset, lng], [lat - offset, lng],
-        [lat, lng + offset], [lat, lng - offset],
-        [lat + offset, lng + offset], [lat + offset, lng - offset],
-        [lat - offset, lng + offset], [lat - offset, lng - offset]
-    ];
+    const step = 0.00045; // 約50m相当のステップ
+    let points = [];
+    
+    // 5x5グリッド（中心を起点に -2〜+2 の範囲で計算）
+    for (let i = -2; i <= 2; i++) {
+        for (let j = -2; j <= 2; j++) {
+            points.push([lat + (i * step), lng + (j * step)]);
+        }
+    }
 
     let totalElev = 0;
     let validCount = 0;
 
+    // 全25点の標高を取得
     for (const p of points) {
-        const val = await getElevationValue(p[0], p[1]); // ★修正
+        const val = await getElevationValue(p[0], p[1]);
         if (!isNaN(val)) {
             totalElev += val;
             validCount++;
@@ -1107,15 +1110,15 @@ async function checkInundationRisk(lat, lng) {
     }
 
     const avgElev = totalElev / validCount;
-    const centerElev = await getElevationValue(lat, lng); // ★修正
+    const centerElev = await getElevationValue(lat, lng);
     const diff = avgElev - centerElev;
 
+    // 閾値を0.5mとし、周囲より高いか低いかを判定
     return {
-        isRisk: diff > 1.0,
+        isRisk: diff > 0.5, 
         diff: diff.toFixed(1)
     };
 }
-
 
   
 // 【最終進化系】多次元複合メタ検索エンジン ＋ キーワード密度重み付けソート
