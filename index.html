@@ -1054,41 +1054,235 @@ async function getElevation(lat, lng) {
 }
   
 
-let searchMarkers = [];  
+// 【最終進化系】多次元複合メタ検索エンジン ＋ キーワード密度重み付けソート
+let searchMarkers = [];
+
 async function executeHybridSearch(query) {
   if (!query) return;
   const suggestionsBox = document.getElementById('customSuggestions');
-  suggestionsBox.innerHTML = '<div class="suggestion-item">検索中...</div>';
-  suggestionsBox.style.display = 'block';
-
+  suggestionsBox.innerHTML = '';
+  
+  // マーカーのリセット
   searchMarkers.forEach(m => map.removeLayer(m));
   searchMarkers = [];
 
-  try {
-    // 国土地理院の住所検索APIは非常に安定しています
-    const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    const data = await response.json();
+  // 1. クエリの正規化・キーワード分解（複合キーワード対応）
+  let cleanQuery = query.trim().replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/－|ー|－/g, "-");
+  // スペース（全角半角）でキーワードを配列に分解
+  const queryTokens = cleanQuery.split(/[\s　]+/).filter(t => t.length > 0);
+  if (queryTokens.length === 0) return;
 
-    if (!data || data.length === 0) {
-      suggestionsBox.innerHTML = '<div class="suggestion-item">該当なし</div>';
-      return;
+  const baseLocation = currentLocation || map.getCenter();
+  let masterRegistry = []; // すべての検索ソースからのデータを統合するレジストリ
+
+  // 検索を並列（非同期の同時進行）で走らせて爆速化
+  const searchPromises = [];
+
+  // -------------------------------------------------------------
+  // ルートA: 国土地理院 住所・地名（公的インデックス）
+  // -------------------------------------------------------------
+  searchPromises.push(
+    fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(queryTokens[0])}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+        data.forEach(item => {
+          masterRegistry.push({
+            lat: item.geometry.coordinates[1],
+            lon: item.geometry.coordinates[0],
+            name: item.properties.title,
+            address: "公的登録位置データ",
+            category: "government",
+            matchCount: 0 // 後でスコア計算
+          });
+        });
+      }).catch(() => {})
+  );
+
+  // -------------------------------------------------------------
+  // ルートB: OpenStreetMap Nominatim（商業施設・詳細スポット）
+  // -------------------------------------------------------------
+  const bounds = map.getBounds();
+  const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
+  // 複数キーワードをOSMが認識しやすい形に結合
+  const osmQuery = queryTokens.join(' ');
+  searchPromises.push(
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}${viewboxParams}&limit=30&addressdetails=1&accept-language=ja`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+        data.forEach(item => {
+          const nameParts = item.display_name.split(',');
+          const shopName = nameParts[0].trim();
+          let addressClean = nameParts.slice(1).join(', ').replace(/日本, /g, '').replace(/, \d{3}-\d{4}/g, '').split(', ').reverse().join(' ').trim();
+
+          masterRegistry.push({
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            name: shopName,
+            address: addressClean || item.type,
+            category: item.class || "facility",
+            matchCount: 0
+          });
+        });
+      }).catch(() => {})
+  );
+
+  // -------------------------------------------------------------
+  // ルートC: 住所地番ディープ・フォールバック（枝番分解リクエスト）
+  // -------------------------------------------------------------
+  // もし「葵区追手町9-6」のように末尾に番地がある場合、町名部分（追手町）だけで裏側で並行して探す
+  if (queryTokens.length === 1 && /\d+/.test(cleanQuery)) {
+    const townQuery = cleanQuery.replace(/[\d-ー－\s]+.*$/, "");
+    if (townQuery.length >= 2) {
+      searchPromises.push(
+        fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(townQuery)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!data) return;
+            data.forEach(item => {
+              masterRegistry.push({
+                lat: item.geometry.coordinates[1],
+                lon: item.geometry.coordinates[0],
+                name: item.properties.title + " " + cleanQuery.match(/[\d-ー－]+/)[0], // 元の番地を結合して擬似生成
+                address: "地番解析による最適推定位置",
+                category: "address_estimate",
+                matchCount: 0
+              });
+            });
+          }).catch(() => {})
+      );
+    }
+  }
+
+  // すべてのAPIからのレスポンスを待機
+  await Promise.all(searchPromises);
+
+  // -------------------------------------------------------------
+  // 🌟【多次元アルゴリズム】データの精査・重複排除・ヒット率判定ソート
+  // -------------------------------------------------------------
+  let uniqueResults = [];
+  masterRegistry.forEach(item => {
+    // 緯度経度が極めて近いものは重複とみなしてマージ
+    let duplicate = uniqueResults.find(r => Math.abs(r.lat - item.lat) < 0.0004 && Math.abs(r.lon - item.lon) < 0.0004);
+    if (!duplicate) {
+      uniqueResults.push(item);
+    } else {
+      // ソースが異なる同一施設の場合、情報の長い方を採用
+      if (item.address.length > duplicate.address.length) duplicate.address = item.address;
+    }
+  });
+
+  if (uniqueResults.length === 0) {
+    suggestionsBox.innerHTML = `<div class="suggestion-item"><span class="material-icons-round" style="margin-right:8px; color:#ea4335;">error</span>複合検索にヒットしませんでした</div>`;
+    suggestionsBox.style.display = 'block';
+    return;
+  }
+
+  // 各検索結果の総合ヒットスコアをリアルタイム計算
+  uniqueResults.forEach(item => {
+    let score = 0;
+    let matchTokenCount = 0;
+
+    // A: 複合キーワードの一致数をカウント（ヒット率が最優先）
+    queryTokens.forEach(token => {
+      const regex = new RegExp(token, 'i');
+      let hit = false;
+      if (regex.test(item.name)) { score += 5000; hit = true; }
+      if (regex.test(item.address)) { score += 2000; hit = true; }
+      if (hit) matchTokenCount++;
+    });
+
+    // 「入力されたキーワードが全部含まれている」ものを超最優先にする（100%ヒット率ボーナス）
+    if (matchTokenCount === queryTokens.length) {
+      score += 20000;
     }
 
-    const results = data.map(item => ({
-      lat: item.geometry.coordinates[1],
-      lon: item.geometry.coordinates[0],
-      name: item.properties.title
-    }));
+    // B: クエリ全体と完全一致する強力ボーナス
+    if (item.name === cleanQuery) score += 10000;
 
-    renderSearchResults(results);
-  } catch (e) {
-    // ここにエラーが来るなら、ブラウザのセキュリティ設定が原因です
-    suggestionsBox.innerHTML = '<div class="suggestion-item">エラー: ブラウザの制限により通信できません</div>';
-    console.error("通信詳細:", e);
-  }
+    // C: 防災拠点・インフラカテゴリへのバイアス
+    const infraKeywords = ["駅", "役所", "役場", "本社", "病院", "警察", "消防", "学校", "避難"];
+    infraKeywords.forEach(k => {
+      if (item.name.includes(k)) score += 1000;
+    });
+
+    // D: 近接距離バイアス（現在地から近い場所を上位へ押し上げる：最大8,000点）
+    if (baseLocation) {
+      const itemLatLng = L.latLng(item.lat, item.lon);
+      const distanceMeter = baseLocation.distanceTo(itemLatLng);
+      if (distanceMeter < 40000) {
+        score += (40000 - distanceMeter) * 0.2; 
+      }
+    }
+
+    item.finalScore = score;
+  });
+
+  // 算出した複合スコアの順に並び替え
+  uniqueResults.sort((a, b) => b.finalScore - a.finalScore);
+
+  // 上位12件をサジェストとマップに適用
+  const finalDisplays = uniqueResults.slice(0, 12);
+
+  finalDisplays.forEach(item => {
+    const safeName = item.name.replace(/'/g, "\\'");
+
+    // マップへのピン設置
+    const marker = L.marker([item.lat, item.lon]).addTo(map);
+    marker.bindPopup(`
+      <div style="font-family:sans-serif; min-width:180px;">
+        <strong style="font-size:14px; display:block; margin-bottom:5px;">${item.name}</strong>
+        <div style="font-size:11px; color:#666; margin-bottom:8px;">${item.address}</div>
+        <button onclick="selectLocation(${item.lat}, ${item.lon}, '${safeName}')" 
+                style="width:100%; padding:6px; background:#1a73e8; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
+          ここを目的地にする
+        </button>
+      </div>
+    `);
+    searchMarkers.push(marker);
+
+    // カテゴリに応じたスタイリッシュアイコン選定
+    let iconName = "place";
+    let iconColor = "#1a73e8";
+    
+    if (["駅", "役所", "病院"].some(k => item.name.includes(k))) {
+      iconName = "stars"; iconColor = "#fbbc05";
+    } else if (item.category === "shop" || /セブン|ローソン|マート|ミニストップ/._to_s?.(item.name) || item.name.match(/セブン|ローソン|マート|ファミリー/)) {
+      iconName = "local_grocery_store"; iconColor = "#27ae60"; // コンビニ・店舗
+    } else if (item.category === "address_estimate") {
+      iconName = "explore"; iconColor = "#e67e22"; // 住所地番推定結果
+    }
+
+    // 視認性の高い2段表示サジェスト生成
+    const div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.style.padding = '10px 14px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    
+    div.innerHTML = `
+      <span class="material-icons-round" style="color:${iconColor}; font-size:20px; margin-right:12px; flex-shrink: 0;">${iconName}</span>
+      <div style="display: flex; flex-direction: column; overflow: hidden; width: 100%;">
+        <strong style="color:#202124; font-size:14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</strong>
+        <span style="color:#5f6368; font-size:11px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.address}</span>
+      </div>
+    `;
+    
+    div.onclick = () => { 
+      selectLocation(item.lat, item.lon, item.name); 
+      map.setView([item.lat, item.lon], 16);
+      suggestionsBox.style.display = 'none'; 
+    };
+    suggestionsBox.appendChild(div);
+  });
+
+  suggestionsBox.style.display = 'block';
+
+  const group = L.featureGroup(searchMarkers);
+  map.fitBounds(group.getBounds().pad(0.2));
 }
-  
+
   
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng); 
