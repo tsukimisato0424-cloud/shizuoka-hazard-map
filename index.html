@@ -727,11 +727,13 @@ function selectLocation(lat, lng, label) {
 /* ==================================================================
    7. 標高・住所・冠水リスク判定
    ------------------------------------------------------------------
-   ★最適化ポイント：
-   以前は「中心点＋周囲25点＝26回」の標高取得を1件ずつ直列(await)で
-   実行しており、地点をタップするたびに数秒〜十数秒待たされていた。
-   → グリッドを3x3(9点・中心含む)に削減し、Promise.allで並列取得。
-   → 中心標高もこの9点の中から使い回すことで、二重取得を解消。
+   ★設計方針：
+   精度を優先し、判定グリッドは元の5x5（25点・中心含む）を維持する。
+   その代わり、
+     ・25点の標高取得はPromise.allで全点「並列」実行し、直列待ちを排除
+     ・現在地／目的地アイコンの表示は解析を待たず即座に行い、
+       「解析中...」表示のままバックグラウンドで結果が出たらパネルだけ更新
+   という構成にすることで、精度を落とさずに体感速度を改善している。
    ================================================================== */
 async function getElevationValue(lat, lng) {
   try {
@@ -744,10 +746,10 @@ async function getElevationValue(lat, lng) {
   }
 }
 
-// 周辺約45mの範囲を3x3グリッド（9点・中心含む）で並列サンプリングし、窪地判定を行う
+// 周辺約100mの範囲を5x5グリッド（25点・中心含む）で並列サンプリングし、窪地判定を行う
 async function checkInundationRisk(lat, lng) {
   const step = 0.00045; // 約50m相当のステップ
-  const offsets = [-1, 0, 1];
+  const offsets = [-2, -1, 0, 1, 2];
   const points = [];
   for (const i of offsets) {
     for (const j of offsets) {
@@ -756,6 +758,7 @@ async function checkInundationRisk(lat, lng) {
   }
   const centerIndex = points.findIndex(p => p[0] === lat && p[1] === lng); // 中心(0,0)のインデックス
 
+  // 25点すべてを並列取得（直列awaitループにはしない）
   const values = await Promise.all(points.map(p => getElevationValue(p[0], p[1])));
 
   const centerElev = values[centerIndex];
