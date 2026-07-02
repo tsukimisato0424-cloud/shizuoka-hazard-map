@@ -1099,32 +1099,34 @@ async function executeHybridSearch(query) {
       }).catch(() => {})
   );
 
-  // -------------------------------------------------------------
+ // -------------------------------------------------------------
   // ルートB: OpenStreetMap Nominatim（商業施設・詳細スポット）
   // -------------------------------------------------------------
   const bounds = map.getBounds();
-  const viewboxParams = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&bounded=0`;
-  // 複数キーワードをOSMが認識しやすい形に結合
+  // viewboxParams変数は使わなくなったため削除し、直書きで記述します
   const osmQuery = queryTokens.join(' ');
+  
   searchPromises.push(
-   fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}&viewbox=${bounds.toBBoxString()}&bounded=1&limit=5&addressdetails=1&extratags=1`)
-  .then(res => res.json())
-  .then(data => {
-    data.forEach(item => {
-      // house_number がある場合、スコアを大幅に加算する
-      const hasHouseNumber = item.address && item.address.house_number;
-      let scoreBonus = hasHouseNumber ? 5000 : 0;
-      
-      masterRegistry.push({
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-        name: item.namedetails?.name || item.address?.road || item.display_name.split(',')[0],
-        address: item.display_name,
-        category: item.class,
-        scoreBonus: scoreBonus // スコア計算時に使用
-      });
-    });
-  });
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(osmQuery)}&viewbox=${bounds.toBBoxString()}&bounded=1&limit=5&addressdetails=1&extratags=1`)
+      .then(res => res.json())
+      .then(data => {
+        if (!Array.isArray(data)) return; // データが配列かチェック
+        data.forEach(item => {
+          // house_number がある場合、スコアを大幅に加算する
+          const hasHouseNumber = item.address && item.address.house_number;
+          let scoreBonus = hasHouseNumber ? 5000 : 0;
+          
+          masterRegistry.push({
+            lat: parseFloat(item.lat),
+            lon: parseFloat(item.lon),
+            name: item.namedetails?.name || item.address?.road || item.display_name.split(',')[0],
+            address: item.display_name,
+            category: item.class,
+            scoreBonus: scoreBonus 
+          });
+        });
+      })
+      .catch(err => console.error("OSM検索エラー:", err))
   );
 
   // -------------------------------------------------------------
