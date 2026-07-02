@@ -1247,20 +1247,6 @@ async function executeHybridSearch(query) {
   finalDisplays.forEach(item => {
     const safeName = item.name.replace(/'/g, "\\'");
 
-    // マップへのピン設置
-    const marker = L.marker([item.lat, item.lon]).addTo(map);
-    marker.bindPopup(`
-      <div style="font-family:sans-serif; min-width:180px;">
-        <strong style="font-size:14px; display:block; margin-bottom:5px;">${item.name}</strong>
-        <div style="font-size:11px; color:#666; margin-bottom:8px;">${item.address}</div>
-        <button onclick="selectLocation(${item.lat}, ${item.lon}, '${safeName}')" 
-                style="width:100%; padding:6px; background:#1a73e8; color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">
-          ここを目的地にする
-        </button>
-      </div>
-    `);
-    searchMarkers.push(marker);
-
     // カテゴリに応じたスタイリッシュアイコン選定
     let iconName = "place";
     let iconColor = "#1a73e8";
