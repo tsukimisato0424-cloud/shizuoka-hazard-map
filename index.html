@@ -999,28 +999,36 @@ function toggleStatusPanel() {
   }
 }
   
+
 function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(pos => {
-  currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
+  navigator.geolocation.getCurrentPosition(async pos => { // asyncを追加
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
-  // ステータスを現在地情報へ更新
-document.getElementById('latLngDisplay').innerText =
-  `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
+    // 1. 基本情報の更新
+    document.getElementById('latLngDisplay').innerText =
+      `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
+    document.getElementById('addressDisplay').innerText = "住所: 取得中...";
 
-document.getElementById('addressDisplay').innerText =
-  "住所: 取得中...";
+    // 2. 標高・住所・地形リスク判定を並行して実行
+    const [elevation, address] = await Promise.all([
+      getElevation(currentLocation.lat, currentLocation.lng),
+      getAddress(currentLocation.lat, currentLocation.lng)
+    ]);
 
-getElevation(currentLocation.lat, currentLocation.lng)
-  .then(elevation=>{
-    document.getElementById('elevationDisplay').innerText=elevation;
-  });
+    document.getElementById('elevationDisplay').innerText = elevation;
+    document.getElementById('addressDisplay').innerText = `住所: ${address}`;
 
-getAddress(currentLocation.lat, currentLocation.lng)
-  .then(address=>{
-    document.getElementById('addressDisplay').innerText=
-      `住所: ${address}`;
-  });
+    // 地形リスク判定の更新
+    const riskStatus = document.getElementById('sub1-content');
+    if (riskStatus) {
+      riskStatus.innerHTML = "解析中...";
+      const result = await checkInundationRisk(currentLocation.lat, currentLocation.lng);
+      riskStatus.innerHTML = result.isRisk 
+        ? `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`
+        : `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+    }
     
+    // 3. マップ更新とルート描画
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
@@ -1028,7 +1036,6 @@ getAddress(currentLocation.lat, currentLocation.lng)
       map.setView(currentLocation, 14);
     }
     
-    // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
     if (shelterActive) {
       fetchAndShowShelters(currentLocation);
     }
@@ -1036,14 +1043,13 @@ getAddress(currentLocation.lat, currentLocation.lng)
     if (destination) drawRoute();
   }, err => {
     console.error("現在地取得失敗", err);
-    // 位置情報が取れない場合のフォールバック
     if (isInitial) {
       currentLocation = map.getCenter();
       if (shelterActive) fetchAndShowShelters(currentLocation);
     }
   }, { enableHighAccuracy: true });
 }
-updateCurrentLocation(true);
+  
 
 function drawRoute() {
   if (!currentLocation || !destination) return;
