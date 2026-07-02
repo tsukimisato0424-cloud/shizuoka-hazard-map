@@ -435,14 +435,19 @@ html, body { height: 100%; margin: 0; padding: 0; }
   
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
-  height: 40px !important;
-  overflow: hidden !important;
+  height: 80px !important;
+  overflow: visible !important;
 }
-  
-#statusPanel[data-state="minimized"] .tab-content,
-#statusPanel[data-state="minimized"] .tab-container {
+
+/* 最小化時に詳細コンテンツのみを非表示にする */
+#statusPanel[data-state="minimized"] .tab-content {
   display: none !important;
 }
+
+/* 最小化時でもタブコンテナは表示し続ける */
+#statusPanel[data-state="minimized"] .tab-container {
+  display: flex !important;
+}  
 
 /* 上段：海抜とルートタイトルの行 */
 .status-header {
