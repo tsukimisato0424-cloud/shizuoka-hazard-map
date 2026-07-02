@@ -435,12 +435,13 @@ html, body { height: 100%; margin: 0; padding: 0; }
   
 /* 最小化状態 */
 #statusPanel[data-state="minimized"] {
-  height: 40px;
+  height: 40px !important;
+  overflow: hidden !important;
 }
-#statusPanel[data-state="minimized"] #addressDisplay,
-#statusPanel[data-state="minimized"] #latLngDisplay,
-#statusPanel[data-state="minimized"] #statusContent {
-  display: none;
+  
+#statusPanel[data-state="minimized"] .tab-content,
+#statusPanel[data-state="minimized"] .tab-container {
+  display: none !important;
 }
 
 /* 上段：海抜とルートタイトルの行 */
