@@ -1069,6 +1069,17 @@ function drawRoute() {
 }
 
 // 標高を取得する関数
+async function getElevation(lat, lng) {
+  try {
+    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return (data.elevation !== undefined && data.elevation !== null) ? `${data.elevation} m` : "-- m";
+  } catch (e) {
+    return "-- m";
+  }
+} 
+  
 // 数値そのものを返す計算用関数
 async function getElevationValue(lat, lng) {
     try {
