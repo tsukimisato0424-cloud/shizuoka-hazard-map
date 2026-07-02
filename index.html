@@ -810,9 +810,9 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
-  kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
-  kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
+  kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/tile/inundation/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
+  kikikuru_landslide: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/tile/landslide/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
+  kikikuru_flood: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/tile/flood/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
 };
 
 // 地図切替メニューの開閉同期処理
