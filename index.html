@@ -619,6 +619,10 @@ body, html {
 #searchContainer, #hazardMenuCard, #statusPanel, #rightControlContainer {
   touch-action: none;         /* ここでのピンチを無視する */
 }
+
+.panel-row { display: flex; height: 100%; }
+.panel-column { flex: 1; min-width: 0; } /* min-width:0でFlex内の文字溢れを制御 */
+.tab-content { height: 90px; }
   
 </style>
 </head>
@@ -735,35 +739,36 @@ body, html {
 
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
-      <div class="panel-column" style="border-right: 1px solid #ddd; padding-right: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点情報</div>
-        <div id="addressDisplay" style="font-size:11px; line-height:1.2;">住所: 取得中...</div>
-        <div id="latLngDisplay" style="font-size:10px; color:#777; margin-top:2px;">緯度/経度: --</div>
-        <div style="font-size:11px; margin-top:2px;">海抜: <span id="elevationDisplay" style="font-weight:bold; color:#d35400;">-- m</span></div>
+      <div class="panel-column" style="border-right: 1px solid #eee; padding-right: 8px;">
+        <div style="font-weight:bold; font-size:11px; margin-bottom:4px;">地点情報</div>
+        <div id="addressDisplay" style="font-size:10px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">住所: 取得中...</div>
+        <div id="latLngDisplay" style="font-size:9px; color:#777; margin-top:2px;">緯度/経度: --</div>
       </div>
-
-      <div class="panel-column" style="padding-left: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">ルート情報</div>
-        <div class="route-modes" style="display:flex; flex-direction:column; gap:4px;">
-          <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
-            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_walk</span>
-            <span id="walkTime" style="font-size:11px; font-weight:bold;">--分</span>
-            <span id="walkDist" style="font-size:10px; color:#5f6368;">--km</span>
-          </div>
-          <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
-            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_car</span>
-            <span id="carTime" style="font-size:11px; font-weight:bold;">--分</span>
-            <span id="carDist" style="font-size:10px; color:#5f6368;">--km</span>
-          </div>
+      <div class="panel-column" style="padding-left: 8px;">
+        <div style="font-weight:bold; font-size:11px; margin-bottom:4px;">リスク判定 (標高)</div>
+        <div id="riskIndicator" style="height: 6px; width: 100%; background: #eee; border-radius: 3px; margin: 4px 0;">
+          <div id="riskBar" style="height: 100%; width: 0%; background: #27ae60; border-radius: 3px; transition: width 0.5s;"></div>
         </div>
+        <div id="riskText" style="font-size: 10px; font-weight: bold; color: #5f6368;">海抜: --</div>
       </div>
     </div>
   </div>
 
   <div id="tab2" class="tab-content">
     <div class="panel-row">
-      <div class="panel-column">サブ①</div>
-      <div class="panel-column">サブ②</div>
+      <div class="panel-column" style="width: 100%;">
+        <div style="font-weight:bold; font-size:11px; margin-bottom:4px;">ルート情報</div>
+        <div style="display:flex; gap:8px;">
+          <div class="route-mode-box" style="flex:1; padding:4px; display:flex; align-items:center; gap:4px; background:#f8f9fa; border-radius:6px;">
+            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_walk</span>
+            <div style="font-size:10px;"><span id="walkTime">--</span>分/<span id="walkDist">--</span>km</div>
+          </div>
+          <div class="route-mode-box" style="flex:1; padding:4px; display:flex; align-items:center; gap:4px; background:#f8f9fa; border-radius:6px;">
+            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_car</span>
+            <div style="font-size:10px;"><span id="carTime">--</span>分/<span id="carDist">--</span>km</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1459,6 +1464,34 @@ window.addEventListener('DOMContentLoaded', () => {
     if (mapContainer.style.position !== 'absolute') {
         mapContainer.style.position = 'absolute';
     }
+
+// リスク判定ロジックの更新関数
+function updateRiskUI(elevationValue) {
+  const riskBar = document.getElementById('riskBar');
+  const riskText = document.getElementById('riskText');
+  const ele = parseFloat(elevationValue);
+  
+  riskText.innerText = `海抜: ${elevationValue}`;
+  
+  if (isNaN(ele)) {
+    riskBar.style.width = '0%';
+    riskBar.style.background = '#ccc';
+  } else if (ele < 2) {
+    riskBar.style.width = '100%';
+    riskBar.style.background = '#e74c3c'; // 赤：非常に危険
+  } else if (ele < 10) {
+    riskBar.style.width = '50%';
+    riskBar.style.background = '#f1c40f'; // 黄：注意
+  } else {
+    riskBar.style.width = '20%';
+    riskBar.style.background = '#27ae60'; // 緑：比較的安全
+  }
+}
+
+// 既存のgetElevation呼び出し箇所（mapクリックイベント等）を以下のように更新
+getElevation(lat, lng).then(elevation => {
+    document.getElementById('elevationDisplay').innerText = elevation;
+    updateRiskUI(elevation); // ここでリスクバーを更新
 });
   
 </script>
