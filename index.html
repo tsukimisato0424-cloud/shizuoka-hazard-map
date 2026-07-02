@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>防災ハザードマップ (Fixed)</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
@@ -13,14 +13,6 @@
 
   
 <style>
-
-/* 地図以外の要素でのピンチズームやタップ拡大を抑制する */
-body {
-    touch-action: manipulation;
-    /* iOS Safari特有のバウンス効果を消すと操作感がより地図アプリらしくなります */
-    overscroll-behavior: none;
-}
-  
 html, body { height: 100%; margin: 0; padding: 0; }
 /* マップ本体の z-index を修正 */
 #map { 
