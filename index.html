@@ -739,40 +739,49 @@ body, html {
   
 <div id="statusPanel" data-state="full">
   <div class="tab-container">
-    <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
-    <div class="tab-btn" onclick="switchTab(2)">サブ</div>
-  </div>
+  <div class="tab-btn active" onclick="switchTab(1)">冠水リスク</div>
+  <div class="tab-btn" onclick="switchTab(2)">メイン</div>
+</div>
 
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
     <span class="material-icons-round" id="toggleIcon">expand_more</span>
   </button>
 
-  <div id="tab1" class="tab-content active">
-    <div class="panel-row">
-      <div class="panel-column" style="border-right: 1px solid #ddd; padding-right: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点情報</div>
-        <div id="addressDisplay" style="font-size:11px; line-height:1.2;">住所: 取得中...</div>
-        <div id="latLngDisplay" style="font-size:10px; color:#777; margin-top:2px;">緯度/経度: --</div>
-        <div style="font-size:11px; margin-top:2px;">海抜: <span id="elevationDisplay" style="font-weight:bold; color:#d35400;">-- m</span></div>
-      </div>
+ <div id="tab1" class="tab-content active">
+  <div class="panel-row">
+    <div class="panel-column">
+      <div style="font-weight:bold; font-size:12px;">冠水リスク判定(半径500m)</div>
+      <div id="sub1-content" style="font-size:12px; margin-top:5px;">地点を選択してください</div>
+    </div>
+  </div>
+</div>
 
-      <div class="panel-column" style="padding-left: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">ルート情報</div>
-        <div class="route-modes" style="display:flex; flex-direction:column; gap:4px;">
-          <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
-            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_walk</span>
-            <span id="walkTime" style="font-size:11px; font-weight:bold;">--分</span>
-            <span id="walkDist" style="font-size:10px; color:#5f6368;">--km</span>
-          </div>
-          <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
-            <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_car</span>
-            <span id="carTime" style="font-size:11px; font-weight:bold;">--分</span>
-            <span id="carDist" style="font-size:10px; color:#5f6368;">--km</span>
-          </div>
+<div id="tab2" class="tab-content">
+  <div class="panel-row">
+    <div class="panel-column" style="border-right: 1px solid #ddd; padding-right: 10px;">
+      <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点情報</div>
+      <div id="addressDisplay" style="font-size:11px; line-height:1.2;">住所: 取得中...</div>
+      <div id="latLngDisplay" style="font-size:10px; color:#777; margin-top:2px;">緯度/経度: --</div>
+      <div style="font-size:11px; margin-top:2px;">海抜: <span id="elevationDisplay" style="font-weight:bold; color:#d35400;">-- m</span></div>
+    </div>
+
+    <div class="panel-column" style="padding-left: 10px;">
+      <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">ルート情報</div>
+      <div class="route-modes" style="display:flex; flex-direction:column; gap:4px;">
+        <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
+          <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_walk</span>
+          <span id="walkTime" style="font-size:11px; font-weight:bold;">--分</span>
+          <span id="walkDist" style="font-size:10px; color:#5f6368;">--km</span>
+        </div>
+        <div class="route-mode-box" style="padding:4px 8px; display:flex; align-items:center; gap:6px;">
+          <span class="material-icons-round" style="font-size:14px; color:#1a73e8;">directions_car</span>
+          <span id="carTime" style="font-size:11px; font-weight:bold;">--分</span>
+          <span id="carDist" style="font-size:10px; color:#5f6368;">--km</span>
         </div>
       </div>
     </div>
   </div>
+</div>
 
 <div id="tab2" class="tab-content">
   <div class="panel-row">
