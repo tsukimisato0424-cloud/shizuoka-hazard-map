@@ -781,12 +781,13 @@ body, html {
   </div>
 </div>
 
+
 <div id="tab2" class="tab-content" style="overflow-y: auto;">
   <div id="alertContainer" style="padding: 5px; font-size: 12px; color: #5f6368;">
     位置情報から警報を取得中...
   </div>
 </div>
-  
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
@@ -1000,34 +1001,33 @@ function toggleStatusPanel() {
   }
 }
   
+// 重複を削除し、一箇所にまとめます
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
-  currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
-
-  // ステータスを現在地情報へ更新
-document.getElementById('latLngDisplay').innerText =
-  `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
-
-document.getElementById('addressDisplay').innerText =
-  "住所: 取得中...";
-
-getElevation(currentLocation.lat, currentLocation.lng)
-  .then(elevation=>{
-    document.getElementById('elevationDisplay').innerText=elevation;
-  });
-
-getAddress(currentLocation.lat, currentLocation.lng)
-  .then(address=>{
-    document.getElementById('addressDisplay').innerText=
-      `住所: ${address}`;
-  });
+    currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
     
-    if (currentMarker) map.removeLayer(currentMarker);
-    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    // UI更新
+    document.getElementById('latLngDisplay').innerText = `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
+    
+    // 住所・標高・警報の更新
+    getAddress(currentLocation.lat, currentLocation.lng).then(addr => {
+        document.getElementById('addressDisplay').innerText = `住所: ${addr}`;
+    });
+    getElevation(currentLocation.lat, currentLocation.lng).then(elev => {
+        document.getElementById('elevationDisplay').innerText = elev;
+    });
+
+    // ここで警報を呼び出す
+    updateAlertsWithLocation(currentLocation.lat, currentLocation.lng);
     
     if (isInitial || !destination) {
       map.setView(currentLocation, 14);
     }
+    
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+  });
+}
     
     // 【機能追加】現在地ボタンを押したときは、現在地周辺に避難所を再プロット
     if (shelterActive) {
