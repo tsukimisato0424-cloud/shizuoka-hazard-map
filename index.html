@@ -14,7 +14,16 @@
   
 <style>
 html, body { height: 100%; margin: 0; padding: 0; }
-#map { height: 100%; width: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+/* マップ本体の z-index を修正 */
+#map { 
+  height: 100%; 
+  width: 100%; 
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  z-index: 1; /* 地図は一番下 */
+}
+  
 /* 1. Google風スタイリッシュ検索バー */
 #searchContainer { 
   position: absolute; top: 10px; left: 0; right: 0; 
@@ -311,10 +320,11 @@ html, body { height: 100%; margin: 0; padding: 0; }
   position: absolute;
   top: 170px; /* ハザードメニューの下にくるように配置 */
   right: 10px;
-  z-index: 1500;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 10px; /* ボタン同士の間隔 */
+  gap: 10px;
+  pointer-events: auto;
 }
 
 /* 個別のボタン・メニューの配置を親に合わせる */
@@ -1446,6 +1456,15 @@ function switchTab(tabNumber) {
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
   document.getElementById('tab' + tabNumber).classList.add('active');
 }
+
+// 読み込み完了後に要素を再定義する安全策
+window.addEventListener('DOMContentLoaded', () => {
+    const mapContainer = document.getElementById('map');
+    // mapが画面外に押し出されていないか確認
+    if (mapContainer.style.position !== 'absolute') {
+        mapContainer.style.position = 'absolute';
+    }
+});
   
 </script>
 </body>
