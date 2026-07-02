@@ -619,7 +619,13 @@ body, html {
 #searchContainer, #hazardMenuCard, #statusPanel, #rightControlContainer {
   touch-action: none;         /* ここでのピンチを無視する */
 }
+
+  /* 新規追加のレイアウト用CSS */
+  .panel-row { display: flex; gap: 10px; height: 100%; }
+  .panel-column { flex: 1; overflow: hidden; }
   
+  /* タブコンテンツの調整 */
+  .tab-content { height: 90px; } /* コンテンツに合わせて調整してください */  
 </style>
 </head>
 <body>
@@ -724,7 +730,6 @@ body, html {
 </div>
   
 <div id="statusPanel" data-state="full">
-  <!-- 飛び出るタブ -->
   <div class="tab-container">
     <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
     <div class="tab-btn" onclick="switchTab(2)">サブ</div>
@@ -734,39 +739,32 @@ body, html {
     <span class="material-icons-round" id="toggleIcon">expand_more</span>
   </button>
 
-  <!-- 1枚目：地点情報（高さ固定） -->
   <div id="tab1" class="tab-content active">
-    <div class="status-header">
-      <span style="font-weight:bold;">地点情報</span>
-      <span>海抜: <span id="elevationDisplay">-- m</span></span>
-    </div>
-    <div id="addressDisplay" style="font-size:12px; font-weight:bold;">住所: 取得中...</div>
-    <div id="latLngDisplay" style="font-size:11px; color:#777;">緯度: --, 経度: --</div>
-  </div>
-
-  <!-- 2枚目：ルート情報（高さ固定） -->
-  <div id="tab2" class="tab-content">
-    <div class="route-section" style="border:none; margin:0;">
-      <div class="route-modes">
-        <div class="route-mode-box">
-          <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
-          <div class="route-text-data">
-            <span class="route-time" id="walkTime">-- 分</span>
-            <span class="route-dist" id="walkDist">-- km</span>
-          </div>
-        </div>
-        <div class="route-mode-box">
-          <div class="route-icon-circle"><span class="material-icons-round">directions_car</span></div>
-          <div class="route-text-data">
-            <span class="route-time" id="carTime">-- 分</span>
-            <span class="route-dist" id="carDist">-- km</span>
-          </div>
-        </div>
+    <div class="panel-row">
+      <div class="panel-column">
+        <div style="font-weight:bold; font-size:12px;">メイン①</div>
+        <div id="addressDisplay" style="font-size:11px;">住所取得中...</div>
+      </div>
+      <div class="panel-column">
+        <div style="font-weight:bold; font-size:12px;">メイン②</div>
+        <div>海抜: <span id="elevationDisplay" style="color:#d35400;">-- m</span></div>
+        <div id="latLngDisplay" style="font-size:10px; color:#777;">--</div>
       </div>
     </div>
   </div>
-</div>
 
+  <div id="tab2" class="tab-content">
+    <div class="panel-row">
+      <div class="panel-column">
+        <div style="font-weight:bold; font-size:12px;">サブ①</div>
+        </div>
+      <div class="panel-column">
+        <div style="font-weight:bold; font-size:12px;">サブ②</div>
+        </div>
+    </div>
+  </div>
+</div>
+  
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
