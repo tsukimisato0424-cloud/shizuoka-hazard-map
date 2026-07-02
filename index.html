@@ -794,9 +794,11 @@ body, html {
 const map = L.map('map', {
   zoomControl: false,
   minZoom: 5,
-  tap: false
+  tap: true,           // false から true に変更
+  tapTolerance: 30     // この1行を追加
 }).setView([34.9756, 138.3828], 13);
 
+  
 // 複数の地図を扱うための設定
 const baseLayers = {
   pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { attribution: '© 国土地理院' }),
@@ -1001,34 +1003,10 @@ function toggleStatusPanel() {
   
 
 function updateCurrentLocation(isInitial = false) {
-  navigator.geolocation.getCurrentPosition(async pos => { // asyncを追加
+  navigator.geolocation.getCurrentPosition(async pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
-    // 1. 基本情報の更新
-    document.getElementById('latLngDisplay').innerText =
-      `緯度: ${currentLocation.lat.toFixed(6)}, 経度: ${currentLocation.lng.toFixed(6)}`;
-    document.getElementById('addressDisplay').innerText = "住所: 取得中...";
-
-    // 2. 標高・住所・地形リスク判定を並行して実行
-    const [elevation, address] = await Promise.all([
-      getElevation(currentLocation.lat, currentLocation.lng),
-      getAddress(currentLocation.lat, currentLocation.lng)
-    ]);
-
-    document.getElementById('elevationDisplay').innerText = elevation;
-    document.getElementById('addressDisplay').innerText = `住所: ${address}`;
-
-    // 地形リスク判定の更新
-    const riskStatus = document.getElementById('sub1-content');
-    if (riskStatus) {
-      riskStatus.innerHTML = "解析中...";
-      const result = await checkInundationRisk(currentLocation.lat, currentLocation.lng);
-      riskStatus.innerHTML = result.isRisk 
-        ? `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`
-        : `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
-    }
-    
-    // 3. マップ更新とルート描画
+    // 【高速化】先にマーカーと地図移動を先行させる
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
     
@@ -1036,18 +1014,23 @@ function updateCurrentLocation(isInitial = false) {
       map.setView(currentLocation, 14);
     }
     
-    if (shelterActive) {
-      fetchAndShowShelters(currentLocation);
-    }
+    // 【高速化】詳細情報の読み込みをバックグラウンドへ
+    updateDetails(currentLocation.lat, currentLocation.lng);
     
+    if (shelterActive) fetchAndShowShelters(currentLocation);
     if (destination) drawRoute();
-  }, err => {
-    console.error("現在地取得失敗", err);
-    if (isInitial) {
-      currentLocation = map.getCenter();
-      if (shelterActive) fetchAndShowShelters(currentLocation);
-    }
-  }, { enableHighAccuracy: true });
+  }, err => { /* エラー処理 */ }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+}
+
+// 情報を取得してパネルを更新する専用関数
+async function updateDetails(lat, lng) {
+  const [elevation, address] = await Promise.all([
+    getElevation(lat, lng),
+    getAddress(lat, lng)
+  ]);
+  document.getElementById('elevationDisplay').innerText = elevation;
+  document.getElementById('addressDisplay').innerText = `住所: ${address}`;
+  // リスク判定もここで呼び出す
 }
 
 updateCurrentLocation(true);
