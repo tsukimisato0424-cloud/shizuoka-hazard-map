@@ -774,11 +774,16 @@ body, html {
     </div>
   </div>
 
-  <div id="tab2" class="tab-content">
-    <div class="panel-row">
-      <div class="panel-column">サブ①</div>
-      <div class="panel-column">サブ②</div>
-    </div>
+<div id="tab2" class="tab-content">
+  <div class="panel-row">
+    <div class="panel-column">サブ①</div>
+    <div class="panel-column">サブ②</div>
+  </div>
+</div>
+
+<div id="tab2" class="tab-content" style="overflow-y: auto;">
+  <div id="alertContainer" style="padding: 5px; font-size: 12px; color: #5f6368;">
+    位置情報から警報を取得中...
   </div>
 </div>
   
@@ -1529,6 +1534,40 @@ window.addEventListener('DOMContentLoaded', () => {
         mapContainer.style.position = 'absolute';
     }
 });
+
+// 警報情報の取得と反映
+async function updateAlertsWithLocation(lat, lng) {
+    const alertContainer = document.getElementById('alertContainer');
+    if (!alertContainer) return;
+
+    // 1. 緯度経度からエリアコードを特定
+    const areaCode = await getAreaCodeFromLatLng(lat, lng);
+    
+    // 2. 気象庁APIから取得
+    try {
+        const response = await fetch('https://www.jma.go.jp/bosai/alert/data/list/japan.json');
+        const data = await response.json();
+        const areaData = data[areaCode];
+
+        if (areaData && areaData.warning) {
+            alertContainer.innerHTML = `
+                <div style="background:#fff1f1; border-left:4px solid #d32f2f; padding:6px; border-radius:4px;">
+                    <div style="font-weight:bold; color:#d32f2f; font-size:13px; margin-bottom:4px;">⚠️ ${areaData.warning.title}</div>
+                    <div style="font-size:11px; line-height:1.4;">${areaData.warning.text || "現在、警報が発表されています。"}</div>
+                </div>
+            `;
+        } else {
+            alertContainer.innerHTML = `
+                <div style="color:#27ae60; padding:10px; text-align:center;">
+                    <span class="material-icons-round" style="vertical-align:middle;">check_circle</span> 
+                    現在、発表中の警報はありません。
+                </div>`;
+        }
+    } catch (err) {
+        alertContainer.innerHTML = '警報情報の取得に失敗しました。';
+    }
+}
+
   
 </script>
 </body>
