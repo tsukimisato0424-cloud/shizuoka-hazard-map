@@ -774,10 +774,11 @@ body, html {
     </div>
   </div>
 
-  <div id="tab2" class="tab-content">
-    <div class="panel-row">
-      <div class="panel-column">サブ①</div>
-      <div class="panel-column">サブ②</div>
+<div id="tab2" class="tab-content">
+  <div class="panel-row">
+    <div class="panel-column">
+      <div style="font-weight:bold; font-size:12px;">冠水リスク判定(半径500m)</div>
+      <div id="sub1-content" style="font-size:12px; margin-top:5px;">地点を選択してください</div>
     </div>
   </div>
 </div>
@@ -1087,7 +1088,40 @@ async function getElevation(lat, lng) {
   }
 }
   
+// 周辺9地点をサンプリングして窪地判定を行う
+async function checkInundationRisk(lat, lng) {
+    const offset = 0.0045; // 約500m
+    const points = [
+        [lat, lng], [lat + offset, lng], [lat - offset, lng],
+        [lat, lng + offset], [lat, lng - offset],
+        [lat + offset, lng + offset], [lat + offset, lng - offset],
+        [lat - offset, lng + offset], [lat - offset, lng - offset]
+    ];
 
+    let totalElev = 0;
+    let validCount = 0;
+
+    for (const p of points) {
+        const el = await getElevation(p[0], p[1]);
+        const val = parseFloat(el);
+        if (!isNaN(val)) {
+            totalElev += val;
+            validCount++;
+        }
+    }
+
+    const avgElev = totalElev / validCount;
+    const centerElev = parseFloat(await getElevation(lat, lng));
+    const diff = avgElev - centerElev;
+
+    return {
+        isRisk: diff > 1.0, // 周囲より1m以上低ければリスクあり
+        diff: diff.toFixed(1)
+    };
+}
+
+
+  
 // 【最終進化系】多次元複合メタ検索エンジン ＋ キーワード密度重み付けソート
 let searchMarkers = [];
 
@@ -1341,6 +1375,20 @@ map.on('click', async function(e) {
   const lat = e.latlng.lat;
   const lng = e.latlng.lng;
 
+ // ★ここに追加：窪地判定を実行して表示
+  const riskStatus = document.getElementById('sub1-content'); // 下記HTML修正とセット
+  riskStatus.innerHTML = "解析中...";
+  
+  const result = await checkInundationRisk(e.latlng.lat, e.latlng.lng);
+  
+  if (result.isRisk) {
+    riskStatus.innerHTML = `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`;
+  } else {
+    riskStatus.innerHTML = `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+  }
+});
+
+  
   // 1. パネルに座標を表示
   document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
 
