@@ -1049,8 +1049,9 @@ function updateCurrentLocation(isInitial = false) {
     }
   }, { enableHighAccuracy: true });
 }
-  
 
+updateCurrentLocation(true);
+  
 function drawRoute() {
   if (!currentLocation || !destination) return;
   if (routingControl) map.removeControl(routingControl);
