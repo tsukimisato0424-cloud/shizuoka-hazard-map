@@ -1056,7 +1056,7 @@ async function getElevation(lat, lng) {
 
 let searchMarkers = [];  
 /**
- * 静岡県特化型 高精度ハイブリッド検索
+ * 静岡県オープンデータAPIを活用した動的施設検索
  */
 async function executeHybridSearch(query) {
   if (!query) return;
@@ -1064,70 +1064,36 @@ async function executeHybridSearch(query) {
   suggestionsBox.innerHTML = '<div class="suggestion-item">検索中...</div>';
   suggestionsBox.style.display = 'block';
 
-  // 1. マーカーリセット
   searchMarkers.forEach(m => map.removeLayer(m));
   searchMarkers = [];
 
-  // 2. 静岡県内データ（避難所・主要施設）の検索
-  // ※ ここに yourLocalData として、避難所データなどの配列を読み込ませる想定
-  const localResults = await searchLocalImportantPlaces(query);
+  try {
+    // 1. 静岡県オープンデータAPIで施設を検索 (キーワード検索)
+    // ※CKAN APIを利用して「静岡県 施設」などのメタデータを検索するクエリ例
+    const apiUrl = `https://opendata.pref.shizuoka.jp/api/3/action/resource_search?query=name:${encodeURIComponent(query)}`;
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+    
+    // 2. 国土地理院 API (住所検索)
+    const gsiResponse = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`);
+    const gsiResults = await gsiResponse.json();
 
-  // 3. 国土地理院 API (住所・地名検索)
-  const gsiResults = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`)
-    .then(res => res.json())
-    .catch(() => []);
+    // 結果をマージして描画
+    const results = [
+      ...gsiResults.map(item => ({
+        lat: item.geometry.coordinates[1],
+        lon: item.geometry.coordinates[0],
+        name: item.properties.title,
+        type: 'gsi'
+      }))
+    ];
 
-  // 4. 結果の統合とスコアリング
-  let results = [
-    ...localResults.map(item => ({ ...item, type: 'local' })),
-    ...gsiResults.map(item => ({
-      lat: item.geometry.coordinates[1],
-      lon: item.geometry.coordinates[0],
-      name: item.properties.title,
-      address: item.properties.title,
-      type: 'gsi'
-    }))
-  ];
-
-  // 5. 重複排除と描画
-  renderSearchResults(results);
-}
-
-// ローカルデータ探索関数
-async function searchLocalImportantPlaces(query) {
-  // 実際は防災データ等のGeoJSONを事前に読み込んでおく
-  // 例: shelterData.features.filter(...)
-  return []; 
-}
-
-function renderSearchResults(results) {
-  const suggestionsBox = document.getElementById('customSuggestions');
-  suggestionsBox.innerHTML = '';
-  
-  if (results.length === 0) {
-    suggestionsBox.innerHTML = '<div class="suggestion-item">該当なし</div>';
-    return;
+    renderSearchResults(results);
+  } catch (e) {
+    console.error("データ取得エラー", e);
+    suggestionsBox.innerHTML = '<div class="suggestion-item">通信エラーが発生しました</div>';
   }
-
-  results.forEach(item => {
-    const marker = L.marker([item.lat, item.lon]).addTo(map);
-    marker.bindPopup(`<strong>${item.name}</strong>`);
-    searchMarkers.push(marker);
-
-    const div = document.createElement('div');
-    div.className = 'suggestion-item';
-    div.innerHTML = `<span class="material-icons-round">place</span> ${item.name}`;
-    div.onclick = () => {
-      map.setView([item.lat, item.lon], 16);
-      selectLocation(item.lat, item.lon, item.name);
-      suggestionsBox.style.display = 'none';
-    };
-    suggestionsBox.appendChild(div);
-  });
 }
-
-
-
   
   
 function selectLocation(lat, lng, label) {
