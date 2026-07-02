@@ -1367,37 +1367,37 @@ map.on('click', async function(e) {
   const lat = e.latlng.lat;
   const lng = e.latlng.lng;
 
- // ★ここに追加：窪地判定を実行して表示
-  const riskStatus = document.getElementById('sub1-content'); // 下記HTML修正とセット
-  riskStatus.innerHTML = "解析中...";
-  
-  const result = await checkInundationRisk(e.latlng.lat, e.latlng.lng);
-  
-  if (result.isRisk) {
-    riskStatus.innerHTML = `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`;
-  } else {
-    riskStatus.innerHTML = `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+  // 1. 窪地判定を実行して表示
+  const riskStatus = document.getElementById('sub1-content');
+  if (riskStatus) {
+    riskStatus.innerHTML = "解析中...";
+    const result = await checkInundationRisk(lat, lng);
+    
+    if (result.isRisk) {
+      riskStatus.innerHTML = `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`;
+    } else {
+      riskStatus.innerHTML = `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+    }
   }
-}
-});
 
-  
-  // 1. パネルに座標を表示
+  // 2. パネルに座標を表示
   document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
 
-  // 2. 標高取得と表示
+  // 3. 標高取得と表示
+  // ※getElevation は既存の「"12.5 m"」を返す関数とお見受けします
   const elevation = await getElevation(lat, lng);
   document.getElementById('elevationDisplay').innerText = elevation;
 
-  // 3. 住所取得と表示
+  // 4. 住所取得と表示
   document.getElementById('addressDisplay').innerText = "住所: 取得中...";
   const address = await getAddress(lat, lng);
   document.getElementById('addressDisplay').innerText = `住所: ${address}`;
   
-  // 4. 目的地設定とルート表示
+  // 5. 目的地設定とルート表示
   selectLocation(lat, lng, "タップした地点");
   if (shelterActive) fetchAndShowShelters(e.latlng);
-});
+}); // ← ここの閉じ括弧は1つだけにするのが正解です
+
   
 const searchInput = document.getElementById('customSearchInput');
 const searchBtn = document.getElementById('customSearchBtn');
