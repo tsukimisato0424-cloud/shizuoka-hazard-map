@@ -1024,13 +1024,29 @@ function updateCurrentLocation(isInitial = false) {
 
 // 情報を取得してパネルを更新する専用関数
 async function updateDetails(lat, lng) {
+  // 1. 座標と住所の更新
+  document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.lng ? lng.lng.toFixed(6) : lng.toFixed(6)}`; // lngの型安全対策
+  document.getElementById('addressDisplay').innerText = "住所: 取得中...";
+
+  // 2. 標高・住所の非同期取得
   const [elevation, address] = await Promise.all([
     getElevation(lat, lng),
     getAddress(lat, lng)
   ]);
+  
   document.getElementById('elevationDisplay').innerText = elevation;
   document.getElementById('addressDisplay').innerText = `住所: ${address}`;
-  // リスク判定もここで呼び出す
+
+  // 3. 【追加】ここが抜けていました！リスク判定を実行してパネルに表示
+  const riskStatus = document.getElementById('sub1-content');
+  if (riskStatus) {
+    riskStatus.innerHTML = "解析中...";
+    const result = await checkInundationRisk(lat, lng);
+    
+    riskStatus.innerHTML = result.isRisk 
+      ? `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${result.diff}m 低地</div>`
+      : `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+  }
 }
 
 updateCurrentLocation(true);
