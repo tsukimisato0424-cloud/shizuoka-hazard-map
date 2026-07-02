@@ -1069,28 +1069,21 @@ function drawRoute() {
 }
 
 // 標高を取得する関数
-async function getElevation(lat, lng) {
-  try {
-    // 地理院地図標高APIのURL
-    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    // 標高が取得できればその値を、なければ「測定不能」を返す
-    if (data.elevation !== undefined && data.elevation !== null) {
-      return data.elevation.toFixed(1) + " m";
-    } else {
-      return "標高データなし";
+// 数値そのものを返す計算用関数
+async function getElevationValue(lat, lng) {
+    try {
+        const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+        const response = await fetch(url);
+        const data = await response.json();
+        return (data.elevation !== undefined && data.elevation !== null) ? data.elevation : NaN;
+    } catch (e) {
+        return NaN;
     }
-  } catch (error) {
-    console.error("標高取得エラー:", error);
-    return "取得失敗";
-  }
 }
   
 // 周辺9地点をサンプリングして窪地判定を行う
 async function checkInundationRisk(lat, lng) {
-    const offset = 0.0045; // 約500m
+    const offset = 0.0045;
     const points = [
         [lat, lng], [lat + offset, lng], [lat - offset, lng],
         [lat, lng + offset], [lat, lng - offset],
@@ -1102,8 +1095,7 @@ async function checkInundationRisk(lat, lng) {
     let validCount = 0;
 
     for (const p of points) {
-        const el = await getElevation(p[0], p[1]);
-        const val = parseFloat(el);
+        const val = await getElevationValue(p[0], p[1]); // ★修正
         if (!isNaN(val)) {
             totalElev += val;
             validCount++;
@@ -1111,11 +1103,11 @@ async function checkInundationRisk(lat, lng) {
     }
 
     const avgElev = totalElev / validCount;
-    const centerElev = parseFloat(await getElevation(lat, lng));
+    const centerElev = await getElevationValue(lat, lng); // ★修正
     const diff = avgElev - centerElev;
 
     return {
-        isRisk: diff > 1.0, // 周囲より1m以上低ければリスクあり
+        isRisk: diff > 1.0,
         diff: diff.toFixed(1)
     };
 }
