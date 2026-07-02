@@ -620,12 +620,14 @@ body, html {
   touch-action: none;         /* ここでのピンチを無視する */
 }
 
-  /* 新規追加のレイアウト用CSS */
-  .panel-row { display: flex; gap: 10px; height: 100%; }
+
+  /* レイアウト調整用CSS */
+  .panel-row { display: flex; height: 100%; }
   .panel-column { flex: 1; overflow: hidden; }
+  .tab-content { height: 110px; } /* コンテンツを少し広めに確保 */
   
-  /* タブコンテンツの調整 */
-  .tab-content { height: 90px; } /* コンテンツに合わせて調整してください */  
+  /* 既存のルートボックススタイルを少しコンパクトに調整 */
+  .route-mode-box { background: #f8f9fa; border-radius: 6px; }  
 </style>
 </head>
 <body>
