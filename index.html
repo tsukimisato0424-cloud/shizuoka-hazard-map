@@ -604,6 +604,21 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
   font-size: 11px !important; /* 少し拡大して読みやすく */
   line-height: 1.3;
 }
+
+/* 全体を制御して拡大を禁止する */
+body, html {
+  touch-action: pan-x pan-y; /* 画面スクロールのみ許可、ピンチズームは禁止 */
+  overscroll-behavior: none;  /* iOSのバウンス効果を消す */
+  position: fixed;            /* 画面全体の動きを固定 */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;           /* はみ出しを禁止 */
+}
+
+/* 検索バーやパネルなど、地図上のUI要素も拡大反応を消す */
+#searchContainer, #hazardMenuCard, #statusPanel, #rightControlContainer {
+  touch-action: none;         /* ここでのピンチを無視する */
+}
   
 </style>
 </head>
@@ -757,7 +772,11 @@ input, .hazard-btn, .suggestion-item, .map-type-item {
 
 <script>
 // 静岡駅周辺を初期位置に設定
-const map = L.map('map', { zoomControl: false, minZoom: 5 }).setView([34.9756, 138.3828], 13);
+const map = L.map('map', {
+  zoomControl: false,
+  minZoom: 5,
+  tap: false
+}).setView([34.9756, 138.3828], 13);
 
 // 複数の地図を扱うための設定
 const baseLayers = {
