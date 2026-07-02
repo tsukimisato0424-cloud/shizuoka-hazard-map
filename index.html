@@ -1055,9 +1055,6 @@ async function getElevation(lat, lng) {
   
 
 let searchMarkers = [];  
-/**
- * 静岡県オープンデータAPIを活用した動的施設検索
- */
 async function executeHybridSearch(query) {
   if (!query) return;
   const suggestionsBox = document.getElementById('customSuggestions');
@@ -1068,30 +1065,27 @@ async function executeHybridSearch(query) {
   searchMarkers = [];
 
   try {
-    // 1. 静岡県オープンデータAPIで施設を検索 (キーワード検索)
-    // ※CKAN APIを利用して「静岡県 施設」などのメタデータを検索するクエリ例
-    const apiUrl = `https://opendata.pref.shizuoka.jp/api/3/action/resource_search?query=name:${encodeURIComponent(query)}`;
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    
-    // 2. 国土地理院 API (住所検索)
-    const gsiResponse = await fetch(`https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`);
-    const gsiResults = await gsiResponse.json();
+    // 静岡県内に限定した検索クエリ
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + " 静岡県")}&limit=5&addressdetails=1`;
+    const response = await fetch(url);
+    const results = await response.json();
 
-    // 結果をマージして描画
-    const results = [
-      ...gsiResults.map(item => ({
-        lat: item.geometry.coordinates[1],
-        lon: item.geometry.coordinates[0],
-        name: item.properties.title,
-        type: 'gsi'
-      }))
-    ];
+    if (results.length === 0) {
+      suggestionsBox.innerHTML = '<div class="suggestion-item">見つかりませんでした</div>';
+      return;
+    }
 
-    renderSearchResults(results);
+    // 検索結果を整形
+    const formattedResults = results.map(item => ({
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      name: item.display_name,
+      type: 'osm'
+    }));
+
+    renderSearchResults(formattedResults);
   } catch (e) {
-    console.error("データ取得エラー", e);
-    suggestionsBox.innerHTML = '<div class="suggestion-item">通信エラーが発生しました</div>';
+    suggestionsBox.innerHTML = '<div class="suggestion-item">検索エラー: 通信を確認してください</div>';
   }
 }
   
