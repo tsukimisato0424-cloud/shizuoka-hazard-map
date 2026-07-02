@@ -1065,17 +1065,26 @@ async function executeHybridSearch(query) {
   searchMarkers = [];
 
   try {
-    // 静岡県内に限定した検索クエリ
+    // 重要なポイント: Nominatimは User-Agent を必須としています
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + " 静岡県")}&limit=5&addressdetails=1`;
-    const response = await fetch(url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'MyHazardMapApp/1.0' // ここが重要です！これがないとブロックされます
+      }
+    });
+
+    if (!response.ok) throw new Error('Network response was not ok');
+    
     const results = await response.json();
 
     if (results.length === 0) {
-      suggestionsBox.innerHTML = '<div class="suggestion-item">見つかりませんでした</div>';
+      suggestionsBox.innerHTML = '<div class="suggestion-item">該当なし</div>';
       return;
     }
 
-    // 検索結果を整形
     const formattedResults = results.map(item => ({
       lat: parseFloat(item.lat),
       lon: parseFloat(item.lon),
@@ -1085,7 +1094,8 @@ async function executeHybridSearch(query) {
 
     renderSearchResults(formattedResults);
   } catch (e) {
-    suggestionsBox.innerHTML = '<div class="suggestion-item">検索エラー: 通信を確認してください</div>';
+    console.error("検索エラー:", e);
+    suggestionsBox.innerHTML = '<div class="suggestion-item">通信に失敗しました。時間をおいて再試行してください。</div>';
   }
 }
   
