@@ -1065,37 +1065,27 @@ async function executeHybridSearch(query) {
   searchMarkers = [];
 
   try {
-    // 重要なポイント: Nominatimは User-Agent を必須としています
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + " 静岡県")}&limit=5&addressdetails=1`;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'MyHazardMapApp/1.0' // ここが重要です！これがないとブロックされます
-      }
-    });
+    // 国土地理院の住所検索APIは非常に安定しています
+    const url = `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    const data = await response.json();
 
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const results = await response.json();
-
-    if (results.length === 0) {
+    if (!data || data.length === 0) {
       suggestionsBox.innerHTML = '<div class="suggestion-item">該当なし</div>';
       return;
     }
 
-    const formattedResults = results.map(item => ({
-      lat: parseFloat(item.lat),
-      lon: parseFloat(item.lon),
-      name: item.display_name,
-      type: 'osm'
+    const results = data.map(item => ({
+      lat: item.geometry.coordinates[1],
+      lon: item.geometry.coordinates[0],
+      name: item.properties.title
     }));
 
-    renderSearchResults(formattedResults);
+    renderSearchResults(results);
   } catch (e) {
-    console.error("検索エラー:", e);
-    suggestionsBox.innerHTML = '<div class="suggestion-item">通信に失敗しました。時間をおいて再試行してください。</div>';
+    // ここにエラーが来るなら、ブラウザのセキュリティ設定が原因です
+    suggestionsBox.innerHTML = '<div class="suggestion-item">エラー: ブラウザの制限により通信できません</div>';
+    console.error("通信詳細:", e);
   }
 }
   
