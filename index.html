@@ -354,8 +354,13 @@ html, body {
 
   <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
   <button id="refreshBtn"><span class="material-icons-round">refresh</span></button>
-</div>
+</div
 
+　<button id="fullscreenBtn" onclick="toggleFullscreen()" style="width:50px; height:50px; border-radius:50%; border:none; background:white; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+  <span class="material-icons-round" style="color:#1a73e8;">fullscreen</span>
+</button>
+</div>
+   
 <!-- 下部ステータスパネル -->
 <div id="statusPanel" data-state="full">
   <div class="tab-container">
@@ -1197,6 +1202,13 @@ searchBtn.onclick = () => executeHybridSearch(searchInput.value);
    12. 起動処理
    ================================================================== */
 updateCurrentLocation(true);
+
+  function toggleFullscreen() {
+  document.body.classList.toggle('fullscreen');
+  const btnIcon = document.getElementById('fullscreenBtn').querySelector('span');
+  btnIcon.innerText = document.body.classList.contains('fullscreen') ? 'fullscreen_exit' : 'fullscreen';
+}
+   
 </script>
 </body>
 </html>
