@@ -734,13 +734,18 @@ function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng);
 
   if (destMarker) map.removeLayer(destMarker);
+    destMarker = null;
+}
    const destIcon = L.divIcon({
     className: 'custom-destination-icon',
     html: '<span>G</span>',
     iconSize: [30, 30],
     iconAnchor: [15, 30] // 先端を座標に合わせる
   });
-   destMarker = L.marker(destination, { icon: destIcon }).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+   destMarker = L.marker(destination, {
+      icon: destIcon,
+      zIndexOffset: 1000
+   }).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
 
   if (currentLocation) {
     drawRoute();
