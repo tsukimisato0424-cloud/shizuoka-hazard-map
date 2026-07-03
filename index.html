@@ -23,8 +23,64 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; overf
 #searchContainer { position: absolute; top: 10px; left: 10px; right: 10px; }
 #hazardMenuCard { position: absolute; top: 75px; left: 10px; right: 10px; background: rgba(255,255,255,0.9); border-radius: 16px; padding: 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
+/* ハザードボタン共通 */
+.hazard-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #333;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.hazard-btn:active { transform: scale(0.96); }
+.hazard-btn.active {
+  background: #1a73e8;
+  color: #fff;
+}
+/* 地形分類は経路リスク対象外であることが分かるよう控えめに区別 */
+.hazard-btn[data-route-risk="exclude"] {
+  position: relative;
+}
+.hazard-btn[data-route-risk="exclude"]::after {
+  content: '参考';
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 8px;
+  color: #999;
+}
+.hazard-btn[data-route-risk="exclude"].active::after {
+  color: #cfe0fb;
+}
+
 /* 全画面ボタン */
 #fullscreenBtn { width: 50px; height: 50px; border-radius: 50%; background: #333; color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: 10px; }
+
+/* 地形分類 凡例 */
+#landformLegend {
+  position: absolute;
+  z-index: 9999;
+  bottom: 200px;
+  left: 10px;
+  right: 10px;
+  background: rgba(255,255,255,0.95);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #333;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: none;
+}
+#landformLegend.visible { display: block; }
+#landformLegend a { color: #1a73e8; }
 
 /* 2. ステータスパネル */
 #statusPanel { position: absolute; bottom: 20px; left: 10px; right: 10px; background: white; padding: 10px; border-radius: 12px; }
@@ -44,11 +100,26 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; overf
 </div>
 
 <div id="hazardMenuCard" class="ui-element">
-  <button class="hazard-btn" data-type="flood">洪水</button>
-  <button class="hazard-btn" data-type="landslide">土砂</button>
-  <button class="hazard-btn" data-type="tsunami">津波</button>
-  <button class="hazard-btn" data-type="landform">地形分類</button>
-  <button class="hazard-btn" data-type="shelter">避難所</button>
+  <button class="hazard-btn" data-type="flood">
+    <span class="material-icons-round">water</span>洪水
+  </button>
+  <button class="hazard-btn" data-type="landslide">
+    <span class="material-icons-round">terrain</span>土砂
+  </button>
+  <button class="hazard-btn" data-type="tsunami">
+    <span class="material-icons-round">waves</span>津波
+  </button>
+  <button class="hazard-btn" data-type="landform" data-route-risk="exclude">
+    <span class="material-icons-round">layers</span>地形分類
+  </button>
+  <button class="hazard-btn" data-type="shelter">
+    <span class="material-icons-round">home_work</span>避難所
+  </button>
+</div>
+
+<div id="landformLegend" class="ui-element">
+  地形分類（土地の成り立ち）を表示中。防災リスクの判定（洪水・土砂・津波・経路リスク等）には使用されない参考情報です。
+  詳細は<a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener">重ねるハザードマップ</a>を参照してください。
 </div>
 
 <div id="rightControlContainer" class="ui-element" style="position: absolute; top: 170px; right: 10px;">
@@ -73,16 +144,44 @@ html, body { height: 100%; margin: 0; padding: 0; font-family: sans-serif; overf
 const map = L.map('map').setView([34.9756, 138.3828], 13);
 L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png').addTo(map);
 
-// 地形分類レイヤー
-const landformLayer = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/landform/{z}/{x}/{y}.png', { opacity: 0.7 });
+// 国土地理院「重ねるハザードマップ」地形分類レイヤー
+const landformLayer = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/landform/{z}/{x}/{y}.png', {
+  opacity: 0.7,
+  maxNativeZoom: 17,
+  attribution: '国土地理院 地形分類（自然地形・人工地形）'
+});
+
+// 経路リスク計算から除外するハザードタイプ。
+// 地形分類は土地の成り立ちに関する参考情報であり、
+// 洪水・土砂・津波のような即時の危険度指標ではないため、
+// 経路探索の危険度スコアには一切加算しない。
+const ROUTE_RISK_EXCLUDED_TYPES = new Set(
+  Array.from(document.querySelectorAll('.hazard-btn[data-route-risk="exclude"]'))
+    .map(btn => btn.getAttribute('data-type'))
+);
+
+function isRouteRiskType(type) {
+  return !ROUTE_RISK_EXCLUDED_TYPES.has(type);
+}
+
+const landformLegend = document.getElementById('landformLegend');
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function() {
     const type = this.getAttribute('data-type');
-    if(type === 'landform') {
+    if (type === 'landform') {
       this.classList.toggle('active');
-      this.classList.contains('active') ? landformLayer.addTo(map) : map.removeLayer(landformLayer);
+      const isActive = this.classList.contains('active');
+      if (isActive) {
+        landformLayer.addTo(map);
+      } else {
+        map.removeLayer(landformLayer);
+      }
+      landformLegend.classList.toggle('visible', isActive);
+      // isRouteRiskType('landform') は常に false。
+      // 経路リスクエンジン実装時はこの判定でスキップすること。
     }
+    // 洪水・土砂・津波・避難所は今後実装
   };
 });
 
