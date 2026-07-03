@@ -734,8 +734,6 @@ function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng);
 
   if (destMarker) map.removeLayer(destMarker);
-    destMarker = null;
-}
    const destIcon = L.divIcon({
     className: 'custom-destination-icon',
     html: '<span>G</span>',
