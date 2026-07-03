@@ -707,7 +707,9 @@ async function checkPointHazard(lat, lon) {
       const canvas = await getTileCanvas(url);
       if (!canvas) continue;
       const data = canvas.getContext('2d').getImageData(px, py, 1, 1).data;
-      if (data[3] > 10) hits.push(type); // 透明でなければ想定区域内とみなす
+      const [r, g, b, a] = data;
+      const isNearWhite = r > 235 && g > 235 && b > 235; // 「危険なし」を表す淡色・背景を除外
+      if (a > 60 && !isNearWhite) hits.push(type);
     } catch (e) { /* CORS等で読み取れない場合は判定をスキップ */ }
   }
   return hits;
@@ -1189,4 +1191,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
