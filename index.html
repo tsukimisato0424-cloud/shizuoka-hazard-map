@@ -222,7 +222,7 @@ html, body {
    ========================================================= */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: rgba(225, 235, 250, 0.98);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 0px;
   overflow: visible;
@@ -343,6 +343,13 @@ html, body {
         <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
+        <span class="legend-section-title">【キキクル】</span>
+        <div class="legend-item"><div class="legend-color" style="background:#5e2a84;"></div>紫：極めて危険</div>
+        <div class="legend-item"><div class="legend-color" style="background:#a557a5;"></div>赤：危険</div>
+        <div class="legend-item"><div class="legend-color" style="background:#e4905d;"></div>黄：注意</div>
+
+        <span class="legend-section-title">【避難所】</span>
+        <div class="legend-item">
           <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
             <span class="material-icons-round" style="font-size:14px; color:#fff;">directions_run</span>
           </div>
@@ -994,4 +1001,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
