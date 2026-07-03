@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>防災ハザードマップ</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-<!-- 未使用だったPapaParse / shp.js は削除（読み込み時間短縮のため） -->
 
 <style>
 /* =========================================================
@@ -80,7 +78,7 @@ html, body {
 .suggestion-item .material-icons-round { color: #70757a; font-size: 18px; margin-right: 10px; }
 
 /* =========================================================
-   2. ハザード選択メニュー
+   2. ハザード選択メニュー（キキクル3種を削除し4項目構成に）
    ========================================================= */
 #hazardMenuCard {
   position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000;
@@ -93,7 +91,7 @@ html, body {
     0 8px 30px rgba(0,0,0,.20),
     0 0 0 1px rgba(26,115,232,.45),
     0 0 12px rgba(26,115,232,.30);
-  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
   touch-action: none;
 }
 
@@ -114,13 +112,10 @@ html, body {
   border-width: 2px;
   box-shadow: 0 0 10px rgba(26, 115, 232, 0.5);
 }
-.hazard-btn.active[data-type="flood"]              { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
-.hazard-btn.active[data-type="landslide"]          { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
-.hazard-btn.active[data-type="tsunami"]            { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
-.hazard-btn.active[data-type="shelter"]            { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_inundation"]{ background: linear-gradient(135deg, #a8c0ff, #3f2b96); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_landslide"] { background: linear-gradient(135deg, #f794a4, #d32f2f); color: #fff; }
-.hazard-btn.active[data-type="kikikuru_flood"]     { background: linear-gradient(135deg, #74ebd5, #007ba1); color: #fff; }
+.hazard-btn.active[data-type="flood"]     { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
+.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
+.hazard-btn.active[data-type="tsunami"]   { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+.hazard-btn.active[data-type="shelter"]   { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 
 /* =========================================================
    3. 右側フローティングコントロール（凡例・地図切替・現在地・更新）
@@ -130,7 +125,6 @@ html, body {
   display: flex; flex-direction: column; gap: 10px;
 }
 
-/* 円形→カード型に展開するアコーディオン共通スタイル（凡例／地図切替） */
 #legendAccordion, #mapTypeContainer {
   position: relative; z-index: 1500;
   width: 52px; height: 52px;
@@ -141,7 +135,7 @@ html, body {
               height 0.28s cubic-bezier(0.4,0,0.2,1),
               border-radius 0.28s ease;
 }
-#legendAccordion[open-state="true"] { width: 200px; height: 350px; border-radius: 16px; }
+#legendAccordion[open-state="true"] { width: 200px; height: 300px; border-radius: 16px; }
 #mapTypeContainer[open-state="true"] { width: 140px; height: 200px; border-radius: 16px; }
 
 #legendAccordion details, #mapTypeContainer details { border: none; height: 100%; }
@@ -164,7 +158,6 @@ html, body {
 #mapTypeContainer summary .maptype-text { font-size: 9px; font-weight: bold; color: #3c4043; line-height: 1.1; text-align: center; }
 #mapTypeContainer summary .maptype-arrow { display: none; }
 
-/* 展開時 */
 #legendAccordion[open-state="true"] summary,
 #mapTypeContainer[open-state="true"] summary {
   width: 100%; height: 48px; padding: 0 14px;
@@ -188,13 +181,11 @@ html, body {
 .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 
 .maptype-content { padding: 8px 0; }
-#mapTypeMenu { display: none; }
 .map-type-item {
   padding: 12px 16px; font-size: 13px; color: #3c4043; cursor: pointer; border-bottom: 1px solid #f1f3f4;
 }
 .map-type-item:hover { background: #f8f9fa; }
 
-/* 現在地／更新ボタン（丸ボタン共通） */
 #locationBtn, #refreshBtn {
   position: relative; z-index: 1500;
   width: 50px; height: 50px; border: none; border-radius: 50%;
@@ -208,7 +199,7 @@ html, body {
 #refreshBtn.loading .material-icons-round { animation: spinRefresh 0.8s linear infinite; }
 
 /* =========================================================
-   4. 避難所アイコン
+   4. 避難所アイコン／現在地・目的地ピン
    ========================================================= */
 .custom-shelter-icon {
   width: 18px !important; height: 18px !important; font-size: 10px !important;
@@ -216,6 +207,9 @@ html, body {
   color: #ffffff !important; display: flex !important; align-items: center !important; justify-content: center !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
+
+.custom-pin-icon { background: transparent !important; border: none !important; }
+.custom-pin-icon svg { display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); }
 
 /* =========================================================
    5. 下部ステータスパネル
@@ -257,7 +251,7 @@ html, body {
 #elevationDisplay { font-weight: bold; color: #d35400; }
 
 .panel-row { display: flex; height: 100%; }
-.panel-column { flex: 1; overflow: hidden; }
+.panel-column { flex: 1; overflow-y: auto; }
 
 .route-modes { display: flex; gap: 8px; flex: 1; }
 .route-mode-box { flex: 1; background: #f8f9fa; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
@@ -277,9 +271,6 @@ html, body {
   border-radius: 16px !important;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
 }
-
-.leaflet-routing-container { display: none !important; }
-.leaflet-marker-pane .leaflet-popup { display: none !important; }
 </style>
 </head>
 <body>
@@ -311,15 +302,6 @@ html, body {
   <button class="hazard-btn" data-type="shelter">
     <span class="material-icons-round">gite</span>避難所
   </button>
-  <button class="hazard-btn" data-type="kikikuru_inundation">
-    <span class="material-icons-round">emergency_share</span>浸水<br>キキクル
-  </button>
-  <button class="hazard-btn" data-type="kikikuru_landslide">
-    <span class="material-icons-round">landscape</span>土砂<br>キキクル
-  </button>
-  <button class="hazard-btn" data-type="kikikuru_flood">
-    <span class="material-icons-round">water_drop</span>洪水<br>キキクル
-  </button>
 </div>
 
 <!-- 右側フローティングコントロール -->
@@ -343,11 +325,6 @@ html, body {
         <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
-        <span class="legend-section-title">【キキクル】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#5e2a84;"></div>紫：極めて危険</div>
-        <div class="legend-item"><div class="legend-color" style="background:#a557a5;"></div>赤：危険</div>
-        <div class="legend-item"><div class="legend-color" style="background:#e4905d;"></div>黄：注意</div>
-
         <span class="legend-section-title">【避難所】</span>
         <div class="legend-item">
           <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
@@ -355,6 +332,10 @@ html, body {
           </div>
           指定緊急避難場所 (緑アイコン)
         </div>
+
+        <span class="legend-section-title">【ルート】</span>
+        <div class="legend-item"><div class="legend-color" style="background:#1a73e8;"></div>安全なルート</div>
+        <div class="legend-item"><div class="legend-color" style="background:#e53935;"></div>危険区域を通過するルート</div>
       </div>
     </details>
   </div>
@@ -394,6 +375,7 @@ html, body {
       <div class="panel-column" style="border-right: 1px solid #ddd; padding-right: 10px;">
         <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地形リスク判定【冠水想定】</div>
         <div id="sub1-content" style="font-size:11px; line-height:1.4;">地点を選択してください</div>
+        <div id="routeHazardStatus" style="font-size:11px; line-height:1.4; margin-top:6px;"></div>
       </div>
       <div class="panel-column" style="padding-left: 10px;">
         <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点情報</div>
@@ -422,15 +404,14 @@ html, body {
         </div>
       </div>
       <div class="panel-column" style="padding-left: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">その他の情報</div>
-        <div style="font-size:11px; color:#777;">（ここに情報を追加可能）</div>
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">警報・注意報</div>
+        <div id="weatherWarnings" style="font-size:11px; line-height:1.5; color:#777;">地点を選択してください</div>
       </div>
     </div>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
 /* ==================================================================
@@ -478,7 +459,7 @@ function changeMap(type) {
 }
 
 /* ==================================================================
-   2. ハザードレイヤー
+   2. ハザードレイヤー（キキクル3種は削除済み）
    ================================================================== */
 const layers = {
   flood: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
@@ -487,27 +468,8 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  kikikuru_inundation: [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/inundation/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
-  kikikuru_landslide:  [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/landslide/{z}/{x}/{y}.png',  { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })],
-  kikikuru_flood:      [L.tileLayer('https://www.jma.go.jp/bosai/kikiken/data/flood/{z}/{x}/{y}.png',      { opacity: 0.7, maxZoom: 17, attribution: '気象庁' })]
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
-
-function refreshKikikuruLayers() {
-  ["kikikuru_inundation", "kikikuru_landslide", "kikikuru_flood"].forEach(type => {
-    const oldLayer = layers[type][0];
-    const wasVisible = map.hasLayer(oldLayer);
-    if (wasVisible) map.removeLayer(oldLayer);
-
-    const newUrl = oldLayer._url.split("?")[0] + "?t=" + Date.now();
-    layers[type][0] = L.tileLayer(newUrl, {
-      opacity: oldLayer.options.opacity,
-      maxZoom: oldLayer.options.maxZoom,
-      attribution: oldLayer.options.attribution
-    });
-    if (wasVisible) layers[type][0].addTo(map);
-  });
-}
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.onclick = function () {
@@ -531,12 +493,10 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
   };
 });
 
-document.getElementById("refreshBtn").onclick = async () => {
-  const btn = document.getElementById("refreshBtn");
-  btn.classList.add("loading");
-  refreshKikikuruLayers();
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  btn.classList.remove("loading");
+// 更新ボタン：キキクル削除に伴い、ページ全体をリロードする方式に変更
+document.getElementById("refreshBtn").onclick = () => {
+  document.getElementById("refreshBtn").classList.add("loading");
+  location.reload();
 };
 
 /* ==================================================================
@@ -649,16 +609,41 @@ function switchTab(tabNumber) {
 }
 
 /* ==================================================================
-   6. 現在地・ルート
+   6. 現在地・目的地ピン（共通デザインのドロップ型アイコン）
+   ------------------------------------------------------------------
+   現在地：青ドロップ（文字なし）
+   目的地：赤ドロップ（中央に「G」）
+   ポップアップは表示しない（要望によりバルーン削除）
    ================================================================== */
-let currentLocation = null, destination = null, routingControl = null, currentMarker = null, destMarker = null;
+function createPinIcon(color, letter) {
+  const label = letter || '';
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
+      <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="${color}"/>
+      <circle cx="18" cy="17" r="10" fill="#ffffff"/>
+      ${label ? `<text x="18" y="22" font-size="13" font-weight="bold" text-anchor="middle" fill="${color}" font-family="Arial, sans-serif">${label}</text>` : ''}
+    </svg>`;
+  return L.divIcon({
+    className: 'custom-pin-icon',
+    html: svg,
+    iconSize: [36, 48],
+    iconAnchor: [18, 46]
+  });
+}
+const currentLocationIcon = createPinIcon('#1a73e8', '');
+const destinationIcon = createPinIcon('#e53935', 'G');
+
+/* ==================================================================
+   7. 現在地・ルート
+   ================================================================== */
+let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
     if (currentMarker) map.removeLayer(currentMarker);
-    currentMarker = L.marker(currentLocation).addTo(map).bindPopup("現在地").openPopup();
+    currentMarker = L.marker(currentLocation, { icon: currentLocationIcon }).addTo(map);
 
     if (isInitial || !destination) map.setView(currentLocation, 14);
 
@@ -670,7 +655,7 @@ function updateCurrentLocation(isInitial = false) {
 }
 
 document.getElementById("locationBtn").onclick = () => {
-  if (routingControl) { map.removeControl(routingControl); routingControl = null; }
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
   if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
   destination = null;
 
@@ -678,41 +663,143 @@ document.getElementById("locationBtn").onclick = () => {
   document.getElementById("walkDist").innerText = "-- km";
   document.getElementById("carTime").innerText = "-- 分";
   document.getElementById("carDist").innerText = "-- km";
+  document.getElementById("routeHazardStatus").innerHTML = "";
 
   updateCurrentLocation(false);
 };
 
-function drawRoute() {
-  if (!currentLocation || !destination) return;
-  if (routingControl) map.removeControl(routingControl);
+/* --- ハザードタイル上の1点を判定（PNGタイルのピクセルを読み取る簡易判定） --- */
+const hazardTileCache = new Map();
 
-  routingControl = L.Routing.control({
-    waypoints: [currentLocation, destination],
-    routeWhileDragging: false,
-    addWaypoints: false,
-    draggableWaypoints: false,
-    show: false,
-    lineOptions: { styles: [{ color: '#1a73e8', opacity: 0.8, weight: 5 }] }
-  }).addTo(map);
+function lonLatToTileFloat(lon, lat, zoom) {
+  const n = Math.pow(2, zoom);
+  const x = (lon + 180) / 360 * n;
+  const latRad = lat * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  return { x, y };
+}
 
-  routingControl.on('routesfound', function (e) {
-    const summary = e.routes[0].summary;
-    const distanceKm = (summary.totalDistance / 1000).toFixed(1);
-    const walkMinutes = Math.round(summary.totalDistance / 80);
-    const carMinutes = Math.round(summary.totalTime / 60);
-
-    document.getElementById('walkDist').innerText = `${distanceKm} km`;
-    document.getElementById('walkTime').innerText = `${walkMinutes} 分`;
-    document.getElementById('carDist').innerText = `${distanceKm} km`;
-    document.getElementById('carTime').innerText = `${carMinutes} 分`;
+function getTileCanvas(url) {
+  if (hazardTileCache.has(url)) return hazardTileCache.get(url);
+  const promise = new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        resolve(canvas);
+      } catch (e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
   });
+  hazardTileCache.set(url, promise);
+  return promise;
+}
+
+// 指定座標が洪水/津波/土砂の想定区域内かどうかをタイル画像のピクセル透明度から判定
+async function checkPointHazard(lat, lon) {
+  const zoom = 15;
+  const { x, y } = lonLatToTileFloat(lon, lat, zoom);
+  const tx = Math.floor(x), ty = Math.floor(y);
+  const px = Math.floor((x - tx) * 256), py = Math.floor((y - ty) * 256);
+
+  const hazardSources = {
+    flood: `https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/${zoom}/${tx}/${ty}.png`,
+    tsunami: `https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/${zoom}/${tx}/${ty}.png`,
+    landslide: `https://disaportaldata.gsi.go.jp/raster/05_dosekiryukeikaikuiki/${zoom}/${tx}/${ty}.png`
+  };
+
+  const hits = [];
+  for (const [type, url] of Object.entries(hazardSources)) {
+    try {
+      const canvas = await getTileCanvas(url);
+      if (!canvas) continue;
+      const data = canvas.getContext('2d').getImageData(px, py, 1, 1).data;
+      if (data[3] > 10) hits.push(type); // 透明でなければ想定区域内とみなす
+    } catch (e) { /* CORS等で読み取れない場合は判定をスキップ */ }
+  }
+  return hits;
+}
+
+// ルート経路（[lon,lat]の配列）を間引きながらサンプリングし、危険区域通過の有無を判定
+async function analyzeRouteHazards(coordinates) {
+  const maxSamples = 25;
+  const step = Math.max(1, Math.floor(coordinates.length / maxSamples));
+  const found = new Set();
+  for (let i = 0; i < coordinates.length; i += step) {
+    const [lon, lat] = coordinates[i];
+    const hits = await checkPointHazard(lat, lon);
+    hits.forEach(h => found.add(h));
+  }
+  return found;
+}
+
+const HAZARD_NAME_MAP = { flood: '洪水浸水想定区域', tsunami: '津波浸水想定区域', landslide: '土砂災害警戒区域' };
+
+// OSRM(徒歩/車)を用いたルート検索。徒歩ルートを地図上に描画し、危険区域通過を判定する。
+async function drawRoute() {
+  if (!currentLocation || !destination) return;
+  if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+
+  const hazardStatusEl = document.getElementById('routeHazardStatus');
+  hazardStatusEl.innerHTML = '<span style="color:#777;">ルートを計算中...</span>';
+
+  const from = `${currentLocation.lng},${currentLocation.lat}`;
+  const to = `${destination.lng},${destination.lat}`;
+
+  try {
+    const [footRes, carRes] = await Promise.all([
+      fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson`)
+        .then(r => r.json()).catch(() => null),
+      fetch(`https://router.project-osrm.org/route/v1/driving/${from};${to}?overview=full&geometries=geojson`)
+        .then(r => r.json()).catch(() => null)
+    ]);
+
+    if (footRes && footRes.routes && footRes.routes[0]) {
+      const route = footRes.routes[0];
+      const coords = route.geometry.coordinates; // [lon, lat]
+      const latlngs = coords.map(c => [c[1], c[0]]);
+
+      document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
+      document.getElementById('walkDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
+
+      const hazards = await analyzeRouteHazards(coords);
+      const isDanger = hazards.size > 0;
+
+      routeLayer = L.polyline(latlngs, {
+        color: isDanger ? '#e53935' : '#1a73e8',
+        weight: 5,
+        opacity: 0.85
+      }).addTo(map);
+
+      hazardStatusEl.innerHTML = isDanger
+        ? `<div style="color:#e53935; font-weight:bold;">⚠ ルートが危険区域を通過します<br>(${[...hazards].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+        : `<div style="color:#27ae60;">ルート上に危険区域はありません</div>`;
+    } else {
+      hazardStatusEl.innerHTML = '<span style="color:#777;">徒歩ルートを算出できませんでした</span>';
+    }
+
+    if (carRes && carRes.routes && carRes.routes[0]) {
+      const route = carRes.routes[0];
+      document.getElementById('carTime').innerText = `${Math.round(route.duration / 60)} 分`;
+      document.getElementById('carDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
+    } else {
+      document.getElementById('carTime').innerText = '-- 分';
+      document.getElementById('carDist').innerText = '-- km';
+    }
+  } catch (err) {
+    hazardStatusEl.innerHTML = '<span style="color:#777;">ルート算出中にエラーが発生しました</span>';
+  }
 }
 
 function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng);
 
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+  destMarker = L.marker(destination, { icon: destinationIcon }).addTo(map);
 
   if (currentLocation) {
     drawRoute();
@@ -725,15 +812,11 @@ function selectLocation(lat, lng, label) {
 }
 
 /* ==================================================================
-   7. 標高・住所・冠水リスク判定
+   8. 標高・住所・冠水リスク判定
    ------------------------------------------------------------------
    ★設計方針：
-   精度を優先し、判定グリッドは元の5x5（25点・中心含む）を維持する。
-   その代わり、
-     ・25点の標高取得はPromise.allで全点「並列」実行し、直列待ちを排除
-     ・現在地／目的地アイコンの表示は解析を待たず即座に行い、
-       「解析中...」表示のままバックグラウンドで結果が出たらパネルだけ更新
-   という構成にすることで、精度を落とさずに体感速度を改善している。
+   精度を優先し、判定グリッドは5x5（25点・中心含む）を維持する。
+   25点の標高取得はPromise.allで全点「並列」実行し、直列待ちを排除。
    ================================================================== */
 async function getElevationValue(lat, lng) {
   try {
@@ -756,9 +839,8 @@ async function checkInundationRisk(lat, lng) {
       points.push([lat + i * step, lng + j * step]);
     }
   }
-  const centerIndex = points.findIndex(p => p[0] === lat && p[1] === lng); // 中心(0,0)のインデックス
+  const centerIndex = points.findIndex(p => p[0] === lat && p[1] === lng);
 
-  // 25点すべてを並列取得（直列awaitループにはしない）
   const values = await Promise.all(points.map(p => getElevationValue(p[0], p[1])));
 
   const centerElev = values[centerIndex];
@@ -784,7 +866,90 @@ async function getAddress(lat, lng) {
   }
 }
 
-// 地点選択時にパネル全体（座標・住所・海抜・冠水リスク）を更新する
+/* ==================================================================
+   9. 気象庁 警報・注意報の表示
+   ------------------------------------------------------------------
+   ★注意：
+   気象庁は「緯度経度→エリアコード」の直接変換APIを公開していないため、
+   逆ジオコーディングで得た住所文字列と気象庁エリアマスタの市区町村名を
+   突き合わせて対応コードを推定する簡易実装です。住所表記の揺れによって
+   一致しない場合があります。
+   ================================================================== */
+let areaMasterCache = null;
+async function getAreaMaster() {
+  if (areaMasterCache) return areaMasterCache;
+  const res = await fetch('https://www.jma.go.jp/bosai/common/const/area.json');
+  areaMasterCache = await res.json();
+  return areaMasterCache;
+}
+
+// 気象庁 警報・注意報コード → 日本語名称（主要なもの）
+const JMA_WARNING_NAMES = {
+  "02": "暴風雪", "03": "大雨", "04": "洪水", "05": "暴風", "06": "大雪", "07": "波浪",
+  "08": "高潮", "09": "雷", "10": "強風", "11": "風雪", "12": "波浪", "13": "融雪",
+  "14": "濃霧", "15": "乾燥", "16": "なだれ", "18": "低温", "19": "霜", "20": "着氷",
+  "21": "着雪", "22": "大雨警報", "23": "大雨注意報",
+  "32": "大雨警報(土砂災害)", "33": "大雨警報(浸水害)",
+  "35": "大雨注意報(土砂災害)", "36": "大雨注意報(浸水害)"
+};
+
+async function updateWeatherWarnings(addressText) {
+  const el = document.getElementById('weatherWarnings');
+  el.innerHTML = "警報・注意報を確認中...";
+
+  const cityMatch = addressText && addressText.match(/([^\s,、]+?(市|区|町|村))/);
+  const cityName = cityMatch ? cityMatch[1] : null;
+  if (!cityName) { el.innerHTML = "地点の市区町村を特定できませんでした"; return; }
+
+  try {
+    const master = await getAreaMaster();
+    const stripSuffix = s => s.replace(/(市|区|町|村)$/, '');
+
+    let matchedCode = null, parentCode = null;
+    for (const [code, info] of Object.entries(master.class20 || {})) {
+      if (info.name && cityName.includes(stripSuffix(info.name))) {
+        matchedCode = code;
+        parentCode = info.parent || code;
+        break;
+      }
+    }
+    if (!matchedCode) {
+      for (const [code, info] of Object.entries(master.class15 || {})) {
+        if (info.name && cityName.includes(stripSuffix(info.name))) {
+          matchedCode = code;
+          parentCode = info.parent || code;
+          break;
+        }
+      }
+    }
+    if (!matchedCode) { el.innerHTML = "対応する気象庁エリアが見つかりませんでした"; return; }
+
+    const warnRes = await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${parentCode}.json`);
+    const warnData = await warnRes.json();
+
+    const activeWarnings = [];
+    (warnData.areaTypes || []).forEach(areaType => {
+      (areaType.areas || []).forEach(area => {
+        (area.warnings || []).forEach(w => {
+          if (w.status && w.status !== "解除") {
+            const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
+            activeWarnings.push(`${name}（${w.status}）`);
+          }
+        });
+      });
+    });
+
+    el.innerHTML = activeWarnings.length
+      ? [...new Set(activeWarnings)].map(w => `<div style="color:#d35400;">・${w}</div>`).join('')
+      : `<div style="color:#27ae60;">現在、発表中の警報・注意報はありません</div>`;
+  } catch (e) {
+    el.innerHTML = "警報情報の取得に失敗しました";
+  }
+}
+
+/* ==================================================================
+   10. 地点選択時のパネル更新（座標・住所・海抜・冠水リスク・警報）
+   ================================================================== */
 async function updateDetails(lat, lng) {
   document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
   document.getElementById('addressDisplay').innerText = "住所: 取得中...";
@@ -793,7 +958,6 @@ async function updateDetails(lat, lng) {
   const riskStatus = document.getElementById('sub1-content');
   riskStatus.innerHTML = "解析中...";
 
-  // 住所取得と標高/リスク判定を並列実行
   const [address, risk] = await Promise.all([
     getAddress(lat, lng),
     checkInundationRisk(lat, lng)
@@ -804,6 +968,8 @@ async function updateDetails(lat, lng) {
   riskStatus.innerHTML = risk.isRisk
     ? `<div style="color:red; font-weight:bold;">冠水危険あり<br>周囲より ${risk.diff}m 低地</div>`
     : `<div style="color:green;">地形的な窪地リスクは低いです</div>`;
+
+  updateWeatherWarnings(address);
 }
 
 map.on('click', async function (e) {
@@ -816,7 +982,7 @@ map.on('click', async function (e) {
 });
 
 /* ==================================================================
-   8. 施設・住所検索（国土地理院 + OpenStreetMap 複合検索）
+   11. 施設・住所検索（国土地理院 + OpenStreetMap 複合検索）
    ================================================================== */
 let searchMarkers = [];
 let isSearching = false; // 連打による重複検索を防止
@@ -831,7 +997,6 @@ async function executeHybridSearch(query) {
   searchMarkers = [];
 
   try {
-    // クエリの正規化・キーワード分解（複合キーワード対応）
     const cleanQuery = query.trim()
       .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
       .replace(/－|ー/g, "-");
@@ -995,10 +1160,9 @@ searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHyb
 searchBtn.onclick = () => executeHybridSearch(searchInput.value);
 
 /* ==================================================================
-   9. 起動処理
+   12. 起動処理
    ================================================================== */
 updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
