@@ -330,7 +330,11 @@ html, body {
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
         <span class="legend-section-title">【地形分類（自然地形）】</span>
-        <div class="legend-note">山地・台地・低地・水部などの土地の成り立ちを色分け表示します（国土数値情報 土地分類基本調査）。色分けの詳細はレイヤー表示時に地図上でご確認ください。</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f9d375;"></div>台地・段丘</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f4f4c7;"></div>低地</div>
+        <div class="legend-item"><div class="legend-color" style="background:#d4e68e;"></div>山地</div>
+        <div class="legend-item"><div class="legend-color" style="background:#9dd1ea;"></div>水部</div>
+        <div class="legend-note" style="margin-top:8px;">※土地の成り立ちを示す図です。低地は洪水や地震時の揺れに対するリスクが高い傾向があります。</div>
 
       </div>
     </details>
@@ -409,6 +413,7 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
 
 <script>
 /* ==================================================================
@@ -466,10 +471,39 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  // 地形分類（自然地形）：国土数値情報 土地分類基本調査（地形分類図）のタイルを重ねて表示
-  terrain: [L.tileLayer('https://nlftp.mlit.go.jp/kokjo/inspect/tile/landclassification/land_history/terrainclassification/terrainclassification1/{z}/{x}/{y}.png', {
-    opacity: 0.6, maxZoom: 17, attribution: '国土交通省 国土数値情報（土地分類基本調査）'
-  })]
+  // 地形分類（自然地形）：国土地理院「ベクトルタイル提供実験」の地形分類データ（PBF化：optgeo/unite-one）を
+  // 台地・段丘／低地／山地／水部の4区分に集約して着色表示する
+  terrain: [(function () {
+    // 元データの詳細な地形分類名（unite-oneのcodeプロパティ）を凡例の4区分にグルーピング
+    const TERRAIN_GROUP = {
+      '山地': '山地', '崖・段丘崖': '山地', '地すべり地形': '山地', '山麓堆積地形': '山地',
+      '台地・段丘': '台地・段丘',
+      '扇状地': '低地', '自然堤防': '低地', '天井川': '低地', '砂州・砂丘': '低地',
+      '凹地・浅い谷': '低地', '氾濫平野': '低地', '後背低地・湿地': '低地',
+      '旧河道': '低地', '落堀': '低地', '河川敷・浜': '低地',
+      '水部': '水部', '旧水部': '水部'
+    };
+    const TERRAIN_COLOR = {
+      '台地・段丘': '#f9d375',
+      '低地': '#f4f4c7',
+      '山地': '#d4e68e',
+      '水部': '#9dd1ea'
+    };
+    return L.vectorGrid.protobuf('https://optgeo.github.io/unite-one/zxy/{z}/{x}/{y}.pbf', {
+      maxNativeZoom: 12,
+      maxZoom: 18,
+      minZoom: 5,
+      interactive: false,
+      vectorTileLayerStyles: {
+        one: function (properties) {
+          const group = TERRAIN_GROUP[properties.code] || null;
+          const color = group ? TERRAIN_COLOR[group] : '#cccccc';
+          return { fill: true, fillColor: color, fillOpacity: 0.55, stroke: false, weight: 0 };
+        }
+      },
+      attribution: '地形分類: 国土地理院ベクトルタイル提供実験（加工: optgeo/unite-one, CC0）'
+    });
+  })()]
 };
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
@@ -1203,4 +1237,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
