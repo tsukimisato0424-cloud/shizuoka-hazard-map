@@ -91,7 +91,7 @@ html, body {
     0 8px 30px rgba(0,0,0,.20),
     0 0 0 1px rgba(26,115,232,.45),
     0 0 12px rgba(26,115,232,.30);
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
   touch-action: none;
 }
 
@@ -115,6 +115,7 @@ html, body {
 .hazard-btn.active[data-type="flood"]     { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
 .hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
 .hazard-btn.active[data-type="tsunami"]   { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
+.hazard-btn.active[data-type="terrain"]   { background: linear-gradient(135deg, #a1887f, #4e342e); color: #fff; }
 .hazard-btn.active[data-type="shelter"]   { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 
 /* =========================================================
@@ -178,6 +179,7 @@ html, body {
 .legend-section-title { font-weight: 800 !important; color: #1a73e8 !important; margin: 6px 0 3px 0 !important; display: block; }
 .legend-item { display: flex; align-items: center; margin-bottom: 1px !important; gap: 6px; color: #5f6368; }
 .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.legend-note { font-size: 11px !important; color: #777; line-height: 1.5 !important; margin-top: 2px; }
 
 .maptype-content { padding: 8px 0; }
 .map-type-item {
@@ -298,6 +300,9 @@ html, body {
   <button class="hazard-btn" data-type="tsunami">
     <span class="material-icons-round">tsunami</span>津波浸水
   </button>
+  <button class="hazard-btn" data-type="terrain">
+    <span class="material-icons-round">terrain</span>地形分類
+  </button>
   <button class="hazard-btn" data-type="shelter">
     <span class="material-icons-round">gite</span>避難所
   </button>
@@ -323,6 +328,9 @@ html, body {
         <span class="legend-section-title">【土砂災害】</span>
         <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
+
+        <span class="legend-section-title">【地形分類（自然地形）】</span>
+        <div class="legend-note">山地・台地・低地・水部などの土地の成り立ちを色分け表示します（国土数値情報 土地分類基本調査）。色分けの詳細はレイヤー表示時に地図上でご確認ください。</div>
 
       </div>
     </details>
@@ -457,7 +465,11 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
+  // 地形分類（自然地形）：国土数値情報 土地分類基本調査（地形分類図）のタイルを重ねて表示
+  terrain: [L.tileLayer('https://nlftp.mlit.go.jp/kokjo/inspect/tile/landclassification/land_history/terrainclassification/terrainclassification1/{z}/{x}/{y}.png', {
+    opacity: 0.6, maxZoom: 17, attribution: '国土交通省 国土数値情報（土地分類基本調査）'
+  })]
 };
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
