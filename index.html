@@ -280,6 +280,27 @@ html, body {
 
 .leaflet-routing-container { display: none !important; }
 .leaflet-marker-pane .leaflet-popup { display: none !important; }
+/* =========================================================
+   ７. 指定地点用ピンデザイン
+   ========================================================= */
+.custom-destination-icon {
+  background: #ea4335 !important; /* 赤色 */
+  border: 2px solid #ffffff !important;
+  border-radius: 50% 50% 50% 0 !important;
+  transform: rotate(-45deg);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+.custom-destination-icon span {
+  transform: rotate(45deg); /* 文字を真っ直ぐにする */
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  font-family: sans-serif;
+}
+   
 </style>
 </head>
 <body>
@@ -712,7 +733,13 @@ function selectLocation(lat, lng, label) {
   destination = L.latLng(lat, lng);
 
   if (destMarker) map.removeLayer(destMarker);
-  destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+   const destIcon = L.divIcon({
+    className: 'custom-destination-icon',
+    html: '<span>G</span>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30] // 先端を座標に合わせる
+  });
+   destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
 
   if (currentLocation) {
     drawRoute();
