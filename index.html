@@ -177,7 +177,6 @@ html, body {
 }
 .legend-section-title { font-weight: 800 !important; color: #1a73e8 !important; margin: 6px 0 3px 0 !important; display: block; }
 .legend-item { display: flex; align-items: center; margin-bottom: 1px !important; gap: 6px; color: #5f6368; }
-.legend-item:has(.custom-shelter-icon), .legend-item:has(img[alt="避難所"]) { display: none !important; } /* 避難所行は非表示運用 */
 .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
 
 .maptype-content { padding: 8px 0; }
@@ -263,7 +262,7 @@ html, body {
 /* =========================================================
    6. Leaflet ポップアップ調整
    ========================================================= */
-.leaflet-popup-pane { pointer-events: none; }
+.leaflet-popup-pane { pointer-events: none; z-index: 10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button { pointer-events: auto; }
 .leaflet-popup-content { font-size: 14px !important; line-height: 1.6 !important; color: #3c4043; }
 .leaflet-popup-content-wrapper {
@@ -325,17 +324,6 @@ html, body {
         <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
-        <span class="legend-section-title">【避難所】</span>
-        <div class="legend-item">
-          <div class="custom-shelter-icon" style="width:22px; height:22px; border:1px solid #fff; display:inline-flex;">
-            <span class="material-icons-round" style="font-size:14px; color:#fff;">directions_run</span>
-          </div>
-          指定緊急避難場所 (緑アイコン)
-        </div>
-
-        <span class="legend-section-title">【ルート】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#1a73e8;"></div>安全なルート</div>
-        <div class="legend-item"><div class="legend-color" style="background:#e53935;"></div>危険区域を通過するルート</div>
       </div>
     </details>
   </div>
@@ -373,9 +361,10 @@ html, body {
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
       <div class="panel-column" style="border-right: 1px solid #ddd; padding-right: 10px;">
-        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地形リスク判定【冠水想定】</div>
+        <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点リスク判定【冠水想定】</div>
         <div id="sub1-content" style="font-size:11px; line-height:1.4;">地点を選択してください</div>
-        <div id="routeHazardStatus" style="font-size:11px; line-height:1.4; margin-top:6px;"></div>
+        <div style="font-weight:bold; font-size:12px; margin-top:8px; margin-bottom:4px;">経路リスク判定【前災害】</div>
+        <div id="routeHazardStatus" style="font-size:11px; line-height:1.4;"></div>
       </div>
       <div class="panel-column" style="padding-left: 10px;">
         <div style="font-weight:bold; font-size:12px; margin-bottom:4px;">地点情報</div>
@@ -636,7 +625,7 @@ const destinationIcon = createPinIcon('#e53935', 'G');
 /* ==================================================================
    7. 現在地・ルート
    ================================================================== */
-let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
+let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null; // routeLayerはL.layerGroup（色分けされた線分の集合）
 
 function updateCurrentLocation(isInitial = false) {
   navigator.geolocation.getCurrentPosition(pos => {
@@ -724,17 +713,51 @@ async function checkPointHazard(lat, lon) {
   return hits;
 }
 
-// ルート経路（[lon,lat]の配列）を間引きながらサンプリングし、危険区域通過の有無を判定
+// ルート経路（[lon,lat]の配列）を間引きながらサンプリングし、各座標ごとの危険フラグ（区間分け用）と
+// ルート全体で検出された危険区域の種類を返す
 async function analyzeRouteHazards(coordinates) {
-  const maxSamples = 25;
+  const maxSamples = 30;
   const step = Math.max(1, Math.floor(coordinates.length / maxSamples));
-  const found = new Set();
-  for (let i = 0; i < coordinates.length; i += step) {
-    const [lon, lat] = coordinates[i];
+  const sampleIndices = [];
+  for (let i = 0; i < coordinates.length; i += step) sampleIndices.push(i);
+  if (sampleIndices[sampleIndices.length - 1] !== coordinates.length - 1) sampleIndices.push(coordinates.length - 1);
+
+  const sampleResults = await Promise.all(sampleIndices.map(async (idx) => {
+    const [lon, lat] = coordinates[idx];
     const hits = await checkPointHazard(lat, lon);
-    hits.forEach(h => found.add(h));
+    return { idx, hazard: hits.length > 0, types: hits };
+  }));
+
+  // サンプル点間は「直前のサンプルの判定」を引き継ぐ階段状の補間で塗り分ける
+  const pointFlags = new Array(coordinates.length).fill(false);
+  const foundTypes = new Set();
+  for (let s = 0; s < sampleResults.length; s++) {
+    const cur = sampleResults[s];
+    const endIdx = (s + 1 < sampleResults.length) ? sampleResults[s + 1].idx : coordinates.length - 1;
+    for (let i = cur.idx; i <= endIdx; i++) pointFlags[i] = cur.hazard;
+    cur.types.forEach(t => foundTypes.add(t));
   }
-  return found;
+  return { pointFlags, foundTypes };
+}
+
+// 危険フラグが変化する箇所でポリラインを分割し、安全区間＝青／危険区間＝赤の線分配列を作る
+function buildColoredRouteSegments(latlngs, pointFlags) {
+  const segments = [];
+  let curColor = pointFlags[0] ? '#e53935' : '#1a73e8';
+  let curPoints = [latlngs[0]];
+  for (let i = 1; i < latlngs.length; i++) {
+    const color = pointFlags[i] ? '#e53935' : '#1a73e8';
+    if (color !== curColor) {
+      curPoints.push(latlngs[i]); // 境界点を共有して線をつなげる
+      segments.push({ color: curColor, points: curPoints });
+      curPoints = [latlngs[i]];
+      curColor = color;
+    } else {
+      curPoints.push(latlngs[i]);
+    }
+  }
+  segments.push({ color: curColor, points: curPoints });
+  return segments;
 }
 
 const HAZARD_NAME_MAP = { flood: '洪水浸水想定区域', tsunami: '津波浸水想定区域', landslide: '土砂災害警戒区域' };
@@ -766,17 +789,17 @@ async function drawRoute() {
       document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
       document.getElementById('walkDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
 
-      const hazards = await analyzeRouteHazards(coords);
-      const isDanger = hazards.size > 0;
+      const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
+      const isDanger = foundTypes.size > 0;
 
-      routeLayer = L.polyline(latlngs, {
-        color: isDanger ? '#e53935' : '#1a73e8',
-        weight: 5,
-        opacity: 0.85
-      }).addTo(map);
+      // 安全区間＝青、危険区間＝赤で個別のポリラインに分割して描画
+      const segments = buildColoredRouteSegments(latlngs, pointFlags);
+      routeLayer = L.layerGroup(
+        segments.map(seg => L.polyline(seg.points, { color: seg.color, weight: 5, opacity: 0.85 }))
+      ).addTo(map);
 
       hazardStatusEl.innerHTML = isDanger
-        ? `<div style="color:#e53935; font-weight:bold;">⚠ ルートが危険区域を通過します<br>(${[...hazards].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+        ? `<div style="color:#e53935; font-weight:bold;">⚠ ルートが危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
         : `<div style="color:#27ae60;">ルート上に危険区域はありません</div>`;
     } else {
       hazardStatusEl.innerHTML = '<span style="color:#777;">徒歩ルートを算出できませんでした</span>';
