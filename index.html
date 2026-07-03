@@ -739,7 +739,7 @@ function selectLocation(lat, lng, label) {
     iconSize: [30, 30],
     iconAnchor: [15, 30] // 先端を座標に合わせる
   });
-   destMarker = L.marker(destination).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
+   destMarker = L.marker(destination, { icon: destIcon }).addTo(map).bindPopup(`<b>目的地:</b><br>${label}`).openPopup();
 
   if (currentLocation) {
     drawRoute();
