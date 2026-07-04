@@ -295,6 +295,30 @@ html, body {
   border-radius: 16px !important;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
 }
+
+/* =========================================================
+   ７. アニメーション用設定
+   ========================================================= */
+#searchContainer, #hazardMenuCard, #statusPanel {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 隠れたときの状態 */
+#searchContainer.hidden {
+  transform: translateY(-100px); /* 上へスライド */
+  opacity: 0;
+}
+#hazardMenuCard.hidden {
+  transform: translateX(-100%);  /* 左へスライド */
+  opacity: 0;
+}
+#statusPanel.hidden {
+  transform: translateY(150px);  /* 下へスライド */
+  opacity: 0;
+}
+   
 </style>
 </head>
 <body>
@@ -1216,8 +1240,8 @@ searchBtn.onclick = () => executeHybridSearch(searchInput.value);
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
 
-// 隠したいUI要素を個別に指定
-const uiToToggle = [
+// 隠したい要素をリスト化
+const uiElements = [
   document.getElementById('searchContainer'),
   document.getElementById('hazardMenuCard'),
   document.getElementById('statusPanel')
@@ -1228,29 +1252,19 @@ let isUIVisible = true;
 fullscreenBtn.onclick = () => {
   isUIVisible = !isUIVisible;
   
-  // 指定したUI要素の表示/非表示を切り替え
-  uiToToggle.forEach(el => {
-    if (el) {
-      el.style.display = isUIVisible ? '' : 'none';
-    }
+  // 各要素に hidden クラスを付け外し
+  uiElements.forEach(el => {
+    if (el) el.classList.toggle('hidden', !isUIVisible);
   });
 
-  // ボタンのアイコンを切り替え
+  // ボタンアイコンを切り替え
   fullscreenIcon.innerText = isUIVisible ? 'fullscreen' : 'fullscreen_exit';
   
-  // 地図のサイズを再計算
-  // transitionアニメーションがある場合は少し待ってから実行するとスムーズです
+  // アニメーション完了後に地図サイズを再計算
   setTimeout(() => {
     map.invalidateSize();
-  }, 100);
+  }, 400); 
 };
-
-// 【オプション】地図をタップしたらUIが戻るようにする場合
-map.on('click', () => {
-  if (!isUIVisible) {
-    fullscreenBtn.click();
-  }
-});
    
    /* ==================================================================
    13. 起動処理
