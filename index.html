@@ -773,7 +773,13 @@ function updateCurrentLocation(isInitial = false) {
 
     if (shelterActive) fetchAndShowShelters(currentLocation);
     if (destination) drawRoute();
-  }, () => { /* 取得失敗時は何もしない */ }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+   }, (error) => {
+    if (error.code === error.PERMISSION_DENIED) {
+      alert("現在地を取得できませんでした。\nブラウザの設定から、このサイトへの位置情報の利用を許可してください。");
+    } else {
+      console.error("位置情報取得エラー:", error.message);
+    }
+  }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
 }
 
 document.getElementById("locationBtn").onclick = () => {
