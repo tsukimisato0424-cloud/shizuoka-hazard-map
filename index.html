@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>防災ハザードマップ</title>
+<title>防災支援マップ</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
@@ -357,7 +357,7 @@ html, body {
 <div id="authOverlay">
   <div class="auth-card">
     <div class="auth-title">防災支援マップ</div>
-    <input type="password" id="passInput" placeholder="PASSWORD">
+    <input type="password" id="passInput" placeholder="PASSWORD" inputmode="numeric" pattern="\d*">
     <button class="auth-btn" onclick="checkPassword()">認証</button>
     <p id="errorMsg" style="color:#ff4444; font-size:12px; margin-top:10px;"></p>
     
