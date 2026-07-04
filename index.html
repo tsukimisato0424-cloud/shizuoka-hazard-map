@@ -37,22 +37,31 @@ html, body {
 #searchContainer {
   position: absolute; top: 10px; left: 0; right: 0;
   padding: 0 10px; z-index: 99999;
+  touch-action: none;
 }
+
 .custom-search-bar {
   display: flex; align-items: center;
-  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 70, 0.95)) !important;
-  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
   border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30);
   padding: 2px 4px;
 }
+
 .custom-search-bar input {
   flex: 1; border: none; outline: none; font-size: 15px !important;
-  background: transparent; color: #ffffff !important;
-  text-shadow: 1px 1px 2px #000;
+  letter-spacing: 0.3px; padding: 14px 12px; background: transparent; color: #202124;
 }
-.custom-search-bar input::placeholder { color: #bbccdd; }
-.search-icon-btn { background: none; border: none; color: #a0d8ff !important; cursor: pointer; padding: 8px; }
+
+.search-icon-btn {
+  background: none; border: none; color: #1a73e8; cursor: pointer;
+  padding: 8px; display: flex; align-items: center;
+}
 
 #customSuggestions {
   background: #ffffff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
@@ -73,21 +82,37 @@ html, body {
    ========================================================= */
 #hazardMenuCard {
   position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000;
-  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 70, 0.95)) !important;
-  backdrop-filter: blur(12px);
-  border-radius: 16px; padding: 8px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.20),
+    0 0 0 1px rgba(26,115,232,.45),
+    0 0 12px rgba(26,115,232,.30);
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  touch-action: none;
 }
+
 .hazard-btn {
   width: 100%; height: 74px;
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #d1d9e6; border-radius: 12px; background: #fff;
   display: flex; flex-direction: column; justify-content: center; align-items: center;
-  font-size: 11px !important; font-weight: 700; color: #ffffff;
-  text-shadow: 1px 1px 0px #000;
+  font-size: 11px !important; font-weight: 700; line-height: 1.3;
+  letter-spacing: 0.3px;
+  padding: 4px 2px; color: #5f6368;
+  transition: .2s;
 }
-.hazard-btn.active { background: linear-gradient(135deg, #1a73e8, #0d47a1); border-color: rgba(255,255,255,0.3); }@keyframes hazardGlow {
+.hazard-btn .material-icons-round { font-size: 22px; margin-bottom: 2px; }
+.hazard-btn:active { transform: translateY(1px); box-shadow: 0 0 8px #1a73e8; border-color: #1a73e8; }
+
+.hazard-btn.active {
+  border-color: #fff !important;
+  border-width: 2px;
+  transform: translateY(-1px);
+}
+@keyframes hazardGlow {
   0%, 100% { box-shadow: 0 0 10px 0px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
   50%      { box-shadow: 0 0 18px 4px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
 }
