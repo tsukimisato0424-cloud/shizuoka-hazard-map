@@ -91,7 +91,7 @@ html, body {
     0 8px 30px rgba(0,0,0,.20),
     0 0 0 1px rgba(26,115,232,.45),
     0 0 12px rgba(26,115,232,.30);
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
   touch-action: none;
 }
 
@@ -115,7 +115,6 @@ html, body {
 .hazard-btn.active[data-type="flood"]     { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
 .hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
 .hazard-btn.active[data-type="tsunami"]   { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
-.hazard-btn.active[data-type="terrain"]   { background: linear-gradient(135deg, #a1887f, #4e342e); color: #fff; }
 .hazard-btn.active[data-type="shelter"]   { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
 
 /* =========================================================
@@ -136,7 +135,7 @@ html, body {
               height 0.28s cubic-bezier(0.4,0,0.2,1),
               border-radius 0.28s ease;
 }
-#legendAccordion[open-state="true"] { width: 220px; height: 380px; border-radius: 16px; }
+#legendAccordion[open-state="true"] { width: 200px; height: 300px; border-radius: 16px; }
 #mapTypeContainer[open-state="true"] { width: 140px; height: 200px; border-radius: 16px; }
 
 #legendAccordion details, #mapTypeContainer details { border: none; height: 100%; }
@@ -179,7 +178,6 @@ html, body {
 .legend-section-title { font-weight: 800 !important; color: #1a73e8 !important; margin: 6px 0 3px 0 !important; display: block; }
 .legend-item { display: flex; align-items: center; margin-bottom: 1px !important; gap: 6px; color: #5f6368; }
 .legend-color { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
-.legend-note { font-size: 11px !important; color: #777; line-height: 1.5 !important; margin-top: 2px; }
 
 .maptype-content { padding: 8px 0; }
 .map-type-item {
@@ -300,9 +298,6 @@ html, body {
   <button class="hazard-btn" data-type="tsunami">
     <span class="material-icons-round">tsunami</span>津波浸水
   </button>
-  <button class="hazard-btn" data-type="terrain">
-    <span class="material-icons-round">terrain</span>地形分類
-  </button>
   <button class="hazard-btn" data-type="shelter">
     <span class="material-icons-round">gite</span>避難所
   </button>
@@ -328,20 +323,6 @@ html, body {
         <span class="legend-section-title">【土砂災害】</span>
         <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
-
-        <span class="legend-section-title">【地形分類（自然地形）】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#8c6b4f;"></div>火山地・火山山麓地</div>
-        <div class="legend-item"><div class="legend-color" style="background:#a98d6a;"></div>丘陵・小起伏山地</div>
-        <div class="legend-item"><div class="legend-color" style="background:#d4e68e;"></div>山地</div>
-        <div class="legend-item"><div class="legend-color" style="background:#e2a76f;"></div>崖・段丘崖</div>
-        <div class="legend-item"><div class="legend-color" style="background:#c98f45;"></div>地すべり地形</div>
-        <div class="legend-item"><div class="legend-color" style="background:#f9d375;"></div>台地・段丘</div>
-        <div class="legend-item"><div class="legend-color" style="background:#f4f4c7;"></div>低地（扇状地・氾濫平野等）</div>
-        <div class="legend-item"><div class="legend-color" style="background:#c9e6b0;"></div>砂丘・砂州</div>
-        <div class="legend-item"><div class="legend-color" style="background:#9dd1ea;"></div>河川・海（水部）</div>
-        <div class="legend-item"><div class="legend-color" style="background:#5aa9d6;"></div>湖沼</div>
-        <div class="legend-item"><div class="legend-color" style="background:#cccccc;"></div>その他・未分類</div>
-        <div class="legend-note" style="margin-top:8px;">※土地の成り立ちを示す図です。低地は洪水や地震時の揺れに対するリスクが高い傾向があります。</div>
 
       </div>
     </details>
@@ -420,7 +401,6 @@ html, body {
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
 
 <script>
 /* ==================================================================
@@ -477,92 +457,7 @@ const layers = {
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_kyukeishakeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 }),
     L.tileLayer('https://disaportaldata.gsi.go.jp/raster/05_jisuberikeikaikuiki/{z}/{x}/{y}.png', { opacity: 0.7, maxZoom: 17 })
   ],
-  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
-  // 地形分類（自然地形）：国土地理院「ベクトルタイル提供実験」の地形分類データ（PBF化：optgeo/unite-one）を
-  // 治水地形分類図の凡例に準拠した分類でグループ化し着色表示する（ズームレベル16まで実データ対応）
-  terrain: [(function () {
-    // 元データの詳細な地形分類名（unite-oneのcodeプロパティ）を、火山・丘陵・湖沼なども区別した
-    // より詳細な凡例区分にグルーピングする
-    const TERRAIN_GROUP = {
-      // --- 山地系 ---
-      '山地': '山地',
-      '丘陵': '丘陵・小起伏山地',
-      '小起伏山地': '丘陵・小起伏山地',
-      '崖・段丘崖': '崖・段丘崖',
-      '地すべり地形': '地すべり地形',
-      '山麓堆積地形': '丘陵・小起伏山地',
-      // --- 火山系 ---
-      '火山地': '火山地・火山山麓地',
-      '火山山麓地': '火山地・火山山麓地',
-      '火山麓扇状地': '火山地・火山山麓地',
-      '溶岩流': '火山地・火山山麓地',
-      '溶岩流台地': '火山地・火山山麓地',
-      '岩石台地': '台地・段丘',
-      // --- 台地・段丘系 ---
-      '台地・段丘': '台地・段丘',
-      '高位段丘': '台地・段丘',
-      '中位段丘': '台地・段丘',
-      '低位段丘': '台地・段丘',
-      // --- 低地系（扇状地・氾濫平野など） ---
-      '扇状地': '低地（扇状地・氾濫平野等）',
-      '自然堤防': '低地（扇状地・氾濫平野等）',
-      '天井川': '低地（扇状地・氾濫平野等）',
-      '凹地・浅い谷': '低地（扇状地・氾濫平野等）',
-      '氾濫平野': '低地（扇状地・氾濫平野等）',
-      '後背低地・湿地': '低地（扇状地・氾濫平野等）',
-      '旧河道': '低地（扇状地・氾濫平野等）',
-      '落堀': '低地（扇状地・氾濫平野等）',
-      '河川敷・浜': '低地（扇状地・氾濫平野等）',
-      '三角州・海岸低地': '低地（扇状地・氾濫平野等）',
-      // --- 砂丘・砂州系 ---
-      '砂州・砂丘': '砂丘・砂州',
-      '砂丘': '砂丘・砂州',
-      '砂州': '砂丘・砂州',
-      '砂州・砂堆': '砂丘・砂州',
-      // --- 水部系（河川・海と湖沼を区別） ---
-      '水部': '河川・海（水部）',
-      '旧水部': '河川・海（水部）',
-      '河川': '河川・海（水部）',
-      '海': '河川・海（水部）',
-      '湖沼': '湖沼',
-      '湖': '湖沼',
-      '池': '湖沼'
-    };
-    const TERRAIN_COLOR = {
-      '火山地・火山山麓地': '#8c6b4f',
-      '丘陵・小起伏山地': '#a98d6a',
-      '山地': '#d4e68e',
-      '崖・段丘崖': '#e2a76f',
-      '地すべり地形': '#c98f45',
-      '台地・段丘': '#f9d375',
-      '低地（扇状地・氾濫平野等）': '#f4f4c7',
-      '砂丘・砂州': '#c9e6b0',
-      '河川・海（水部）': '#9dd1ea',
-      '湖沼': '#5aa9d6'
-    };
-    // 想定外・未知のcodeが来た場合はコンソールに出力し、グレーで表示する
-    // （実データのcode名を確認したいときはブラウザのコンソールを見てください）
-    const loggedUnknown = new Set();
-    return L.vectorGrid.protobuf('https://optgeo.github.io/unite-one/zxy/{z}/{x}/{y}.pbf', {
-      maxNativeZoom: 16,
-      maxZoom: 18,
-      minZoom: 5,
-      interactive: false,
-      vectorTileLayerStyles: {
-        one: function (properties) {
-          const code = properties.code;
-          const group = TERRAIN_GROUP[code] || null;
-          if (!group && code && !loggedUnknown.has(code)) {
-            loggedUnknown.add(code);
-            console.log('[地形分類] 未分類のcode:', code, properties);
-          }
-          const color = group ? TERRAIN_COLOR[group] : '#cccccc';
-          return { fill: true, fillColor: color, fillOpacity: 0.55, stroke: false, weight: 0 };
-        }
-      },
-      attribution: '地形分類: 国土地理院ベクトルタイル提供実験（加工: optgeo/unite-one, CC0）'
-    });
-  })()]
+  tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })]
 };
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
