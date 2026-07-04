@@ -136,7 +136,7 @@ html, body {
               height 0.28s cubic-bezier(0.4,0,0.2,1),
               border-radius 0.28s ease;
 }
-#legendAccordion[open-state="true"] { width: 200px; height: 300px; border-radius: 16px; }
+#legendAccordion[open-state="true"] { width: 220px; height: 380px; border-radius: 16px; }
 #mapTypeContainer[open-state="true"] { width: 140px; height: 200px; border-radius: 16px; }
 
 #legendAccordion details, #mapTypeContainer details { border: none; height: 100%; }
@@ -330,10 +330,17 @@ html, body {
         <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
 
         <span class="legend-section-title">【地形分類（自然地形）】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#f9d375;"></div>台地・段丘</div>
-        <div class="legend-item"><div class="legend-color" style="background:#f4f4c7;"></div>低地</div>
+        <div class="legend-item"><div class="legend-color" style="background:#8c6b4f;"></div>火山地・火山山麓地</div>
+        <div class="legend-item"><div class="legend-color" style="background:#a98d6a;"></div>丘陵・小起伏山地</div>
         <div class="legend-item"><div class="legend-color" style="background:#d4e68e;"></div>山地</div>
-        <div class="legend-item"><div class="legend-color" style="background:#9dd1ea;"></div>水部</div>
+        <div class="legend-item"><div class="legend-color" style="background:#e2a76f;"></div>崖・段丘崖</div>
+        <div class="legend-item"><div class="legend-color" style="background:#c98f45;"></div>地すべり地形</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f9d375;"></div>台地・段丘</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f4f4c7;"></div>低地（扇状地・氾濫平野等）</div>
+        <div class="legend-item"><div class="legend-color" style="background:#c9e6b0;"></div>砂丘・砂州</div>
+        <div class="legend-item"><div class="legend-color" style="background:#9dd1ea;"></div>河川・海（水部）</div>
+        <div class="legend-item"><div class="legend-color" style="background:#5aa9d6;"></div>湖沼</div>
+        <div class="legend-item"><div class="legend-color" style="background:#cccccc;"></div>その他・未分類</div>
         <div class="legend-note" style="margin-top:8px;">※土地の成り立ちを示す図です。低地は洪水や地震時の揺れに対するリスクが高い傾向があります。</div>
 
       </div>
@@ -472,31 +479,83 @@ const layers = {
   ],
   tsunami: [L.tileLayer('https://disaportaldata.gsi.go.jp/raster/04_tsunami_newlegend_data/{z}/{x}/{y}.png', { opacity: 0.6, maxZoom: 17 })],
   // 地形分類（自然地形）：国土地理院「ベクトルタイル提供実験」の地形分類データ（PBF化：optgeo/unite-one）を
-  // 台地・段丘／低地／山地／水部の4区分に集約して着色表示する
+  // 治水地形分類図の凡例に準拠した分類でグループ化し着色表示する（ズームレベル16まで実データ対応）
   terrain: [(function () {
-    // 元データの詳細な地形分類名（unite-oneのcodeプロパティ）を凡例の4区分にグルーピング
+    // 元データの詳細な地形分類名（unite-oneのcodeプロパティ）を、火山・丘陵・湖沼なども区別した
+    // より詳細な凡例区分にグルーピングする
     const TERRAIN_GROUP = {
-      '山地': '山地', '崖・段丘崖': '山地', '地すべり地形': '山地', '山麓堆積地形': '山地',
+      // --- 山地系 ---
+      '山地': '山地',
+      '丘陵': '丘陵・小起伏山地',
+      '小起伏山地': '丘陵・小起伏山地',
+      '崖・段丘崖': '崖・段丘崖',
+      '地すべり地形': '地すべり地形',
+      '山麓堆積地形': '丘陵・小起伏山地',
+      // --- 火山系 ---
+      '火山地': '火山地・火山山麓地',
+      '火山山麓地': '火山地・火山山麓地',
+      '火山麓扇状地': '火山地・火山山麓地',
+      '溶岩流': '火山地・火山山麓地',
+      '溶岩流台地': '火山地・火山山麓地',
+      '岩石台地': '台地・段丘',
+      // --- 台地・段丘系 ---
       '台地・段丘': '台地・段丘',
-      '扇状地': '低地', '自然堤防': '低地', '天井川': '低地', '砂州・砂丘': '低地',
-      '凹地・浅い谷': '低地', '氾濫平野': '低地', '後背低地・湿地': '低地',
-      '旧河道': '低地', '落堀': '低地', '河川敷・浜': '低地',
-      '水部': '水部', '旧水部': '水部'
+      '高位段丘': '台地・段丘',
+      '中位段丘': '台地・段丘',
+      '低位段丘': '台地・段丘',
+      // --- 低地系（扇状地・氾濫平野など） ---
+      '扇状地': '低地（扇状地・氾濫平野等）',
+      '自然堤防': '低地（扇状地・氾濫平野等）',
+      '天井川': '低地（扇状地・氾濫平野等）',
+      '凹地・浅い谷': '低地（扇状地・氾濫平野等）',
+      '氾濫平野': '低地（扇状地・氾濫平野等）',
+      '後背低地・湿地': '低地（扇状地・氾濫平野等）',
+      '旧河道': '低地（扇状地・氾濫平野等）',
+      '落堀': '低地（扇状地・氾濫平野等）',
+      '河川敷・浜': '低地（扇状地・氾濫平野等）',
+      '三角州・海岸低地': '低地（扇状地・氾濫平野等）',
+      // --- 砂丘・砂州系 ---
+      '砂州・砂丘': '砂丘・砂州',
+      '砂丘': '砂丘・砂州',
+      '砂州': '砂丘・砂州',
+      '砂州・砂堆': '砂丘・砂州',
+      // --- 水部系（河川・海と湖沼を区別） ---
+      '水部': '河川・海（水部）',
+      '旧水部': '河川・海（水部）',
+      '河川': '河川・海（水部）',
+      '海': '河川・海（水部）',
+      '湖沼': '湖沼',
+      '湖': '湖沼',
+      '池': '湖沼'
     };
     const TERRAIN_COLOR = {
-      '台地・段丘': '#f9d375',
-      '低地': '#f4f4c7',
+      '火山地・火山山麓地': '#8c6b4f',
+      '丘陵・小起伏山地': '#a98d6a',
       '山地': '#d4e68e',
-      '水部': '#9dd1ea'
+      '崖・段丘崖': '#e2a76f',
+      '地すべり地形': '#c98f45',
+      '台地・段丘': '#f9d375',
+      '低地（扇状地・氾濫平野等）': '#f4f4c7',
+      '砂丘・砂州': '#c9e6b0',
+      '河川・海（水部）': '#9dd1ea',
+      '湖沼': '#5aa9d6'
     };
+    // 想定外・未知のcodeが来た場合はコンソールに出力し、グレーで表示する
+    // （実データのcode名を確認したいときはブラウザのコンソールを見てください）
+    const loggedUnknown = new Set();
     return L.vectorGrid.protobuf('https://optgeo.github.io/unite-one/zxy/{z}/{x}/{y}.pbf', {
-      maxNativeZoom: 12,
+      maxNativeZoom: 16,
       maxZoom: 18,
       minZoom: 5,
       interactive: false,
       vectorTileLayerStyles: {
         one: function (properties) {
-          const group = TERRAIN_GROUP[properties.code] || null;
+          const code = properties.code;
+          const group = TERRAIN_GROUP[code] || null;
+          if (!group && code && !loggedUnknown.has(code)) {
+            loggedUnknown.add(code);
+            console.log('[地形分類] 未分類のcode:', code, properties);
+          }
           const color = group ? TERRAIN_COLOR[group] : '#cccccc';
           return { fill: true, fillColor: color, fillOpacity: 0.55, stroke: false, weight: 0 };
         }
@@ -1237,4 +1296,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
