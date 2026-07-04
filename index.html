@@ -380,6 +380,21 @@ html, body {
     </div>
   </div>
 </div>
+
+<div id="locationHelpOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:999999; justify-content:center; align-items:center; background:rgba(255,255,255,0.2); backdrop-filter:blur(8px);">
+  <div class="auth-card" style="max-width:300px; background:rgba(255,255,255,0.9); border:1px solid #ddd;">
+    <div class="auth-title" style="font-size:16px;">位置情報の設定について</div>
+    <p style="font-size:13px; color:#555; text-align:left; line-height:1.6;">
+      現在地を表示するにはブラウザの権限許可が必要です。<br><br>
+      <b>iPhone(Safari)の方:</b><br>
+      アドレスバー左上の「ぁあ」をタップ ＞「Webサイトの設定」＞「位置情報」を「許可」に変更。<br><br>
+      <b>Android(Chrome)の方:</b><br>
+      アドレスバーの「鍵マーク」＞「権限」＞「位置情報」を「許可」に変更。<br><br>
+      ※変更後、ページを<b>再読み込み</b>してください。
+    </p>
+    <button class="auth-btn" onclick="document.getElementById('locationHelpOverlay').style.display='none'">閉じる</button>
+  </div>
+</div>
    
 <div id="map"></div>
 
@@ -758,9 +773,27 @@ const destinationIcon = createPinIcon('#e53935', 'G');
 /* ==================================================================
    7. 現在地・ルート
    ================================================================== */
-let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null; // routeLayerはL.layerGroup（色分けされた線分の集合）
+let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 
 function updateCurrentLocation(isInitial = false) {
+  // ブラウザの許可状態を先に確認
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'denied') {
+        // 既に拒否されている場合はガイドを表示
+        document.getElementById('locationHelpOverlay').style.display = 'flex';
+        return;
+      }
+      // 許可または未設定の場合は取得を試みる（ここで自動ダイアログが出ます）
+      executeGeolocation(isInitial);
+    });
+  } else {
+    executeGeolocation(isInitial);
+  }
+}
+
+// 実際の取得処理
+function executeGeolocation(isInitial) {
   navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
@@ -769,15 +802,14 @@ function updateCurrentLocation(isInitial = false) {
 
     if (isInitial || !destination) map.setView(currentLocation, 14);
 
-    updateDetails(currentLocation.lat, currentLocation.lng); // バックグラウンドで詳細情報を更新
+    updateDetails(currentLocation.lat, currentLocation.lng);
 
     if (shelterActive) fetchAndShowShelters(currentLocation);
     if (destination) drawRoute();
-   }, (error) => {
+  }, (error) => {
+    // 拒否された場合のみガイドを表示
     if (error.code === error.PERMISSION_DENIED) {
-      alert("現在地を取得できませんでした。\nブラウザの設定から、このサイトへの位置情報の利用を許可してください。");
-    } else {
-      console.error("位置情報取得エラー:", error.message);
+      document.getElementById('locationHelpOverlay').style.display = 'flex';
     }
   }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
 }
