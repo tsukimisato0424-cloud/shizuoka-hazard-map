@@ -110,12 +110,28 @@ html, body {
 .hazard-btn.active {
   border-color: #fff !important;
   border-width: 2px;
-  box-shadow: 0 0 10px rgba(26, 115, 232, 0.5);
+  transform: translateY(-1px);
 }
-.hazard-btn.active[data-type="flood"]     { background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff; }
-.hazard-btn.active[data-type="landslide"] { background: linear-gradient(135deg, #f2994a, #d35400); color: #fff; }
-.hazard-btn.active[data-type="tsunami"]   { background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff; }
-.hazard-btn.active[data-type="shelter"]   { background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff; }
+@keyframes hazardGlow {
+  0%, 100% { box-shadow: 0 0 10px 0px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
+  50%      { box-shadow: 0 0 18px 4px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
+}
+.hazard-btn.active[data-type="flood"] {
+  background: linear-gradient(135deg, #2f80ed, #0056b3); color: #fff;
+  --glow-color: rgba(47, 128, 237, 0.75); animation: hazardGlow 2.2s ease-in-out infinite;
+}
+.hazard-btn.active[data-type="landslide"] {
+  background: linear-gradient(135deg, #f2994a, #d35400); color: #fff;
+  --glow-color: rgba(242, 153, 74, 0.75); animation: hazardGlow 2.2s ease-in-out infinite;
+}
+.hazard-btn.active[data-type="tsunami"] {
+  background: linear-gradient(135deg, #00c6ff, #0072ff); color: #fff;
+  --glow-color: rgba(0, 198, 255, 0.75); animation: hazardGlow 2.2s ease-in-out infinite;
+}
+.hazard-btn.active[data-type="shelter"] {
+  background: linear-gradient(135deg, #27ae60, #1e8449); color: #fff;
+  --glow-color: rgba(39, 174, 96, 0.75); animation: hazardGlow 2.2s ease-in-out infinite;
+}
 
 /* =========================================================
    3. 右側フローティングコントロール（凡例・地図切替・現在地・更新）
@@ -185,14 +201,14 @@ html, body {
 }
 .map-type-item:hover { background: #f8f9fa; }
 
-#locationBtn, #refreshBtn {
+#locationBtn, #refreshBtn, #fullscreenBtn {
   position: relative; z-index: 1500;
   width: 50px; height: 50px; border: none; border-radius: 50%;
   background: #ffffff; color: #1a73e8; cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   display: flex; align-items: center; justify-content: center;
 }
-#locationBtn .material-icons-round, #refreshBtn .material-icons-round { font-size: 24px; }
+#locationBtn .material-icons-round, #refreshBtn .material-icons-round, #fullscreenBtn .material-icons-round { font-size: 24px; }
 
 @keyframes spinRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 #refreshBtn.loading .material-icons-round { animation: spinRefresh 0.8s linear infinite; }
@@ -217,25 +233,34 @@ html, body {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
   background: rgba(225, 235, 250, 0.98) !important;
   backdrop-filter: blur(10px);
-  border-radius: 0px;
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
   overflow: visible;
   color: #202124;
   touch-action: none;
 }
 
-.tab-container { position: absolute; top: -37px; left: 0; display: flex; gap: 4px; }
+.tab-container { position: absolute; top: -38px; left: 16px; display: flex; gap: 6px; }
 .tab-btn {
-  width: 90px; padding: 8px 12px; text-align: center; cursor: pointer;
-  font-size: 13px; font-weight: bold; border-radius: 12px 12px 0 0; border: none;
-  background: #e0e0e0; color: #777; transition: all 0.2s; z-index: 1; margin-bottom: -1px;
+  width: 88px; padding: 9px 12px; text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: bold; border-radius: 14px 14px 0 0; border: none;
+  background: rgba(224, 224, 224, 0.85); color: #888; transition: all 0.2s ease; z-index: 1;
+  position: relative;
 }
-.tab-btn.active { background: rgba(225, 235, 250, 0.98); color: #1a73e8; z-index: 3; transform: translateY(1px); }
+.tab-btn.active {
+  background: rgba(225, 235, 250, 0.98); color: #1a73e8; z-index: 3;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.10);
+}
+.tab-btn.active::after {
+  content: ""; position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+  width: 16px; height: 3px; border-radius: 2px; background: #1a73e8;
+}
 
 .tab-content { display: none; padding: 15px; height: 120px; overflow: hidden; }
 .tab-content.active { display: block; }
 
 #toggleStatusBtn {
-  position: absolute !important; top: 5px !important; right: 5px !important;
+  position: absolute !important; top: 8px !important; right: 10px !important;
   background: transparent !important; border: none !important; color: #202124 !important;
   cursor: pointer; display: flex !important; align-items: center !important; justify-content: center !important;
   padding: 4px !important; box-shadow: none !important; outline: none !important;
@@ -345,6 +370,7 @@ html, body {
 
   <button id="locationBtn"><span class="material-icons-round">my_location</span></button>
   <button id="refreshBtn"><span class="material-icons-round">refresh</span></button>
+  <button id="fullscreenBtn"><span class="material-icons-round" id="fullscreenIcon">fullscreen</span></button>
 </div>
 
 <!-- 下部ステータスパネル -->
@@ -1185,7 +1211,25 @@ searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHyb
 searchBtn.onclick = () => executeHybridSearch(searchInput.value);
 
 /* ==================================================================
-   12. 起動処理
+   12. 全画面表示トグル
+   ================================================================== */
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const fullscreenIcon = document.getElementById('fullscreenIcon');
+
+fullscreenBtn.onclick = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else {
+    document.exitFullscreen().catch(() => {});
+  }
+};
+
+document.addEventListener('fullscreenchange', () => {
+  fullscreenIcon.innerText = document.fullscreenElement ? 'fullscreen_exit' : 'fullscreen';
+});
+
+/* ==================================================================
+   13. 起動処理
    ================================================================== */
 updateCurrentLocation(true);
 </script>
