@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>防災支援マップ</title>
+
+<!-- ===== アプリ化・ブラウザUI色設定 =====
+     ・theme-color: Android Chrome のアドレスバー/ステータスバー色（単色のみ対応。
+       グラデーションは指定できないため、CSSグラデーションの暗い側に近い色を採用）
+     ・apple-mobile-web-app-*: iOS で「ホーム画面に追加」した際、Safari の
+       アドレスバーを消してネイティブアプリ風のフル画面表示にする
+     ・manifest.json: PWAとしてインストールした際の色・表示モードを指定
+-->
+<meta name="theme-color" content="#1e3c72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="防災支援マップ">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
@@ -21,6 +36,20 @@ html, body {
   position: fixed;
   width: 100%;
   overflow: hidden;
+  /* ノッチ/ステータスバー領域も背景色で塗りつぶし、アプリ感を出す */
+  background: #1e3c72;
+}
+
+/* ノッチ端末のステータスバー部分を、検索バーと同じダークブルーの
+   グラデーションで塗りつぶす疑似ヘッダー（PWA/フルスクリーン時のみ意味を持つ） */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: linear-gradient(135deg, #1e3c72, #283250);
+  z-index: 100000;
+  pointer-events: none;
 }
 
 #map {
@@ -35,7 +64,9 @@ html, body {
    1. 検索バー
    ========================================================= */
 #searchContainer {
-  position: absolute; top: 10px; left: 0; right: 0;
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 0; right: 0;
   padding: 0 10px; z-index: 99999;
   touch-action: none;
 }
@@ -83,7 +114,9 @@ html, body {
    2. ハザード選択メニュー（キキクル3種を削除し4項目構成に）
    ========================================================= */
 #hazardMenuCard {
-  position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000;
+  position: absolute;
+  top: calc(75px + env(safe-area-inset-top, 0px));
+  left: 10px; right: 10px; z-index: 2000;
   background: linear-gradient(135deg, rgba(30, 60, 114, 0.85), rgba(40, 50, 80, 0.95));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -155,7 +188,10 @@ html, body {
    3. 右側フローティングコントロール（凡例・地図切替・現在地・更新）
    ========================================================= */
 #rightControlContainer {
-  position: absolute; top: 170px; right: 10px; z-index: 1000;
+  position: absolute;
+  top: calc(170px + env(safe-area-inset-top, 0px));
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  z-index: 1000;
   display: flex; flex-direction: column; gap: 10px;
 }
 
@@ -257,7 +293,9 @@ html, body {
    5. 下部ステータスパネル
    ========================================================= */
 #statusPanel {
-  position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 10px; right: 10px; z-index: 1500;
   background: linear-gradient(135deg, rgba(30, 60, 114, 0.85), rgba(40, 50, 80, 0.95)) !important;
   backdrop-filter: blur(20px);
   border-radius: 24px;
