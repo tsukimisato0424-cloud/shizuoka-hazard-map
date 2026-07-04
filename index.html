@@ -149,10 +149,19 @@ html, body {
   overflow: hidden;
   transition: width 0.28s cubic-bezier(0.4,0,0.2,1),
               height 0.28s cubic-bezier(0.4,0,0.2,1),
-              border-radius 0.28s ease;
+              border-radius 0.28s ease,
+              transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.4s;
 }
 #legendAccordion[open-state="true"] { width: 200px; height: 300px; border-radius: 16px; }
 #mapTypeContainer[open-state="true"] { width: 140px; height: 200px; border-radius: 16px; }
+
+/* 全画面モード時：凡例・地図切替のみ右へ退避（現在地・更新・全画面は対象外） */
+#legendAccordion.hidden-right, #mapTypeContainer.hidden-right {
+  transform: translateX(120px);
+  opacity: 0;
+  pointer-events: none;
+}
 
 #legendAccordion details, #mapTypeContainer details { border: none; height: 100%; }
 #legendAccordion details { display: flex; flex-direction: column; }
@@ -1361,21 +1370,42 @@ searchBtn.onclick = () => executeHybridSearch(searchInput.value);
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
 
-// 隠したい要素をリスト化
+// 隠したい要素をリスト化（検索バー・ハザードメニュー・下部パネル）
 const uiElements = [
   document.getElementById('searchContainer'),
   document.getElementById('hazardMenuCard'),
   document.getElementById('statusPanel')
 ];
 
+// 全画面モード時に右へスライドして退避させる要素（凡例・地図切替のみ／現在地・更新・全画面は対象外）
+const floatingSubElements = [
+  document.getElementById('legendAccordion'),
+  document.getElementById('mapTypeContainer')
+];
+
 let isUIVisible = true;
 
 fullscreenBtn.onclick = () => {
   isUIVisible = !isUIVisible;
-  
+
+  // 開いたままの状態で隠れると見た目が乱れるため、先に閉じておく
+  if (!isUIVisible) {
+    const legendDetails = document.getElementById('legendDetails');
+    const mapTypeDetails = document.getElementById('mapTypeDetails');
+    if (legendDetails) legendDetails.open = false;
+    if (mapTypeDetails) mapTypeDetails.open = false;
+    legendCard.setAttribute('open-state', 'false');
+    mapTypeCard.setAttribute('open-state', 'false');
+  }
+
   // 各要素に hidden クラスを付け外し
   uiElements.forEach(el => {
     if (el) el.classList.toggle('hidden', !isUIVisible);
+  });
+
+  // 凡例・地図切替を右方向へスライドイン/アウト
+  floatingSubElements.forEach(el => {
+    if (el) el.classList.toggle('hidden-right', !isUIVisible);
   });
 
   // ボタンアイコンを切り替え
