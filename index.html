@@ -34,19 +34,20 @@ html, body {
 /* =========================================================
    1. 検索バー
    ========================================================= */
-#searchContainer { position: absolute; top: 10px; left: 0; right: 0; padding: 0 10px; z-index: 99999; }
+#searchContainer {
+  position: absolute; top: 10px; left: 0; right: 0;
+  padding: 0 10px; z-index: 99999;
+}
 .custom-search-bar {
   display: flex; align-items: center;
-  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(30, 60, 114, 0.3)) !important;
-  backdrop-filter: blur(25px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-top: 2px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2), inset 1px 1px 2px rgba(255,255,255,0.3);
-  padding: 4px 8px;
+  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 70, 0.95)) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  padding: 2px 4px;
 }
 .custom-search-bar input {
-  flex: 1; border: none; outline: none; font-size: 17px !important;
+  flex: 1; border: none; outline: none; font-size: 15px !important;
   background: transparent; color: #ffffff !important;
   text-shadow: 1px 1px 2px #000;
 }
@@ -72,25 +73,20 @@ html, body {
    ========================================================= */
 #hazardMenuCard {
   position: absolute; top: 75px; left: 10px; right: 10px; z-index: 2000;
-  background: rgba(30, 60, 114, 0.5) !important;
-  backdrop-filter: blur(20px);
-  border-radius: 20px; padding: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 8px 30px rgba(0,0,0,.4);
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(20, 40, 70, 0.95)) !important;
+  backdrop-filter: blur(12px);
+  border-radius: 16px; padding: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,0.1) inset;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
 }
 .hazard-btn {
-  width: 100%; height: 80px;
-  border: 1px solid rgba(255,255,255,0.3);
-  border-top: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 14px;
+  width: 100%; height: 74px;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   display: flex; flex-direction: column; justify-content: center; align-items: center;
-  font-size: 13px !important; font-weight: 700; color: #ffffff;
+  font-size: 11px !important; font-weight: 700; color: #ffffff;
   text-shadow: 1px 1px 0px #000;
 }
-   
 .hazard-btn.active { background: linear-gradient(135deg, #1a73e8, #0d47a1); border-color: rgba(255,255,255,0.3); }@keyframes hazardGlow {
   0%, 100% { box-shadow: 0 0 10px 0px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
   50%      { box-shadow: 0 0 18px 4px var(--glow-color), 0 4px 10px rgba(0,0,0,0.15); }
@@ -236,44 +232,87 @@ html, body {
    ========================================================= */
 #statusPanel {
   position: absolute; bottom: 20px; left: 10px; right: 10px; z-index: 1500;
-  background: linear-gradient(135deg, rgba(30, 60, 114, 0.9), rgba(30, 60, 114, 0.6)) !important;
-  backdrop-filter: blur(30px);
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-top: 2px solid rgba(255, 255, 255, 0.6);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  padding: 10px;
-  font-size: 16px !important; color: #ffffff !important;
-  overflow: visible; transition: transform 0.4s;
-}
-.tab-container { position: absolute; top: -42px; left: 16px; display: flex; gap: 4px; }
-.tab-btn { 
-  width: 90px; padding: 12px; text-align: center; cursor: pointer;
-  font-size: 15px !important; font-weight: 700; border-radius: 16px 16px 0 0; border: none;
-  background: rgba(30, 60, 114, 0.3) !important; color: #cceeff !important;
-}
-.tab-btn.active {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(30, 60, 114, 0.9)) !important;
+  background: linear-gradient(135deg, rgba(30, 60, 114, 0.85), rgba(40, 50, 80, 0.95)) !important;
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 15px 40px rgba(0, 20, 50, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  overflow: visible;
+  touch-action: none;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+  
+  font-size: 14.5px !important;
   color: #ffffff !important;
+  text-shadow: 
+    1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000,
+    1px 0px 0px #000, -1px 0px 0px #000, 0px 1px 0px #000, 0px -1px 0px #000;
 }
-#elevationDisplay, .route-time { color: #ffffff !important; font-weight: 800 !important; }
+
+#statusPanel::before {
+  content: ""; position: absolute; inset: -1px; border-radius: 25px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+  z-index: -1; pointer-events: none;
+}
+
+.tab-container { position: absolute; top: -42px; left: 16px; display: flex; gap: 4px; }
+
+.tab-btn {
+  width: 90px; padding: 10px 12px; text-align: center; cursor: pointer;
+  font-size: 13px; font-weight: 700; border-radius: 16px 16px 0 0; border: none;
+  background: rgba(20, 30, 50, 0.6); color: #8899bb;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.tab-btn.active {
+  background: linear-gradient(135deg, rgba(30, 60, 114, 0.95), rgba(40, 50, 80, 1));
+  color: #ffffff; z-index: 3;
+  box-shadow: 0 -5px 15px rgba(0, 100, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+#elevationDisplay, .route-time {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0px #000;
+}
+
+#statusPanel::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.1));
+  z-index: -1;
+  pointer-events: none;
+}
+   
 .tab-content { display: none; padding: 15px; height: 120px; overflow: hidden; }
 .tab-content.active { display: block; }
+
 #toggleStatusBtn {
   position: absolute !important; top: 8px !important; right: 10px !important;
-  background: transparent !important; border: none !important; color: #fff !important;
-  cursor: pointer; display: flex !important;
+  background: transparent !important; border: none !important; color: #202124 !important;
+  cursor: pointer; display: flex !important; align-items: center !important; justify-content: center !important;
+  padding: 4px !important; box-shadow: none !important; outline: none !important;
 }
+#toggleStatusBtn:hover, #toggleStatusBtn:active, #toggleStatusBtn:focus { background: transparent !important; }
+
 #statusPanel[data-state="minimized"] { height: 40px !important; overflow: visible !important; }
 #statusPanel[data-state="minimized"] .tab-content { display: none !important; }
 #statusPanel[data-state="minimized"] .tab-container { display: flex !important; }
 
+.status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; padding-right: 35px; }
+#elevationDisplay { font-weight: bold; color: #d35400; }
+
 .panel-row { display: flex; height: 100%; }
 .panel-column { flex: 1; overflow-y: auto; }
+
 .route-modes { display: flex; gap: 8px; flex: 1; }
-.route-mode-box { flex: 1; background: rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
-.route-icon-circle { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; }
-.route-dist { font-size: 10px; color: #ddeeff; }
+.route-mode-box { flex: 1; background: #f8f9fa; border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; }
+.route-icon-circle { width: 24px; height: 24px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; display: flex; align-items: center; justify-content: center; }
+.route-icon-circle .material-icons-round { font-size: 14px; }
+.route-time { font-size: 13px; font-weight: 800 !important; color: #1a73e8 !important; }
+.route-dist { font-size: 10px; color: #5f6368; }
 
 /* =========================================================
    6. Leaflet ポップアップ調整
