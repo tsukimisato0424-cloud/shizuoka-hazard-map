@@ -312,9 +312,19 @@ body::before{
 .route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
 .route-dist{ font-size:14px; color:#5f6368; }
 
-.warn-special { color: #ffffff !important; background: #000000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-.warn-alarm { color: #ff0000 !important; font-weight: bold; }
-.warn-advisory { color: #ffd700 !important; font-weight: bold; }
+.warn-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  margin: 4px 4px 0 0;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.warn-special { background-color: #4b0082; } /* 特別警報：紫 */
+.warn-alarm { background-color: #d32f2f; }   /* 警報：赤 */
+.warn-advisory { background-color: #fbc02d; color: #000; } /* 注意報：黄 */
    
 /* =========================================================================
    7. Leaflet ポップアップ調整
@@ -1109,13 +1119,15 @@ async function updateWeatherWarnings(addressText){
           matchedFineArea = true;
         }
         (area.warnings || []).forEach(w => {
-          if (w.status && w.status !== '解除'){
+                    if (w.status && w.status !== '解除'){
             const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
-            let className = '';
-            if (w.status.includes('特別警報')) className = 'warn-special';
-            else if (w.status.includes('警報')) className = 'warn-alarm';
-            else if (w.status.includes('注意報')) className = 'warn-advisory';             
-            activeWarnings.push(`<span class="${className}">${name}（${w.status}）</span>`);
+            let typeClass = '';
+            if (w.status.includes('特別警報')) typeClass = 'warn-special';
+            else if (w.status.includes('警報')) typeClass = 'warn-alarm';
+            else if (w.status.includes('注意報')) typeClass = 'warn-advisory';
+            
+            // クラスを2つ（共通デザイン + 個別カラー）指定します
+            activeWarnings.push(`<span class="warn-badge ${typeClass}">${name}</span>`);
           }
         });
       });
