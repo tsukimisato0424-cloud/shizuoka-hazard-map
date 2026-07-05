@@ -312,20 +312,6 @@ body::before{
 .route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
 .route-dist{ font-size:14px; color:#5f6368; }
 
-.warn-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  margin: 4px 4px 0 0;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 14px;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-.warn-special { background-color: #4b0082; } /* 特別警報：紫 */
-.warn-alarm { background-color: #d32f2f; }   /* 警報：赤 */
-.warn-advisory { background-color: #fbc02d; color: #000; } /* 注意報：黄 */
-   
 /* =========================================================================
    7. Leaflet ポップアップ調整
    ========================================================================= */
@@ -1119,15 +1105,9 @@ async function updateWeatherWarnings(addressText){
           matchedFineArea = true;
         }
         (area.warnings || []).forEach(w => {
-                    if (w.status && w.status !== '解除'){
+          if (w.status && w.status !== '解除'){
             const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
-            let typeClass = '';
-            if (w.status.includes('特別警報')) typeClass = 'warn-special';
-            else if (w.status.includes('警報')) typeClass = 'warn-alarm';
-            else if (w.status.includes('注意報')) typeClass = 'warn-advisory';
-            
-            // クラスを2つ（共通デザイン + 個別カラー）指定します
-            activeWarnings.push(`<span class="warn-badge ${typeClass}">${name}</span>`);
+            activeWarnings.push(`${name}（${w.status}）`);
           }
         });
       });
@@ -1142,8 +1122,7 @@ async function updateWeatherWarnings(addressText){
       : `<div style="color:#6fe0a0;">現在、発表中の警報・注意報はありません</div>`) + granularityNote;
   } catch {
     el.innerHTML = '警報情報の取得に失敗しました';
-    el.classList.remove('warning-red', 'alert-danger'); // 既存の赤色クラスを外す
-    el.classList.add('info-neutral'); // 警告ではない色（灰色など）のクラスを追加する  }
+  }
 }
 
 async function updateDetails(lat, lng){
