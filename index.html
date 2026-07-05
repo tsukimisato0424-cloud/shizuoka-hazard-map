@@ -950,12 +950,32 @@ function selectLocation(lat, lng){
 /* =========================================================================
    F. 地点情報（標高／冠水リスク／住所／気象警報）
    ========================================================================= */
+/*
+ * 国土地理院 標高APIは、地点ごとに最も精度の良いDEMを自動選択して返す。
+ * レスポンスの "hsrc" にその出典が入っており、精度は概ね以下の順（良い順）：
+ *   "5m（レーザ）"   = DEM5A（航空レーザ測量、最高精度）
+ *   "5m（写真測量）" = DEM5B（写真測量、5A に次ぐ精度）
+ *   "10m"            = DEM10B等（等高線由来、山間部などでよく使われる粗いデータ）
+ * hsrc も一緒に取得し、判定結果の信頼度を利用者に示せるようにする。
+ */
+const DEM_RESOLUTION_RANK = { '5m（レーザ）':3, '5m（写真測量）':2 };
+function getDemRank(hsrc){
+  return DEM_RESOLUTION_RANK[hsrc] ?? 1; // 10m等・不明はランク1（最も粗い）
+}
+function getDemLabel(hsrc){
+  if (hsrc === '5m（レーザ）') return 'DEM5A・高精度';
+  if (hsrc === '5m（写真測量）') return 'DEM5B・中精度';
+  if (hsrc) return `${hsrc}・低精度`;
+  return '不明';
+}
+
 async function getElevationValue(lat, lng){
   try {
     const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
     const data = await (await fetch(url)).json();
-    return (data.elevation ?? NaN);
-  } catch { return NaN; }
+    const elevation = typeof data.elevation === 'number' ? data.elevation : NaN;
+    return { elevation, hsrc: data.hsrc || null };
+  } catch { return { elevation: NaN, hsrc: null }; }
 }
 
 async function checkInundationRisk(lat, lng){
@@ -965,13 +985,42 @@ async function checkInundationRisk(lat, lng){
   for (const i of offsets) for (const j of offsets) points.push([lat + i * step, lng + j * step]);
   const centerIndex = points.findIndex(p => p[0] === lat && p[1] === lng);
 
-  const values = await Promise.all(points.map(p => getElevationValue(p[0], p[1])));
-  const centerElev = values[centerIndex];
-  const validValues = values.filter(v => !isNaN(v));
-  const avgElev = validValues.length ? validValues.reduce((a, b) => a + b, 0) / validValues.length : NaN;
+  const results = await Promise.all(points.map(p => getElevationValue(p[0], p[1])));
+  const center = results[centerIndex];
+  const centerElev = center.elevation;
+
+  // 周辺(中心を除く)の有効な標高値。都市部では建物や高架橋の高さがDEMに混入することがあるため、
+  // 単純平均ではなくトリム平均（上下の外れ値を除いた平均）を使い、突出した値の影響を抑える。
+  const surroundingValues = results
+    .filter((r, i) => i !== centerIndex && !isNaN(r.elevation))
+    .map(r => r.elevation)
+    .sort((a, b) => a - b);
+
+  let avgElev = NaN;
+  if (surroundingValues.length >= 5){
+    const trimCount = Math.max(1, Math.floor(surroundingValues.length * 0.2));
+    const trimmed = surroundingValues.slice(trimCount, surroundingValues.length - trimCount);
+    avgElev = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+  } else if (surroundingValues.length > 0){
+    avgElev = surroundingValues.reduce((a, b) => a + b, 0) / surroundingValues.length;
+  }
+
   const diff = avgElev - centerElev;
 
-  return { isRisk: diff > 0.5, diff: isNaN(diff) ? '--' : diff.toFixed(1), centerElev };
+  // 中心点と周辺点のDEM解像度に大きな差がある場合は、境界部の精度差による誤判定の可能性を注記する
+  const surroundingRanks = results.filter((r, i) => i !== centerIndex && r.hsrc).map(r => getDemRank(r.hsrc));
+  const centerRank = getDemRank(center.hsrc);
+  const mixedResolution = surroundingRanks.length > 0 && surroundingRanks.some(r => r !== centerRank);
+
+  return {
+    isRisk: diff > 0.5,
+    diff: isNaN(diff) ? '--' : diff.toFixed(1),
+    centerElev,
+    demSource: center.hsrc,
+    demLabel: getDemLabel(center.hsrc),
+    lowConfidence: centerRank === 1,
+    mixedResolution
+  };
 }
 
 async function getAddress(lat, lng){
@@ -1009,24 +1058,52 @@ async function updateWeatherWarnings(addressText){
 
   try {
     const master = await getAreaMaster();
+    // area.json のトップレベルキーは centers / offices / class10s / class15s / class20s (末尾に s が付く)
     const stripSuffix = s => s.replace(/(市|区|町|村)$/, '');
 
-    let parentCode = null;
-    const findCode = (areas) => {
-      for (const [, info] of Object.entries(areas || {})){
-        if (info.name && cityName.includes(stripSuffix(info.name))) return info.parent || null;
+    // 1) まず二次細分区域(class20s = ほぼ市区町村単位)で地点を特定する。
+    //    これが警報判定における最も細かい粒度（従来の「市区町村単位」より一段階詳細）。
+    let targetClass20Code = null;
+    for (const [code, info] of Object.entries(master.class20s || {})){
+      if (info.name && cityName.includes(stripSuffix(info.name))){ targetClass20Code = code; break; }
+    }
+
+    // 2) class20s → class15s → class10s → offices と親をたどり、
+    //    警報JSONの取得に必要な府県予報区(office)コードを求める。
+    //    (JMAの警報データは office コード単位のファイルに、その中の市区町村がまとめて入っている)
+    let officeCode = null, class15Code = null, class10Code = null;
+    if (targetClass20Code){
+      class15Code = master.class20s[targetClass20Code]?.parent || null;
+      class10Code = class15Code ? (master.class15s?.[class15Code]?.parent || null) : null;
+      officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
+    }
+
+    // フォールバック：class20sで見つからない場合はclass15s（郡などのまとまり）で照合
+    if (!officeCode){
+      for (const [code, info] of Object.entries(master.class15s || {})){
+        if (info.name && cityName.includes(stripSuffix(info.name))){
+          class10Code = info.parent || null;
+          officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
+          break;
+        }
       }
-      return null;
-    };
-    parentCode = findCode(master.class20) || findCode(master.class15);
+    }
 
-    if (!parentCode){ el.innerHTML = '対応する気象庁エリアが見つかりませんでした'; return; }
+    if (!officeCode){ el.innerHTML = '対応する気象庁エリアが見つかりませんでした'; return; }
 
-    const warnData = await (await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${parentCode}.json`)).json();
+    const warnData = await (await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${officeCode}.json`)).json();
 
     const activeWarnings = [];
+    let matchedFineArea = false;
     (warnData.areaTypes || []).forEach(areaType => {
       (areaType.areas || []).forEach(area => {
+        // 二次細分区域(市区町村)コードが特定できている場合は、そのエリアのみに絞り込んで判定する。
+        // これにより「県全体」や「一次細分区域」単位ではなく、実際の地点が属する市区町村単位の
+        // より細かい粒度で警報・注意報を判定できる。
+        if (targetClass20Code){
+          if (area.code !== targetClass20Code) return;
+          matchedFineArea = true;
+        }
         (area.warnings || []).forEach(w => {
           if (w.status && w.status !== '解除'){
             const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
@@ -1036,9 +1113,13 @@ async function updateWeatherWarnings(addressText){
       });
     });
 
-    el.innerHTML = activeWarnings.length
+    const granularityNote = targetClass20Code && matchedFineArea
+      ? `<div style="color:#9fb3d1; font-size:12px; margin-top:4px;">判定範囲: 市区町村単位（二次細分区域）</div>`
+      : `<div style="color:#9fb3d1; font-size:12px; margin-top:4px;">判定範囲: 府県予報区単位（詳細エリア未特定）</div>`;
+
+    el.innerHTML = (activeWarnings.length
       ? [...new Set(activeWarnings)].map(w => `<div style="color:#ffb27a;">・${w}</div>`).join('')
-      : `<div style="color:#6fe0a0;">現在、発表中の警報・注意報はありません</div>`;
+      : `<div style="color:#6fe0a0;">現在、発表中の警報・注意報はありません</div>`) + granularityNote;
   } catch {
     el.innerHTML = '警報情報の取得に失敗しました';
   }
@@ -1055,10 +1136,19 @@ async function updateDetails(lat, lng){
   const [address, risk] = await Promise.all([getAddress(lat, lng), checkInundationRisk(lat, lng)]);
 
   document.getElementById('addressDisplay').innerText = `住所: ${address}`;
-  document.getElementById('elevationDisplay').innerText = !isNaN(risk.centerElev) ? `${risk.centerElev} m` : '-- m';
-  riskStatus.innerHTML = risk.isRisk
+  document.getElementById('elevationDisplay').innerText = !isNaN(risk.centerElev)
+    ? `${risk.centerElev} m (${risk.demLabel})`
+    : '-- m';
+
+  let riskHtml = risk.isRisk
     ? `<div style="color:#ff8a80; font-weight:bold;">冠水危険あり<br>周囲より ${risk.diff}m 低地</div>`
     : `<div style="color:#6fe0a0;">地形的な窪地リスクは低いです</div>`;
+  if (risk.lowConfidence){
+    riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ この地点は10mメッシュ等の粗いデータのため精度が低い可能性があります</div>`;
+  } else if (risk.mixedResolution){
+    riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ 周辺データの解像度差（建物等の影響の可能性）にご注意ください</div>`;
+  }
+  riskStatus.innerHTML = riskHtml;
 
   updateWeatherWarnings(address);
 }
@@ -1251,4 +1341,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
