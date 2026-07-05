@@ -312,6 +312,10 @@ body::before{
 .route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
 .route-dist{ font-size:14px; color:#5f6368; }
 
+.warn-special { color: #ffffff !important; background: #000000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+.warn-alarm { color: #ff0000 !important; font-weight: bold; }
+.warn-advisory { color: #ffd700 !important; font-weight: bold; }
+   
 /* =========================================================================
    7. Leaflet ポップアップ調整
    ========================================================================= */
@@ -1107,7 +1111,11 @@ async function updateWeatherWarnings(addressText){
         (area.warnings || []).forEach(w => {
           if (w.status && w.status !== '解除'){
             const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
-            activeWarnings.push(`${name}（${w.status}）`);
+            let className = '';
+            if (w.status.includes('特別警報')) className = 'warn-special';
+            else if (w.status.includes('警報')) className = 'warn-alarm';
+            else if (w.status.includes('注意報')) className = 'warn-advisory';             
+            activeWarnings.push(`<span class="${className}">${name}（${w.status}）</span>`);
           }
         });
       });
