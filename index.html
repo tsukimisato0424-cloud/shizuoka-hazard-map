@@ -1142,7 +1142,8 @@ async function updateWeatherWarnings(addressText){
       : `<div style="color:#6fe0a0;">現在、発表中の警報・注意報はありません</div>`) + granularityNote;
   } catch {
     el.innerHTML = '警報情報の取得に失敗しました';
-  }
+    el.classList.remove('warning-red', 'alert-danger'); // 既存の赤色クラスを外す
+    el.classList.add('info-neutral'); // 警告ではない色（灰色など）のクラスを追加する  }
 }
 
 async function updateDetails(lat, lng){
