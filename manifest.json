@@ -1,6 +1,6 @@
 {
   "name": "防災支援マップ",
-  "short_name": "防災マップ",
+  "short_name": "防災支援マップ",
   "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
