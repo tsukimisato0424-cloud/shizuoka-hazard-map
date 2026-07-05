@@ -9,3 +9,19 @@
   "description": "洪水・土砂災害・津波の想定区域と避難所ルートを確認できる防災支援マップ"
 }
 
+{
+  "name": "防災支援マップ",
+  "short_name": "防災支援マップ",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1e3c72",
+  "theme_color": "#1e3c72",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
