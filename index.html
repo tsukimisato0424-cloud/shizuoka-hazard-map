@@ -45,7 +45,7 @@ html, body{
 body::before{
   content:""; position:fixed; top:0; left:0; right:0;
   height:env(safe-area-inset-top,0px);
-  background:linear-gradient(135deg,#1e3c72,#283250);
+  background:#1e3c72;
   z-index:100000; pointer-events:none;
 }
 #map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; }
@@ -173,7 +173,7 @@ body::before{
    4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
    ========================================================================= */
 #rightControlContainer{
-  position:absolute; top:calc(170px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(205px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -250,7 +250,7 @@ body::before{
 #statusPanel{
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:10px; right:10px; z-index:1500; overflow:visible; border-radius:24px!important;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1.275), box-shadow .4s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:16px!important; color:#fff!important;
   text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,
               1px 0 0 #000,-1px 0 0 #000,0 1px 0 #000,0 -1px 0 #000;
