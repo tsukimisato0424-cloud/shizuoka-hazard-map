@@ -69,7 +69,7 @@ body::before{
 
 .round-btn{
   position:relative; z-index:1500; overflow:hidden;
-  width:52px; height:52px; border-radius:50%;
+  width:56px; height:56px; border-radius:50%;
   background:var(--bubble-bg); border:var(--bubble-border);
   box-shadow:var(--bubble-shadow);
   display:flex; align-items:center; justify-content:center;
@@ -83,7 +83,7 @@ body::before{
 }
 .round-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
 .round-btn .material-icons-round{
-  position:relative; z-index:1; font-size:24px;
+  position:relative; z-index:1; font-size:26px;
   filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
 }
 
@@ -97,42 +97,43 @@ body::before{
 .custom-search-bar{ border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
 .custom-search-bar input, .search-icon-btn{ position:relative; z-index:1; }
 .custom-search-bar input{
-  flex:1; border:none; outline:none; font-size:17px!important;
-  letter-spacing:.3px; padding:14px 12px; background:transparent; color:#fff;
+  flex:1; border:none; outline:none; font-size:19px!important;
+  letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
 }
 .custom-search-bar input::placeholder{ color:rgba(255,255,255,.65); }
 .search-icon-btn{ background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
+.search-icon-btn .material-icons-round{ font-size:26px; }
 
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
-  margin-top:6px; max-height:260px; overflow-y:auto; display:none;
+  margin-top:6px; max-height:280px; overflow-y:auto; display:none;
 }
 .suggestion-item{
-  display:flex; align-items:center; padding:12px 16px; font-size:16px!important;
+  display:flex; align-items:center; padding:13px 16px; font-size:18px!important;
   letter-spacing:.3px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .2s;
 }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
-.suggestion-item .material-icons-round{ color:#70757a; font-size:20px; margin-right:10px; }
+.suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
 
 /* =========================================================================
    3. ハザード選択メニュー
    ========================================================================= */
 #hazardMenuCard{
-  position:absolute; top:calc(75px + env(safe-area-inset-top,0px));
-  left:10px; right:10px; z-index:2000; border-radius:16px; padding:8px;
-  display:grid; grid-template-columns:repeat(4,1fr); gap:4px; touch-action:none;
+  position:absolute; top:calc(78px + env(safe-area-inset-top,0px));
+  left:10px; right:10px; z-index:2000; border-radius:18px; padding:10px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; touch-action:none;
 }
 #hazardMenuCard::before{ background-position:12% 6%; }
 
 .hazard-btn{
   position:relative; z-index:1; overflow:hidden;
-  width:100%; height:78px; border:1px solid rgba(255,255,255,.65); border-radius:14px;
+  width:100%; height:100px; border:1px solid rgba(255,255,255,.65); border-radius:16px;
   background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
   backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
-  font-size:13px!important; font-weight:700; line-height:1.3; letter-spacing:.3px;
-  padding:4px 2px; color:var(--ink);
+  font-size:15px!important; font-weight:700; line-height:1.3; letter-spacing:.3px;
+  padding:6px 3px; color:var(--ink);
   box-shadow:0 8px 16px rgba(70,130,180,.35), 0 2px 3px rgba(70,130,180,.2),
              0 1px 0 rgba(255,255,255,.9) inset, 0 -6px 10px rgba(140,190,225,.35) inset;
   transition:.2s;
@@ -142,7 +143,7 @@ body::before{
   background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
 }
 .hazard-btn .material-icons-round{
-  position:relative; z-index:1; font-size:24px; margin-bottom:2px; color:#3f83ab;
+  position:relative; z-index:1; font-size:32px; margin-bottom:4px; color:#3f83ab;
   filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
 }
 .hazard-btn span:not(.material-icons-round){ position:relative; z-index:1; }
@@ -173,7 +174,7 @@ body::before{
    4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
    ========================================================================= */
 #rightControlContainer{
-  position:absolute; top:calc(205px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(230px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -182,8 +183,8 @@ body::before{
 #legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"]{
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
-#legendAccordion[open-state="true"]{ width:220px; height:320px; border-radius:16px; }
-#mapTypeContainer[open-state="true"]{ width:160px; height:210px; border-radius:16px; }
+#legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
+#mapTypeContainer[open-state="true"]{ width:180px; height:220px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
@@ -194,41 +195,41 @@ body::before{
 #legendAccordion details{ display:flex; flex-direction:column; }
 
 #legendAccordion summary, #mapTypeContainer summary{
-  position:relative; z-index:3; width:52px; height:52px; padding:0; box-sizing:border-box; cursor:pointer;
+  position:relative; z-index:3; width:56px; height:56px; padding:0; box-sizing:border-box; cursor:pointer;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   user-select:none; list-style:none; transition:background .2s;
 }
 #legendAccordion summary::-webkit-details-marker, #mapTypeContainer summary::-webkit-details-marker{ display:none; }
 #legendAccordion summary:hover{ background-color:rgba(255,255,255,.25); }
 
-#legendAccordion summary .legend-icon{ font-size:22px; color:var(--ink); margin:0; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#legendAccordion summary .legend-text{ font-size:11px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
-#legendAccordion summary .legend-arrow{ display:none; font-size:20px; color:#70757a; transition:transform .2s ease; }
+#legendAccordion summary .legend-icon{ font-size:24px; color:var(--ink); margin:0; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+#legendAccordion summary .legend-text{ font-size:12px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
+#legendAccordion summary .legend-arrow{ display:none; font-size:22px; color:#70757a; transition:transform .2s ease; }
 
-#mapTypeContainer summary .maptype-icon{ font-size:22px; color:var(--ink); filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#mapTypeContainer summary .maptype-text{ font-size:10px; font-weight:bold; color:var(--ink); line-height:1.1; text-align:center; }
+#mapTypeContainer summary .maptype-icon{ font-size:24px; color:var(--ink); filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+#mapTypeContainer summary .maptype-text{ font-size:11px; font-weight:bold; color:var(--ink); line-height:1.1; text-align:center; }
 #mapTypeContainer summary .maptype-arrow{ display:none; }
 
 #legendAccordion[open-state="true"] summary, #mapTypeContainer[open-state="true"] summary{
-  width:100%; height:50px; padding:0 14px; flex-direction:row; justify-content:flex-start;
+  width:100%; height:54px; padding:0 14px; flex-direction:row; justify-content:flex-start;
   border-bottom:1px solid #f1f3f4; background:#fff;
 }
-#legendAccordion[open-state="true"] summary .legend-text{ font-size:16px; margin-top:0; margin-left:8px; flex:1; color:#202124; }
+#legendAccordion[open-state="true"] summary .legend-text{ font-size:18px; margin-top:0; margin-left:8px; flex:1; color:#202124; }
 #legendAccordion[open-state="true"] summary .legend-arrow{ display:block; }
 #legendAccordion details[open] summary .legend-arrow{ transform:rotate(180deg); }
-#mapTypeContainer[open-state="true"] summary .maptype-text{ font-size:16px; margin-left:8px; flex:1; }
+#mapTypeContainer[open-state="true"] summary .maptype-text{ font-size:18px; margin-left:8px; flex:1; }
 #mapTypeContainer[open-state="true"] summary .maptype-arrow{ display:block; }
 
-.legend-content{ padding:10px 12px; height:calc(100% - 50px); overflow-y:auto; font-size:15px!important; line-height:1.8!important; color:#3c4043; }
+.legend-content{ padding:10px 12px; height:calc(100% - 54px); overflow-y:auto; font-size:17px!important; line-height:1.8!important; color:#3c4043; }
 .legend-section-title{ font-weight:800!important; color:#1a73e8!important; margin:6px 0 3px!important; display:block; }
-.legend-item{ display:flex; align-items:center; margin-bottom:1px!important; gap:6px; color:#5f6368; }
-.legend-color{ width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+.legend-item{ display:flex; align-items:center; margin-bottom:2px!important; gap:6px; color:#5f6368; }
+.legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 
 .maptype-content{ padding:8px 0; }
-.map-type-item{ padding:12px 16px; font-size:15px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
+.map-type-item{ padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
 .map-type-item:hover{ background:#f8f9fa; }
 
-#locationBtn, #refreshBtn, #fullscreenBtn{ width:50px; height:50px; color:var(--ink); cursor:pointer; border-radius:50%; }
+#locationBtn, #refreshBtn, #fullscreenBtn{ width:54px; height:54px; color:var(--ink); cursor:pointer; border-radius:50%; }
 @keyframes spinRefresh{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
 #refreshBtn.loading .material-icons-round{ animation:spinRefresh .8s linear infinite; }
 
@@ -251,7 +252,7 @@ body::before{
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:10px; right:10px; z-index:1500; overflow:visible; border-radius:24px!important;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
-  font-size:16px!important; color:#fff!important;
+  font-size:18px!important; color:#fff!important;
   text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,
               1px 0 0 #000,-1px 0 0 #000,0 1px 0 #000,0 -1px 0 #000;
 }
@@ -264,10 +265,10 @@ body::before{
   background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,0));
 }
 
-.tab-container{ position:absolute; top:-42px; left:16px; display:flex; gap:4px; }
+.tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; }
 .tab-btn{
-  width:90px; padding:10px 12px; text-align:center; cursor:pointer;
-  font-size:15px; font-weight:700; border-radius:16px 16px 0 0; border:none;
+  width:96px; padding:11px 12px; text-align:center; cursor:pointer;
+  font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
   color:#8899bb; transition:all .3s cubic-bezier(.4,0,.2,1); position:relative;
@@ -282,7 +283,7 @@ body::before{
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:15px; height:140px; overflow:hidden; }
+.tab-content{ display:none; padding:16px; height:150px; overflow:hidden; }
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -291,31 +292,32 @@ body::before{
   cursor:pointer; display:flex!important; align-items:center!important; justify-content:center!important;
   padding:4px!important; box-shadow:none!important; outline:none!important;
 }
+#toggleStatusBtn .material-icons-round{ font-size:28px; }
 #toggleStatusBtn:hover, #toggleStatusBtn:active, #toggleStatusBtn:focus{ background:transparent!important; }
 
-#statusPanel[data-state="minimized"]{ height:40px!important; overflow:visible!important; }
+#statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
 #statusPanel[data-state="minimized"] .tab-container{ display:flex!important; }
 
-.status-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:15px; padding-right:35px; }
+.status-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:17px; padding-right:35px; }
 #elevationDisplay{ font-weight:bold; color:#d35400; }
 
 .panel-row{ display:flex; height:100%; }
 .panel-column{ flex:1; overflow-y:auto; }
 
 .route-modes{ display:flex; gap:8px; flex:1; }
-.route-mode-box{ flex:1; background:#f8f9fa; border-radius:6px; padding:6px 10px; display:flex; align-items:center; gap:6px; }
-.route-icon-circle{ width:24px; height:24px; border-radius:50%; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; }
-.route-icon-circle .material-icons-round{ font-size:14px; }
-.route-time{ font-size:15px; font-weight:800!important; color:#1a73e8!important; }
-.route-dist{ font-size:12px; color:#5f6368; }
+.route-mode-box{ flex:1; background:#f8f9fa; border-radius:6px; padding:7px 11px; display:flex; align-items:center; gap:6px; }
+.route-icon-circle{ width:26px; height:26px; border-radius:50%; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; }
+.route-icon-circle .material-icons-round{ font-size:16px; }
+.route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
+.route-dist{ font-size:14px; color:#5f6368; }
 
 /* =========================================================================
    7. Leaflet ポップアップ調整
    ========================================================================= */
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
-.leaflet-popup-content{ font-size:16px!important; line-height:1.6!important; color:#3c4043; }
+.leaflet-popup-content{ font-size:18px!important; line-height:1.6!important; color:#3c4043; }
 .leaflet-popup-content-wrapper{
   background:rgba(255,255,255,.98)!important; border-radius:16px!important;
   box-shadow:0 10px 20px rgba(0,0,0,.2)!important;
@@ -344,16 +346,16 @@ body::before{
   padding:40px; border-radius:24px; text-align:center; width:80%; max-width:320px;
   border:1px solid rgba(255,255,255,.5); box-shadow:0 8px 32px rgba(0,0,0,.1);
 }
-.auth-title{ color:#333; font-size:22px; font-weight:bold; margin-bottom:20px; }
+.auth-title{ color:#333; font-size:24px; font-weight:bold; margin-bottom:20px; }
 .auth-card input{
-  width:100%; padding:10px; margin-bottom:12px; background:rgba(255,255,255,.5);
-  border:1px solid rgba(0,0,0,.1); border-radius:8px; box-sizing:border-box; font-size:17px; text-align:center;
+  width:100%; padding:12px; margin-bottom:12px; background:rgba(255,255,255,.5);
+  border:1px solid rgba(0,0,0,.1); border-radius:8px; box-sizing:border-box; font-size:19px; text-align:center;
 }
 .auth-btn{
-  width:100%; padding:10px; background:rgba(26,115,232,.9); color:#fff;
-  border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:16px;
+  width:100%; padding:12px; background:rgba(26,115,232,.9); color:#fff;
+  border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:18px;
 }
-.footer-credit{ margin-top:16px; color:#444; font-size:11px; line-height:1.3; text-align:center; text-shadow:0 0 2px rgba(255,255,255,.8); }
+.footer-credit{ margin-top:16px; color:#444; font-size:12px; line-height:1.3; text-align:center; text-shadow:0 0 2px rgba(255,255,255,.8); }
 </style>
 </head>
 <body>
@@ -363,7 +365,7 @@ body::before{
     <div class="auth-title">防災支援マップ</div>
     <input type="password" id="passInput" placeholder="PASSWORD" inputmode="numeric" pattern="\d*">
     <button class="auth-btn" onclick="checkPassword()">認証</button>
-    <p id="errorMsg" style="color:#ff4444; font-size:14px; margin-top:10px;"></p>
+    <p id="errorMsg" style="color:#ff4444; font-size:15px; margin-top:10px;"></p>
     <div class="footer-credit">
       © 2026 H.Tsukimisato All Rights Reserved.<br>
       Data Sources : 国土地理院
@@ -373,8 +375,8 @@ body::before{
 
 <div id="locationHelpOverlay" style="display:none; position:fixed; inset:0; z-index:999999; justify-content:center; align-items:center; background:rgba(255,255,255,0.2); backdrop-filter:blur(8px);">
   <div class="auth-card" style="max-width:300px; background:rgba(255,255,255,0.9); border:1px solid #ddd;">
-    <div class="auth-title" style="font-size:18px;">位置情報の設定について</div>
-    <p style="font-size:15px; color:#555; text-align:left; line-height:1.6;">
+    <div class="auth-title" style="font-size:19px;">位置情報の設定について</div>
+    <p style="font-size:16px; color:#555; text-align:left; line-height:1.6;">
       現在地を表示するにはブラウザの権限許可が必要です。<br><br>
       <b>iPhone(Safari)の方:</b><br>
       アドレスバー左上の「ぁあ」をタップ ＞「Webサイトの設定」＞「位置情報」を「許可」に変更。<br><br>
@@ -464,16 +466,16 @@ body::before{
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">地点リスク判定【冠水想定】</div>
-        <div id="sub1-content" style="font-size:13px; line-height:1.4;">地点を選択してください</div>
-        <div style="font-weight:bold; font-size:14px; margin-top:8px; margin-bottom:4px;">経路リスク判定【全災害】</div>
-        <div id="routeHazardStatus" style="font-size:13px; line-height:1.4;"></div>
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点リスク判定【冠水想定】</div>
+        <div id="sub1-content" style="font-size:15px; line-height:1.4;">地点を選択してください</div>
+        <div style="font-weight:bold; font-size:16px; margin-top:9px; margin-bottom:5px;">経路リスク判定【全災害】</div>
+        <div id="routeHazardStatus" style="font-size:15px; line-height:1.4;"></div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">地点情報</div>
-        <div id="addressDisplay" style="font-size:13px; line-height:1.3;">住所: 取得中...</div>
-        <div id="latLngDisplay" style="font-size:12px; color:#ccd6e6; margin-top:2px;">緯度/経度: --</div>
-        <div style="font-size:13px; margin-top:2px;">海抜: <span id="elevationDisplay">-- m</span></div>
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点情報</div>
+        <div id="addressDisplay" style="font-size:15px; line-height:1.3;">住所: 取得中...</div>
+        <div id="latLngDisplay" style="font-size:14px; color:#ccd6e6; margin-top:2px;">緯度/経度: --</div>
+        <div style="font-size:15px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
       </div>
     </div>
   </div>
@@ -481,23 +483,23 @@ body::before{
   <div id="tab2" class="tab-content">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">ルート情報</div>
-        <div class="route-modes" style="flex-direction:column; gap:4px;">
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">ルート情報</div>
+        <div class="route-modes" style="flex-direction:column; gap:5px;">
           <div class="route-mode-box">
-            <span class="material-icons-round" style="font-size:16px; color:#1a73e8;">directions_walk</span>
-            <span id="walkTime" style="font-size:13px; font-weight:bold;">--分</span>
-            <span id="walkDist" style="font-size:12px; color:#5f6368;">--km</span>
+            <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_walk</span>
+            <span id="walkTime" style="font-size:15px; font-weight:bold;">--分</span>
+            <span id="walkDist" style="font-size:14px; color:#5f6368;">--km</span>
           </div>
           <div class="route-mode-box">
-            <span class="material-icons-round" style="font-size:16px; color:#1a73e8;">directions_car</span>
-            <span id="carTime" style="font-size:13px; font-weight:bold;">--分</span>
-            <span id="carDist" style="font-size:12px; color:#5f6368;">--km</span>
+            <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_car</span>
+            <span id="carTime" style="font-size:15px; font-weight:bold;">--分</span>
+            <span id="carDist" style="font-size:14px; color:#5f6368;">--km</span>
           </div>
         </div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px;">警報・注意報</div>
-        <div id="weatherWarnings" style="font-size:13px; line-height:1.5; color:#dfe6f0;">地点を選択してください</div>
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">警報・注意報</div>
+        <div id="weatherWarnings" style="font-size:15px; line-height:1.5; color:#dfe6f0;">地点を選択してください</div>
       </div>
     </div>
   </div>
@@ -634,7 +636,7 @@ async function fetchAndShowShelters(centerLatLng){
       const hazardMap = { '洪水':'洪水', '津波':'津波', '地震':'地震', '崖崩れ、土石流及び地滑り':'土砂災害' };
       const hazards = Object.entries(hazardMap).filter(([k]) => props[k] === '1').map(([, v]) => v);
       const hazardDisplay = hazards.length
-        ? `<div style="font-size:13px; margin-top:5px; color:#d35400;">対応: ${hazards.join(', ')}</div>`
+        ? `<div style="font-size:14px; margin-top:5px; color:#d35400;">対応: ${hazards.join(', ')}</div>`
         : '';
 
       const marker = L.marker([lat, lng], {
@@ -647,12 +649,12 @@ async function fetchAndShowShelters(centerLatLng){
       });
       marker.bindPopup(`
         <div style="font-family:sans-serif; min-width:220px;">
-          <strong style="font-size:17px; display:block; margin-bottom:5px;">${name}</strong>
-          <div style="font-size:14px; color:#555;">住所: ${address}</div>
-          <div style="font-size:14px; margin-top:5px;">避難場所: ${isEmergencySite}</div>
+          <strong style="font-size:19px; display:block; margin-bottom:6px;">${name}</strong>
+          <div style="font-size:15px; color:#555;">住所: ${address}</div>
+          <div style="font-size:15px; margin-top:6px;">避難場所: ${isEmergencySite}</div>
           ${hazardDisplay}
           <button onclick="triggerRouteToShelter(${lat}, ${lng})"
-                  style="margin-top:12px; width:100%; padding:8px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:15px;">
+                  style="margin-top:12px; width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">
             ルート検索を開始
           </button>
         </div>
@@ -1193,10 +1195,10 @@ async function executeHybridSearch(query){
       const div = document.createElement('div');
       div.className = 'suggestion-item';
       div.innerHTML = `
-        <span class="material-icons-round" style="color:${iconColor}; font-size:20px; margin-right:12px; flex-shrink:0;">${iconName}</span>
+        <span class="material-icons-round" style="color:${iconColor}; font-size:22px; margin-right:12px; flex-shrink:0;">${iconName}</span>
         <div style="display:flex; flex-direction:column; overflow:hidden; width:100%;">
-          <strong style="color:#202124; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</strong>
-          <span style="color:#5f6368; font-size:13px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.address}</span>
+          <strong style="color:#202124; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</strong>
+          <span style="color:#5f6368; font-size:14px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.address}</span>
         </div>`;
       div.addEventListener('click', () => {
         selectLocation(item.lat, item.lon);
