@@ -255,17 +255,40 @@ body::before {
 #legendAccordion, #mapTypeContainer {
   position: relative; z-index: 1500;
   width: 52px; height: 52px;
-  background: #ffffff; border-radius: 50%;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+  background: radial-gradient(circle at 30% 22%, #f5fbff 0%, #d3ecfb 45%, #a9d6f0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  box-shadow:
+    0 10px 18px rgba(70, 130, 180, 0.4),
+    0 3px 4px rgba(70, 130, 180, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -8px 12px rgba(120, 175, 215, 0.4) inset;
   overflow: hidden;
   transition: width 0.28s cubic-bezier(0.4,0,0.2,1),
               height 0.28s cubic-bezier(0.4,0,0.2,1),
               border-radius 0.28s ease,
               transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.4s;
+              opacity 0.4s,
+              box-shadow 0.28s ease;
+}
+
+#legendAccordion::before, #mapTypeContainer::before {
+  content: "";
+  position: absolute;
+  top: 3px; left: 6px;
+  width: 46%; height: 32%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,255,255,0) 70%);
+  pointer-events: none;
+  z-index: 2;
+}
+#legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"] {
+  background: #ffffff;
+  box-shadow: 0 15px 35px rgba(20, 50, 90, 0.3);
 }
 #legendAccordion[open-state="true"] { width: 220px; height: 320px; border-radius: 16px; }
 #mapTypeContainer[open-state="true"] { width: 160px; height: 210px; border-radius: 16px; }
+#legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before { opacity: 0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right {
   transform: translateX(120px);
@@ -277,20 +300,21 @@ body::before {
 #legendAccordion details { display: flex; flex-direction: column; }
 
 #legendAccordion summary, #mapTypeContainer summary {
+  position: relative; z-index: 3;
   width: 52px; height: 52px; padding: 0; box-sizing: border-box; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   user-select: none; list-style: none; transition: background 0.2s;
 }
 #legendAccordion summary::-webkit-details-marker,
 #mapTypeContainer summary::-webkit-details-marker { display: none; }
-#legendAccordion summary:hover { background-color: #f8f9fa; }
+#legendAccordion summary:hover { background-color: rgba(255,255,255,0.25); }
 
-#legendAccordion summary .legend-icon { font-size: 22px; color: #1a73e8; margin: 0; }
-#legendAccordion summary .legend-text { font-size: 11px; font-weight: bold; color: #3c4043; line-height: 1; margin-top: 2px; }
+#legendAccordion summary .legend-icon { font-size: 22px; color: #2c6690; margin: 0; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6)); }
+#legendAccordion summary .legend-text { font-size: 11px; font-weight: bold; color: #2c6690; line-height: 1; margin-top: 2px; }
 #legendAccordion summary .legend-arrow { display: none; font-size: 20px; color: #70757a; transition: transform 0.2s ease; }
 
-#mapTypeContainer summary .maptype-icon { font-size: 22px; color: #1a73e8; }
-#mapTypeContainer summary .maptype-text { font-size: 10px; font-weight: bold; color: #3c4043; line-height: 1.1; text-align: center; }
+#mapTypeContainer summary .maptype-icon { font-size: 22px; color: #2c6690; filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6)); }
+#mapTypeContainer summary .maptype-text { font-size: 10px; font-weight: bold; color: #2c6690; line-height: 1.1; text-align: center; }
 #mapTypeContainer summary .maptype-arrow { display: none; }
 
 #legendAccordion[open-state="true"] summary,
@@ -322,12 +346,39 @@ body::before {
 
 #locationBtn, #refreshBtn, #fullscreenBtn {
   position: relative; z-index: 1500;
-  width: 50px; height: 50px; border: none; border-radius: 50%;
-  background: #ffffff; color: #1a73e8; cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  overflow: hidden;
+  width: 50px; height: 50px; border: 1px solid rgba(255,255,255,0.7); border-radius: 50%;
+  background: radial-gradient(circle at 30% 22%, #f5fbff 0%, #d3ecfb 45%, #a9d6f0 100%);
+  color: #2c6690; cursor: pointer;
+  box-shadow:
+    0 10px 18px rgba(70, 130, 180, 0.4),
+    0 3px 4px rgba(70, 130, 180, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -8px 12px rgba(120, 175, 215, 0.4) inset;
   display: flex; align-items: center; justify-content: center;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
-#locationBtn .material-icons-round, #refreshBtn .material-icons-round, #fullscreenBtn .material-icons-round { font-size: 24px; }
+#locationBtn::before, #refreshBtn::before, #fullscreenBtn::before {
+  content: "";
+  position: absolute;
+  top: 3px; left: 6px;
+  width: 46%; height: 32%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.95), rgba(255,255,255,0) 70%);
+  pointer-events: none;
+}
+#locationBtn:active, #refreshBtn:active, #fullscreenBtn:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 2px 4px rgba(70, 130, 180, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 4px 8px rgba(90, 150, 190, 0.35) inset;
+}
+#locationBtn .material-icons-round, #refreshBtn .material-icons-round, #fullscreenBtn .material-icons-round {
+  position: relative; z-index: 1;
+  font-size: 24px;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.6));
+}
 
 @keyframes spinRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 #refreshBtn.loading .material-icons-round { animation: spinRefresh 0.8s linear infinite; }
