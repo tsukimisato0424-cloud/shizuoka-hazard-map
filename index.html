@@ -913,10 +913,10 @@ async function drawRoute(){
 
       updateRouteHazardAlert(foundTypes);
       hazardStatusEl.innerHTML = foundTypes.size > 0
-        ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
-        : `<div style="color:#6fe0a0;">ルート上に危険区域はありません</div>`;
+        ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+        : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
     } else {
-      hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できませんでした</span>';
+      hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
       clearRouteHazardAlert();
     }
 
