@@ -967,11 +967,16 @@ function renderElevationProfile(data){
   const W = 300, H = 112;
   const padL = 34, padR = 14, padT = 16, padB = 20;
 
+  // ここで一度だけ計算
   const elevations = data.map(d => d.elevation);
   const minE = Math.min(...elevations);
   const maxE = Math.max(...elevations);
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
+  
+  // 住所表示用のインデックス
+  const maxIdx = elevations.indexOf(maxE);
+  const minIdx = elevations.indexOf(minE);
 
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
   const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
@@ -992,26 +997,21 @@ function renderElevationProfile(data){
 
   const start = data[0], end = data[data.length - 1];
 
+  // SVG描画
   svg.innerHTML = `
     <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="#ffffff"/>
     <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="#e0e0e0" stroke-width="1"/>
-    
     ${areaSegmentsHtml}
     ${lineSegmentsHtml}
-    
     <text x="${xAt(start)}" y="${yAt(start.elevation) - 5}" font-size="14" font-weight="bold" fill="#1a73e8" text-anchor="middle">S</text>
     <text x="${xAt(end)}" y="${yAt(end.elevation) - 5}" font-size="14" font-weight="bold" fill="#e53935" text-anchor="middle">G</text>
- `;
-const elevations = data.map(d => d.elevation);
-const maxE = Math.max(...elevations);
-const minE = Math.min(...elevations);
-const maxIdx = elevations.indexOf(maxE);
-const minIdx = elevations.indexOf(minE);
+  `;
 
-document.getElementById('maxElv').innerText = Math.round(maxE);
-document.getElementById('minElv').innerText = Math.round(minE);
-document.getElementById('maxElvAddr').innerText = data[maxIdx].addr;
-document.getElementById('minElvAddr').innerText = data[minIdx].addr;
+  // 最後に数値を更新（先ほど計算した変数を使用）
+  document.getElementById('maxElv').innerText = Math.round(maxE);
+  document.getElementById('minElv').innerText = Math.round(minE);
+  document.getElementById('maxElvAddr').innerText = data[maxIdx].addr;
+  document.getElementById('minElvAddr').innerText = data[minIdx].addr;
 }
 
 async function drawRoute(){
