@@ -323,6 +323,18 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-dist{ font-size:15px; color:#444b52; }
 
 /* =========================================================================
+   6b. 高低差断面図
+   ========================================================================= */
+#elevationProfileContainer{
+  width:100%; height:112px; position:relative;
+  background:rgba(255,255,255,.06); border-radius:10px; overflow:hidden;
+}
+#elevationProfileSvg{ display:block; width:100%; height:100%; }
+#elevationProfilePlaceholder{
+  font-size:14px; color:#c3cfe8; text-align:center; line-height:112px;
+}
+
+/* =========================================================================
    7. Leaflet ポップアップ調整
    ========================================================================= */
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
@@ -508,8 +520,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">拡張枠</div>
-        <div id="weatherWarnings" style="font-size:16px; line-height:1.5; color:#e7edf9;">今後の機能拡張に備えた準備エリアです。</div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">高低差断面図</div>
+        <div id="elevationProfileContainer">
+          <div id="elevationProfilePlaceholder">ルートを選択してください</div>
+          <svg id="elevationProfileSvg" viewBox="0 0 300 112" preserveAspectRatio="none" style="display:none;"></svg>
+        </div>
+        <div id="weatherWarnings" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -774,6 +790,7 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   document.getElementById('carDist').innerText = '-- km';
   document.getElementById('routeHazardStatus').innerHTML = '';
   clearRouteHazardAlert();
+  renderElevationProfile(null);
 
   updateCurrentLocation(false);
 });
@@ -889,6 +906,91 @@ function clearRouteHazardAlert(){
   document.querySelectorAll('.hazard-btn[data-type]').forEach(btn => btn.classList.remove('route-alert'));
 }
 
+/* =========================================================================
+   E-2. 高低差断面図（ルートの標高プロファイル）
+   ========================================================================= */
+async function buildElevationProfileData(coordinates, pointFlags){
+  const maxPoints = 24;
+  const step = Math.max(1, Math.floor(coordinates.length / maxPoints));
+  const indices = [];
+  for (let i = 0; i < coordinates.length; i += step) indices.push(i);
+  if (indices[indices.length - 1] !== coordinates.length - 1) indices.push(coordinates.length - 1);
+
+  const cumDist = new Array(coordinates.length).fill(0);
+  for (let i = 1; i < coordinates.length; i++){
+    const a = L.latLng(coordinates[i - 1][1], coordinates[i - 1][0]);
+    const b = L.latLng(coordinates[i][1], coordinates[i][0]);
+    cumDist[i] = cumDist[i - 1] + a.distanceTo(b);
+  }
+
+  const results = await Promise.all(indices.map(async idx => {
+    const [lon, lat] = coordinates[idx];
+    const { elevation } = await getElevationValue(lat, lon);
+    return {
+      dist: cumDist[idx],
+      elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
+      hazard: !!pointFlags[idx]
+    };
+  }));
+
+  return results.filter(r => r.elevation !== null);
+}
+
+function renderElevationProfile(data){
+  const svg = document.getElementById('elevationProfileSvg');
+  const placeholder = document.getElementById('elevationProfilePlaceholder');
+  if (!svg || !placeholder) return;
+
+  if (!data || data.length < 2){
+    svg.style.display = 'none';
+    svg.innerHTML = '';
+    placeholder.style.display = 'block';
+    placeholder.innerText = 'ルートを選択してください';
+    return;
+  }
+
+  placeholder.style.display = 'none';
+  svg.style.display = 'block';
+
+  const W = 300, H = 112;
+  const padL = 34, padR = 14, padT = 16, padB = 20;
+
+  const elevations = data.map(d => d.elevation);
+  const minE = Math.min(...elevations);
+  const maxE = Math.max(...elevations);
+  const rangeE = Math.max(1, maxE - minE);
+  const maxDist = Math.max(1, data[data.length - 1].dist);
+
+  const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
+  const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
+
+  const areaPoints = data.map(d => `${xAt(d)},${yAt(d.elevation)}`).join(' ');
+  const areaPath = `M${padL},${H - padB} L${areaPoints} L${xAt(data[data.length - 1])},${H - padB} Z`;
+
+  let segmentsHtml = '';
+  for (let i = 1; i < data.length; i++){
+    const p1 = data[i - 1], p2 = data[i];
+    const color = (p1.hazard || p2.hazard) ? '#e53935' : '#1a73e8';
+    segmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  const start = data[0], end = data[data.length - 1];
+  const sx = xAt(start).toFixed(1), sy = yAt(start.elevation).toFixed(1);
+  const ex = xAt(end).toFixed(1), ey = yAt(end.elevation).toFixed(1);
+
+  svg.innerHTML = `
+    <path d="${areaPath}" fill="rgba(26,115,232,0.12)" stroke="none"/>
+    <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
+    <text x="2" y="${(padT + 4).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(maxE)}m</text>
+    <text x="2" y="${(H - padB).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(minE)}m</text>
+    ${segmentsHtml}
+    <circle cx="${sx}" cy="${sy}" r="5.5" fill="#1a73e8" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="${ex}" cy="${ey}" r="5.5" fill="#e53935" stroke="#fff" stroke-width="1.5"/>
+    <text x="${sx}" y="${(Number(sy) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#8ec2ff" text-anchor="middle">現在地</text>
+    <text x="${ex}" y="${(Number(ey) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#ff9e9e" text-anchor="middle">目的地</text>
+  `;
+}
+
 async function drawRoute(){
   if (!currentLocation || !destination) return;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
@@ -896,6 +998,7 @@ async function drawRoute(){
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルートを計算中...</span>';
   clearRouteHazardAlert();
+  renderElevationProfile(null);
 
   const from = `${currentLocation.lng},${currentLocation.lat}`;
   const to = `${destination.lng},${destination.lat}`;
@@ -922,9 +1025,12 @@ async function drawRoute(){
       hazardStatusEl.innerHTML = foundTypes.size > 0
         ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
         : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
+
+      buildElevationProfileData(coords, pointFlags).then(renderElevationProfile);
     } else {
       hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
       clearRouteHazardAlert();
+      renderElevationProfile(null);
     }
 
     if (carRes?.routes?.[0]){
@@ -938,6 +1044,7 @@ async function drawRoute(){
   } catch {
     hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>';
     clearRouteHazardAlert();
+    renderElevationProfile(null);
   }
 }
 
@@ -1048,6 +1155,8 @@ async function getAreaMaster(){
   areaMasterCache = await res.json();
   return areaMasterCache;
 }
+
+function updateWeatherWarnings(){ /* 拡張予約領域（現状は高低差断面図に置き換え済み） */ }
 
 async function updateDetails(lat, lng){
   document.getElementById('latLngDisplay').innerText = `緯度: ${lat.toFixed(6)}, 経度: ${lng.toFixed(6)}`;
@@ -1261,6 +1370,7 @@ fullscreenBtn.addEventListener('click', () => {
 /* =========================================================================
    I. 起動
    ========================================================================= */
+renderElevationProfile(null);
 updateCurrentLocation(true);
 </script>
 </body>
