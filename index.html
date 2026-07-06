@@ -943,9 +943,7 @@ function renderElevationProfile(data){
 
   if (!data || data.length < 2){
     svg.style.display = 'none';
-    svg.innerHTML = '';
     placeholder.style.display = 'block';
-    placeholder.innerText = 'ルートを選択してください';
     return;
   }
 
@@ -964,30 +962,31 @@ function renderElevationProfile(data){
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
   const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
 
-  const areaPoints = data.map(d => `${xAt(d)},${yAt(d.elevation)}`).join(' ');
-  const areaPath = `M${padL},${H - padB} L${areaPoints} L${xAt(data[data.length - 1])},${H - padB} Z`;
+  // 1. 各セグメントごとに塗りつぶし用のパスを生成
+  let areaSegmentsHtml = '';
+  let lineSegmentsHtml = '';
 
-  let segmentsHtml = '';
   for (let i = 1; i < data.length; i++){
     const p1 = data[i - 1], p2 = data[i];
-    const color = (p1.hazard || p2.hazard) ? '#e53935' : '#1a73e8';
-    segmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const isDanger = p1.hazard || p2.hazard;
+    const color = isDanger ? '#e53935' : '#1a73e8';
+    const fillColor = isDanger ? 'rgba(229,57,53,0.3)' : 'rgba(26,115,232,0.2)';
+
+    // 塗りつぶしエリア（台形）
+    const pathD = `M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z`;
+    areaSegmentsHtml += `<path d="${pathD}" fill="${fillColor}" stroke="none"/>`;
+
+    // 折れ線
+    lineSegmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
   }
 
-  const start = data[0], end = data[data.length - 1];
-  const sx = xAt(start).toFixed(1), sy = yAt(start.elevation).toFixed(1);
-  const ex = xAt(end).toFixed(1), ey = yAt(end.elevation).toFixed(1);
-
+  // SVG描画
   svg.innerHTML = `
-    <path d="${areaPath}" fill="rgba(26,115,232,0.12)" stroke="none"/>
     <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
+    ${areaSegmentsHtml}
+    ${lineSegmentsHtml}
     <text x="2" y="${(padT + 4).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(maxE)}m</text>
     <text x="2" y="${(H - padB).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(minE)}m</text>
-    ${segmentsHtml}
-    <circle cx="${sx}" cy="${sy}" r="5.5" fill="#1a73e8" stroke="#fff" stroke-width="1.5"/>
-    <circle cx="${ex}" cy="${ey}" r="5.5" fill="#e53935" stroke="#fff" stroke-width="1.5"/>
-    <text x="${sx}" y="${(Number(sy) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#8ec2ff" text-anchor="middle">現在地</text>
-    <text x="${ex}" y="${(Number(ey) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#ff9e9e" text-anchor="middle">目的地</text>
   `;
 }
 
