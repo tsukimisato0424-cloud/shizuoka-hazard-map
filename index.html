@@ -8,7 +8,8 @@
 <link rel="apple-touch-icon" sizes="512x512" href="icon.png">
 <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
 
-<meta name="theme-color" content="#1e3c72">
+<meta name="theme-color" content="#1e3c72" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1e3c72" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="防災支援マップ">
@@ -36,9 +37,11 @@
 }
 
 html, body{
-  height:100%; margin:0; padding:0;
+  height:100%;
+  background: #1e3c72; 
+  margin:0; padding:0;
   font-family:'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-  color:#202124; -webkit-font-smoothing:antialiased;
+  color:#1e3c72 -webkit-font-smoothing:antialiased;
   touch-action:pan-x pan-y; overscroll-behavior:none;
   position:fixed; width:100%; overflow:hidden; background:#1e3c72;
 }
