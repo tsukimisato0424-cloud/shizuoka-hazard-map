@@ -469,9 +469,9 @@ body::before{
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点リスク判定【冠水想定】</div>
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点リスク判定</div>
         <div id="sub1-content" style="font-size:15px; line-height:1.4;">地点を選択してください</div>
-        <div style="font-weight:bold; font-size:16px; margin-top:9px; margin-bottom:5px;">経路リスク判定【全災害】</div>
+        <div style="font-weight:bold; font-size:16px; margin-top:9px; margin-bottom:5px;">経路リスク判定</div>
         <div id="routeHazardStatus" style="font-size:15px; line-height:1.4;"></div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
@@ -1061,7 +1061,7 @@ async function updateDetails(lat, lng){
     ? `<div style="color:#ff8a80; font-weight:bold;">冠水危険あり<br>周囲より ${risk.diff}m 低地</div>`
     : `<div style="color:#6fe0a0;">地形的な窪地リスクは低いです</div>`;
   if (risk.lowConfidence){
-    riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ この地点は10mメッシュ等の粗いデータのため低精度の可能性</div>`;
+    riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ この地点は低精度の可能性</div>`;
   } else if (risk.mixedResolution){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ 周辺データの解像度差（建物等の影響の可能性）にご注意ください</div>`;
   }
