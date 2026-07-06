@@ -981,34 +981,21 @@ function renderElevationProfile(data) {
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
   const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
 
-  // 2. SVGパーツ作成
-  let areaSegmentsHtml = '';
-  let lineSegmentsHtml = '';
-  for (let i = 1; i < data.length; i++) {
-    const p1 = data[i - 1], p2 = data[i];
-    const isDanger = p1.hazard || p2.hazard;
-    const color = isDanger ? '#e53935' : '#1a73e8';
-    const fillColor = isDanger ? 'rgba(229,57,53,0.3)' : 'rgba(26,115,232,0.2)';
-    
-    areaSegmentsHtml += `<path d="M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z" fill="${fillColor}"/>`;
-    lineSegmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
-  }
-
-  const start = data[0], end = data[data.length - 1];
+  // 2. SVG用パスデータの作成
+  // M... L... 形式の文字列を作成
+  const pathD = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xAt(d).toFixed(1)},${yAt(d.elevation).toFixed(1)}`).join(' ');
 
   // 3. 描画実行
-  const pathPoints = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xAt(d).toFixed(1)},${yAt(d.elevation).toFixed(1)}`).join(' ');
-     
-svg.innerHTML = `
-  <defs>
-    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1a73e8" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#1a73e8" stop-opacity="0"/>
-    </linearGradient>
-  </defs>
-  <path d="M${padL},${H-padB} ${pathD} L${W-padR},${H-padB} Z" fill="url(#grad)"/>
-  <path d="M${pathD}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
-`;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a73e8" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#1a73e8" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="M${padL},${H-padB} ${pathD} L${W-padR},${H-padB} Z" fill="url(#grad)"/>
+    <path d="${pathD}" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>
+  `;
 
   // 4. 数値表示の更新
   const maxIdx = elevations.indexOf(maxE);
