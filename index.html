@@ -57,13 +57,14 @@ body::before{
    1. 共通パーツ：ガラスパネル / 丸ボタン（検索バー・ハザードメニュー・
       ステータスパネル・右側フローティングコントロールで使い回す）
    ========================================================================= */
-.glass-panel{
+.glass-panel {
   position:relative; overflow:hidden;
-  background:var(--glass-bg);
+  background: linear-gradient(135deg, rgba(30,60,114,.85), rgba(40,50,80,.9)) !important;
   backdrop-filter:blur(24px) saturate(180%);
   -webkit-backdrop-filter:blur(24px) saturate(180%);
   border:var(--glass-border);
   box-shadow:var(--glass-shadow);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4) !important;
 }
 .glass-panel::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
@@ -256,8 +257,8 @@ body::before{
   left:10px; right:10px; z-index:1500; overflow:visible; border-radius:24px!important;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
-  text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,
-              1px 0 0 #000,-1px 0 0 #000,0 1px 0 #000,0 -1px 0 #000;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
+  font-weight: 500 !important;
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
