@@ -516,7 +516,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <div id="tab2" class="tab-content">
   <div class="panel-row">
     <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px; width: 45%;">
-      <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">順路</div>
+      <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報</div>
       <div class="route-modes" style="display:flex; flex-direction:column; gap:5px;">
         <div class="route-mode-box" style="display:flex; align-items:center; gap:10px;">
           <span class="material-icons-round" style="color:#1a73e8;">directions_walk</span>
@@ -950,12 +950,12 @@ async function buildElevationProfileData(coordinates, pointFlags){
   return results.filter(r => r.elevation !== null);
 }
 
-function renderElevationProfile(data){
+function renderElevationProfile(data) {
   const svg = document.getElementById('elevationProfileSvg');
   const placeholder = document.getElementById('elevationProfilePlaceholder');
   if (!svg || !placeholder) return;
 
-  if (!data || data.length < 2){
+  if (!data || data.length < 2) {
     svg.style.display = 'none';
     placeholder.style.display = 'block';
     return;
@@ -964,52 +964,48 @@ function renderElevationProfile(data){
   placeholder.style.display = 'none';
   svg.style.display = 'block';
 
+  // 1. 各種計算
   const W = 300, H = 112;
   const padL = 34, padR = 14, padT = 16, padB = 20;
-
-  // ここで一度だけ計算
   const elevations = data.map(d => d.elevation);
   const minE = Math.min(...elevations);
   const maxE = Math.max(...elevations);
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
-  
-  // 住所表示用のインデックス
-  const maxIdx = elevations.indexOf(maxE);
-  const minIdx = elevations.indexOf(minE);
 
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
   const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
 
+  // 2. SVGパーツ作成
   let areaSegmentsHtml = '';
   let lineSegmentsHtml = '';
-
-  for (let i = 1; i < data.length; i++){
+  for (let i = 1; i < data.length; i++) {
     const p1 = data[i - 1], p2 = data[i];
     const isDanger = p1.hazard || p2.hazard;
     const color = isDanger ? '#e53935' : '#1a73e8';
     const fillColor = isDanger ? 'rgba(229,57,53,0.3)' : 'rgba(26,115,232,0.2)';
-
-    const pathD = `M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z`;
-    areaSegmentsHtml += `<path d="${pathD}" fill="${fillColor}" stroke="none"/>`;
+    
+    areaSegmentsHtml += `<path d="M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z" fill="${fillColor}"/>`;
     lineSegmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round"/>`;
   }
 
   const start = data[0], end = data[data.length - 1];
 
-  // SVG描画
+  // 3. 描画実行
   svg.innerHTML = `
     <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="#ffffff"/>
     <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="#e0e0e0" stroke-width="1"/>
     ${areaSegmentsHtml}
     ${lineSegmentsHtml}
-    <text x="${padL - 5}" y="${yAt(maxE)}" font-size="10" fill="#666" text-anchor="end" dominant-baseline="middle">${Math.round(maxE)}m</text>
-    <text x="${padL - 5}" y="${yAt(minE)}" font-size="10" fill="#666" text-anchor="end" dominant-baseline="middle">${Math.round(minE)}m</text>
-    
+    <text x="${padL - 5}" y="${yAt(maxE)}" font-size="10" fill="#666" text-anchor="end">${Math.round(maxE)}m</text>
+    <text x="${padL - 5}" y="${yAt(minE)}" font-size="10" fill="#666" text-anchor="end">${Math.round(minE)}m</text>
     <text x="${xAt(start)}" y="${yAt(start.elevation) - 5}" font-size="14" font-weight="bold" fill="#1a73e8" text-anchor="middle">S</text>
     <text x="${xAt(end)}" y="${yAt(end.elevation) - 5}" font-size="14" font-weight="bold" fill="#e53935" text-anchor="middle">G</text>
   `;
 
+  // 4. 数値表示の更新
+  const maxIdx = elevations.indexOf(maxE);
+  const minIdx = elevations.indexOf(minE);
   document.getElementById('maxElv').innerText = Math.round(maxE);
   document.getElementById('minElv').innerText = Math.round(minE);
   document.getElementById('maxElvAddr').innerText = data[maxIdx].addr;
