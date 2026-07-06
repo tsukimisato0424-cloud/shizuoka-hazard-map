@@ -110,7 +110,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   flex:1; border:none; outline:none; font-size:19px!important;
   letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
 }
-.custom-search-bar input::placeholder{ color:rgba(255,255,255,.65); }
+.custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
 .search-icon-btn{ background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
 .search-icon-btn .material-icons-round{ font-size:26px; }
 
@@ -142,8 +142,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
   backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
-  font-size:15px!important; font-weight:700; line-height:1.3; letter-spacing:.3px;
-  padding:6px 3px; color:var(--ink);
+  font-size:16px!important; font-weight:800; line-height:1.3; letter-spacing:.3px;
+  padding:6px 3px; color:#194a70;
   box-shadow:0 8px 16px rgba(70,130,180,.35), 0 2px 3px rgba(70,130,180,.2),
              0 1px 0 rgba(255,255,255,.9) inset, 0 -6px 10px rgba(140,190,225,.35) inset;
   transition:.2s;
@@ -213,11 +213,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #legendAccordion summary:hover{ background-color:rgba(255,255,255,.25); }
 
 #legendAccordion summary .legend-icon{ font-size:24px; color:var(--ink); margin:0; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#legendAccordion summary .legend-text{ font-size:12px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
+#legendAccordion summary .legend-text{ font-size:13px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
 #legendAccordion summary .legend-arrow{ display:none; font-size:22px; color:#70757a; transition:transform .2s ease; }
 
 #mapTypeContainer summary .maptype-icon{ font-size:24px; color:var(--ink); filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#mapTypeContainer summary .maptype-text{ font-size:11px; font-weight:bold; color:var(--ink); line-height:1.1; text-align:center; }
+#mapTypeContainer summary .maptype-text{ font-size:12px; font-weight:bold; color:var(--ink); line-height:1.1; text-align:center; }
 #mapTypeContainer summary .maptype-arrow{ display:none; }
 
 #legendAccordion[open-state="true"] summary, #mapTypeContainer[open-state="true"] summary{
@@ -232,7 +232,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 .legend-content{ padding:10px 12px; height:calc(100% - 54px); overflow-y:auto; font-size:17px!important; line-height:1.8!important; color:#3c4043; }
 .legend-section-title{ font-weight:800!important; color:#1a73e8!important; margin:6px 0 3px!important; display:block; }
-.legend-item{ display:flex; align-items:center; margin-bottom:2px!important; gap:6px; color:#5f6368; }
+.legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 
 .maptype-content{ padding:8px 0; }
@@ -281,7 +281,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
-  color:#8899bb; transition:all .3s cubic-bezier(.4,0,.2,1); position:relative;
+  color:#c3cfe8; transition:all .3s cubic-bezier(.4,0,.2,1); position:relative;
 }
 .tab-btn.active{
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
@@ -320,7 +320,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-icon-circle{ width:26px; height:26px; border-radius:50%; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; }
 .route-icon-circle .material-icons-round{ font-size:16px; }
 .route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
-.route-dist{ font-size:14px; color:#5f6368; }
+.route-dist{ font-size:15px; color:#444b52; }
 
 /* =========================================================================
    7. Leaflet ポップアップ調整
@@ -365,7 +365,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   width:100%; padding:12px; background:rgba(26,115,232,.9); color:#fff;
   border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size:18px;
 }
-.footer-credit{ margin-top:16px; color:#444; font-size:12px; line-height:1.3; text-align:center; text-shadow:0 0 2px rgba(255,255,255,.8); }
+.footer-credit{ margin-top:16px; color:#444; font-size:13px; line-height:1.4; text-align:center; text-shadow:0 0 2px rgba(255,255,255,.8); }
 </style>
 </head>
 <body>
@@ -375,7 +375,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <div class="auth-title">防災支援マップ</div>
     <input type="password" id="passInput" placeholder="PASSWORD" inputmode="numeric" pattern="\d*">
     <button class="auth-btn" onclick="checkPassword()">認証</button>
-    <p id="errorMsg" style="color:#ff4444; font-size:15px; margin-top:10px;"></p>
+    <p id="errorMsg" style="color:#e02020; font-size:16px; font-weight:bold; margin-top:10px;"></p>
     <div class="footer-credit">
       © 2026 H.Tsukimisato All Rights Reserved.<br>
       Data Sources : 国土地理院
@@ -476,16 +476,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点リスク判定</div>
-        <div id="sub1-content" style="font-size:15px; line-height:1.4;">地点を選択してください</div>
-        <div style="font-weight:bold; font-size:16px; margin-top:9px; margin-bottom:5px;">経路リスク判定</div>
-        <div id="routeHazardStatus" style="font-size:15px; line-height:1.4;"></div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">地点リスク判定</div>
+        <div id="sub1-content" style="font-size:16px; line-height:1.5;">地点を選択してください</div>
+        <div style="font-weight:bold; font-size:17px; margin-top:9px; margin-bottom:5px;">経路リスク判定</div>
+        <div id="routeHazardStatus" style="font-size:16px; line-height:1.5;"></div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">地点情報</div>
-        <div id="addressDisplay" style="font-size:15px; line-height:1.3;">住所: 取得中...</div>
-        <div id="latLngDisplay" style="font-size:14px; color:#ccd6e6; margin-top:2px;">緯度/経度: --</div>
-        <div style="font-size:15px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">地点情報</div>
+        <div id="addressDisplay" style="font-size:16px; line-height:1.4;">住所: 取得中...</div>
+        <div id="latLngDisplay" style="font-size:15px; color:#e2eaf7; margin-top:2px;">緯度/経度: --</div>
+        <div style="font-size:16px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
       </div>
     </div>
   </div>
@@ -493,23 +493,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab2" class="tab-content">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">ルート情報</div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報</div>
         <div class="route-modes" style="flex-direction:column; gap:5px;">
           <div class="route-mode-box">
             <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_walk</span>
-            <span id="walkTime" style="font-size:15px; font-weight:bold;">--分</span>
-            <span id="walkDist" style="font-size:14px; color:#5f6368;">--km</span>
+            <span id="walkTime" style="font-size:16px; font-weight:bold;">--分</span>
+            <span id="walkDist" style="font-size:15px; color:#4a5054;">--km</span>
           </div>
           <div class="route-mode-box">
             <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_car</span>
-            <span id="carTime" style="font-size:15px; font-weight:bold;">--分</span>
-            <span id="carDist" style="font-size:14px; color:#5f6368;">--km</span>
+            <span id="carTime" style="font-size:16px; font-weight:bold;">--分</span>
+            <span id="carDist" style="font-size:15px; color:#4a5054;">--km</span>
           </div>
         </div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">拡張枠</div>
-        <div id="weatherWarnings" style="font-size:15px; line-height:1.5; color:#dfe6f0;">今後の機能拡張に備えた準備エリアです。</div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">拡張枠</div>
+        <div id="weatherWarnings" style="font-size:16px; line-height:1.5; color:#e7edf9;">今後の機能拡張に備えた準備エリアです。</div>
       </div>
     </div>
   </div>
@@ -646,7 +646,7 @@ async function fetchAndShowShelters(centerLatLng){
       const hazardMap = { '洪水':'洪水', '津波':'津波', '地震':'地震', '崖崩れ、土石流及び地滑り':'土砂災害' };
       const hazards = Object.entries(hazardMap).filter(([k]) => props[k] === '1').map(([, v]) => v);
       const hazardDisplay = hazards.length
-        ? `<div style="font-size:14px; margin-top:5px; color:#d35400;">対応: ${hazards.join(', ')}</div>`
+        ? `<div style="font-size:15px; margin-top:5px; color:#c2410c; font-weight:bold;">対応: ${hazards.join(', ')}</div>`
         : '';
 
       const marker = L.marker([lat, lng], {
@@ -660,8 +660,8 @@ async function fetchAndShowShelters(centerLatLng){
       marker.bindPopup(`
         <div style="font-family:sans-serif; min-width:220px;">
           <strong style="font-size:19px; display:block; margin-bottom:6px;">${name}</strong>
-          <div style="font-size:15px; color:#555;">住所: ${address}</div>
-          <div style="font-size:15px; margin-top:6px;">避難場所: ${isEmergencySite}</div>
+          <div style="font-size:16px; color:#333;">住所: ${address}</div>
+          <div style="font-size:16px; margin-top:6px;">避難場所: ${isEmergencySite}</div>
           ${hazardDisplay}
           <button onclick="triggerRouteToShelter(${lat}, ${lng})"
                   style="margin-top:12px; width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">
@@ -1212,7 +1212,7 @@ async function executeHybridSearch(query){
         <span class="material-icons-round" style="color:${iconColor}; font-size:22px; margin-right:12px; flex-shrink:0;">${iconName}</span>
         <div style="display:flex; flex-direction:column; overflow:hidden; width:100%;">
           <strong style="color:#202124; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</strong>
-          <span style="color:#5f6368; font-size:14px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.address}</span>
+          <span style="color:#4a4f54; font-size:15px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.address}</span>
         </div>`;
       div.addEventListener('click', () => {
         selectLocation(item.lat, item.lon);
@@ -1265,4 +1265,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
