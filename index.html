@@ -969,7 +969,7 @@ function renderElevationProfile(data){
     const p1 = data[i - 1], p2 = data[i];
     const isDanger = p1.hazard || p2.hazard;
     const color = isDanger ? '#e53935' : '#1a73e8';
-    const fillColor = isDanger ? 'rgba(229,57,53,0.35)' : 'rgba(26,115,232,0.25)';
+    const fillColor = isDanger ? 'rgba(229,57,53,0.3)' : 'rgba(26,115,232,0.2)';
 
     const pathD = `M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z`;
     areaSegmentsHtml += `<path d="${pathD}" fill="${fillColor}" stroke="none"/>`;
@@ -979,17 +979,18 @@ function renderElevationProfile(data){
   const start = data[0], end = data[data.length - 1];
 
   svg.innerHTML = `
-    <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="rgba(255,255,255,0.1)" rx="4"/>
+    <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="#ffffff"/>
     
-    <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="rgba(255,255,255,.5)" stroke-width="1"/>
+    <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="#ccc" stroke-width="1"/>
+    
     ${areaSegmentsHtml}
     ${lineSegmentsHtml}
     
     <text x="${xAt(start)}" y="${yAt(start.elevation) - 5}" font-size="14" font-weight="bold" fill="#1a73e8" text-anchor="middle">S</text>
     <text x="${xAt(end)}" y="${yAt(end.elevation) - 5}" font-size="14" font-weight="bold" fill="#e53935" text-anchor="middle">G</text>
     
-    <text x="2" y="${(padT + 8).toFixed(1)}" font-size="10" fill="#fff">${Math.round(maxE)}m</text>
-    <text x="2" y="${(H - padB).toFixed(1)}" font-size="10" fill="#fff">${Math.round(minE)}m</text>
+    <text x="16" y="${padT + 2}" font-size="10" font-weight="bold" fill="#333" text-anchor="middle">${Math.round(maxE)}m</text>
+    <text x="16" y="${H - padB + 5}" font-size="10" font-weight="bold" fill="#333" text-anchor="middle">${Math.round(minE)}m</text>
   `;
 }
 
