@@ -24,6 +24,7 @@
    0. ルート変数（共通の色・シャドウ・グラス効果をここに集約）
    ========================================================================= */
 :root{
+  --brand: #1e3c72; /* ブラウザUI（上下セーフエリア）と統一する基準色 */
   --glass-bg: linear-gradient(135deg, rgba(30,60,114,.55), rgba(40,50,80,.72));
   --glass-border: 1px solid rgba(255,255,255,.22);
   --glass-shadow: 0 15px 40px rgba(0,20,50,.4), 0 0 0 1px rgba(255,255,255,.1) inset;
@@ -38,19 +39,24 @@
 
 html, body{
   height:100%;
-  background: #1e3c72; 
   margin:0; padding:0;
+  background:var(--brand);
   font-family:'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-  color:#1e3c72 -webkit-font-smoothing:antialiased;
+  color:var(--brand);
+  -webkit-font-smoothing:antialiased;
   touch-action:pan-x pan-y; overscroll-behavior:none;
-  position:fixed; width:100%; overflow:hidden; background:#1e3c72;
+  position:fixed; width:100%; overflow:hidden;
 }
-body::before{
-  content:""; position:fixed; top:0; left:0; right:0;
-  height:env(safe-area-inset-top,0px);
-  background:#1e3c72;
-  z-index:100000; pointer-events:none;
+
+/* 上下のセーフエリア（ノッチ／ホームインジケーター・アドレスバー周辺）を
+   ブラウザ全体で統一色にするための帯。before=上端、after=下端。 */
+body::before, body::after{
+  content:""; position:fixed; left:0; right:0;
+  background:var(--brand); z-index:100000; pointer-events:none;
 }
+body::before{ top:0; height:env(safe-area-inset-top,0px); }
+body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
+
 #map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; }
 
 /* =========================================================================
@@ -317,7 +323,7 @@ body::before{
 .route-dist{ font-size:14px; color:#5f6368; }
 
 /* =========================================================================
-   ６. Leaflet ポップアップ調整
+   7. Leaflet ポップアップ調整
    ========================================================================= */
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
@@ -328,7 +334,7 @@ body::before{
 }
 
 /* =========================================================================
-   ７. 表示/非表示アニメーション（全画面トグル用）
+   8. 表示/非表示アニメーション（全画面トグル用）
    ========================================================================= */
 #searchContainer, #hazardMenuCard, #statusPanel{
   transition:transform .4s cubic-bezier(.4,0,.2,1), opacity .4s; opacity:1; transform:translateY(0);
@@ -338,7 +344,7 @@ body::before{
 #statusPanel.hidden{ transform:translateY(150px); opacity:0; }
 
 /* =========================================================================
-   ８. パスワード認証画面 / 位置情報ヘルプ
+   9. パスワード認証画面 / 位置情報ヘルプ
    ========================================================================= */
 #authOverlay{
   position:fixed; inset:0; background:rgba(255,255,255,.05);
