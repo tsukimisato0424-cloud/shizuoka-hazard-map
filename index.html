@@ -316,31 +316,7 @@ body::before{
 .route-dist{ font-size:14px; color:#5f6368; }
 
 /* =========================================================================
-   6b. 気象警報バッジ（新・警戒レベル対応表示）
-   ========================================================================= */
-.warn-area-block{ margin-bottom:10px; }
-.warn-area-block:last-child{ margin-bottom:0; }
-.warn-area-name{ font-size:14px; font-weight:800; color:#dfe6f0; margin-bottom:4px; text-shadow:none; }
-.warn-badges{ display:flex; flex-wrap:wrap; gap:5px; }
-.warn-badge{
-  display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:3px 8px; border-radius:6px; font-weight:800; line-height:1.25;
-  text-shadow:none; box-shadow:0 2px 5px rgba(0,0,0,.25);
-}
-.warn-badge .wb-level{ font-size:10px; opacity:.95; }
-.warn-badge .wb-name{ font-size:13px; }
-.warn-badge.lv5{ background:#4a0072; color:#fff; }
-.warn-badge.lv4{ background:#9b30c9; color:#fff; }
-.warn-badge.lv3{ background:#e64a3b; color:#fff; }
-.warn-badge.lv2{ background:#f2e04c; color:#333; }
-.warn-badge.lv1{ background:#e8e8a0; color:#333; }
-.warn-badge.lv0{ background:#c0c0c0; color:#333; }
-.warn-updated{ font-size:11px; color:#9fb3d1; margin-top:6px; text-align:right; }
-.warn-none{ color:#6fe0a0; }
-.warn-loading, .warn-error{ color:#dfe6f0; }
-
-/* =========================================================================
-   7. Leaflet ポップアップ調整
+   ６. Leaflet ポップアップ調整
    ========================================================================= */
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
@@ -351,7 +327,7 @@ body::before{
 }
 
 /* =========================================================================
-   8. 表示/非表示アニメーション（全画面トグル用）
+   ７. 表示/非表示アニメーション（全画面トグル用）
    ========================================================================= */
 #searchContainer, #hazardMenuCard, #statusPanel{
   transition:transform .4s cubic-bezier(.4,0,.2,1), opacity .4s; opacity:1; transform:translateY(0);
@@ -361,7 +337,7 @@ body::before{
 #statusPanel.hidden{ transform:translateY(150px); opacity:0; }
 
 /* =========================================================================
-   9. パスワード認証画面 / 位置情報ヘルプ
+   ８. パスワード認証画面 / 位置情報ヘルプ
    ========================================================================= */
 #authOverlay{
   position:fixed; inset:0; background:rgba(255,255,255,.05);
@@ -525,8 +501,8 @@ body::before{
         </div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">警報・注意報</div>
-        <div id="weatherWarnings" style="font-size:15px; line-height:1.5; color:#dfe6f0;">地点を選択してください</div>
+        <div style="font-weight:bold; font-size:16px; margin-bottom:5px;">拡張枠</div>
+        <div id="weatherWarnings" style="font-size:15px; line-height:1.5; color:#dfe6f0;">今後の機能拡張に備えた準備エリアです。</div>
       </div>
     </div>
   </div>
@@ -975,7 +951,7 @@ function selectLocation(lat, lng){
 }
 
 /* =========================================================================
-   F. 地点情報（標高／冠水リスク／住所／気象警報）
+   F. 地点情報（標高／冠水リスク／住所）
    ========================================================================= */
 /*
  * 国土地理院 標高APIは、地点ごとに最も精度の良いDEMを自動選択して返す。
@@ -1064,176 +1040,6 @@ async function getAreaMaster(){
   const res = await fetch('https://www.jma.go.jp/bosai/common/const/area.json');
   areaMasterCache = await res.json();
   return areaMasterCache;
-}
-
-const JMA_WARNING_NAMES = {
-  '02':'暴風雪', '03':'大雨', '04':'洪水', '05':'暴風', '06':'大雪', '07':'波浪',
-  '08':'高潮', '09':'雷', '10':'強風', '11':'風雪', '12':'波浪', '13':'融雪',
-  '14':'濃霧', '15':'乾燥', '16':'なだれ', '18':'低温', '19':'霜', '20':'着氷',
-  '21':'着雪', '22':'大雨警報', '23':'大雨注意報',
-  '32':'大雨警報(土砂災害)', '33':'大雨警報(浸水害)',
-  '35':'大雨注意報(土砂災害)', '36':'大雨注意報(浸水害)'
-};
-
-/*
- * 令和8年5月29日から、大雨・洪水（氾濫）・土砂災害・高潮については、
- * 名称に「レベルN」を付して発表される表示方式に変わった（例：「レベル4 大雨」「レベル3 土砂災害」）。
- * 本来は気象業務支援センター配信のXML電文（JMAXML）を直接読むのが最も正確だが、
- * その配信は専用線・専用契約が前提の"PULL型"配信であり、ブラウザから直接fetchできる
- * 無償の公開APIではない（CORSの制約もある）。
- * そのため、気象庁が無償でWeb公開している警報・注意報JSON
- * （https://www.jma.go.jp/bosai/warning/data/warning/{office}.json）を代わりに利用し、
- * 電文の status/name テキストから「レベルN」表記や「特別警報／警報／注意報」を読み取って
- * レベル相当の色分けバッジとして再現する。表記が電文改定で変わった場合でも大きく崩れないよう、
- * 正規表現ベースの緩やかな判定にしてある。
- */
-function baseCategoryName(fullName){
-  return fullName.replace(/(特別警報|警報|注意報)$/, '') || fullName;
-}
-// 警報級・注意報級のどちらの現象かをコード番号からも補完判定する（電文の status に
-// 「警報」「注意報」の文字列自体が含まれないケースへの保険）。
-const WARNING_LEVEL_CODES = new Set(['02','03','04','05','06','07','08','22','32','33']);   // 警報級
-const ADVISORY_LEVEL_CODES = new Set(['09','10','11','12','13','14','15','16','18','19','20','21','23','35','36']); // 注意報級
-// レベル表示（「レベル4」等の数字）を付けるのは、警戒レベルに一本化された４分野のみ。
-// それ以外（暴風・波浪・雷など）は従来どおり色分けのみで数字は付けない。
-const LEVELED_KEYWORDS = ['大雨', '土砂災害', '洪水', '氾濫', '高潮'];
-
-function extractWarningLevel(code, name, status){
-  const text = `${name || ''}${status || ''}`;
-  const m = text.match(/レベル\s*([0-9])/);
-  if (m) return parseInt(m[1], 10);
-  if (/特別警報/.test(text)) return 5;
-  if (/警報/.test(text)) return 3;
-  if (/注意報/.test(text)) return 1;
-  if (WARNING_LEVEL_CODES.has(code)) return 3;
-  if (ADVISORY_LEVEL_CODES.has(code)) return 1;
-  return 0;
-}
-
-let warningRefreshTimer = null;
-let lastWarningTarget = null; // { targetClass20Code, class15Code, officeCode }
-const WARNING_REFRESH_MS = 10 * 60 * 1000; // 10分ごとに自動更新
-
-async function updateWeatherWarnings(addressText){
-  const el = document.getElementById('weatherWarnings');
-  if (warningRefreshTimer){ clearInterval(warningRefreshTimer); warningRefreshTimer = null; }
-  el.innerHTML = '<span class="warn-loading">警報・注意報を確認中...</span>';
-
-  const cityMatch = addressText?.match(/([^\s,、]+?(市|区|町|村))/);
-  const cityName = cityMatch ? cityMatch[1] : null;
-  if (!cityName){ el.innerHTML = '<span class="warn-error">地点の市区町村を特定できませんでした</span>'; return; }
-
-  try {
-    const master = await getAreaMaster();
-    // area.json のトップレベルキーは centers / offices / class10s / class15s / class20s (末尾に s が付く)
-    const stripSuffix = s => s.replace(/(市|区|町|村)$/, '');
-
-    // 1) まず二次細分区域(class20s = ほぼ市区町村単位)で地点を特定する。
-    let targetClass20Code = null;
-    for (const [code, info] of Object.entries(master.class20s || {})){
-      if (info.name && cityName.includes(stripSuffix(info.name))){ targetClass20Code = code; break; }
-    }
-
-    // 2) class20s → class15s → class10s → offices と親をたどり、
-    //    警報JSONの取得に必要な府県予報区(office)コードを求める。
-    let officeCode = null, class15Code = null, class10Code = null;
-    if (targetClass20Code){
-      class15Code = master.class20s[targetClass20Code]?.parent || null;
-      class10Code = class15Code ? (master.class15s?.[class15Code]?.parent || null) : null;
-      officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
-    }
-
-    // フォールバック：class20sで見つからない場合はclass15s（郡などのまとまり）で照合
-    if (!officeCode){
-      for (const [code, info] of Object.entries(master.class15s || {})){
-        if (info.name && cityName.includes(stripSuffix(info.name))){
-          class15Code = code;
-          class10Code = info.parent || null;
-          officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
-          break;
-        }
-      }
-    }
-
-    if (!officeCode){ el.innerHTML = '<span class="warn-error">対応する気象庁エリアが見つかりませんでした</span>'; return; }
-
-    lastWarningTarget = { targetClass20Code, class15Code, officeCode };
-    await refreshWarningDisplay();
-    warningRefreshTimer = setInterval(refreshWarningDisplay, WARNING_REFRESH_MS);
-  } catch {
-    el.innerHTML = '<span class="warn-error">警報情報の取得に失敗しました</span>';
-  }
-}
-
-async function refreshWarningDisplay(){
-  const el = document.getElementById('weatherWarnings');
-  if (!lastWarningTarget) return;
-  const { targetClass20Code, class15Code, officeCode } = lastWarningTarget;
-
-  try {
-    const master = await getAreaMaster();
-    const warnData = await (await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${officeCode}.json`)).json();
-
-    // 選択地点と同じ一次細分区域グループ（画像の「南部平野部」等に相当）に属する
-    // 市区町村（二次細分区域）を「周辺」として一緒に表示する。
-    const groupClass20Codes = class15Code
-      ? Object.entries(master.class20s || {}).filter(([, info]) => info.parent === class15Code).map(([code]) => code)
-      : (targetClass20Code ? [targetClass20Code] : []);
-
-    const orderedCodes = targetClass20Code
-      ? [targetClass20Code, ...groupClass20Codes.filter(c => c !== targetClass20Code)]
-      : groupClass20Codes;
-
-    if (orderedCodes.length === 0){
-      el.innerHTML = '<span class="warn-error">対象エリアの警報情報が見つかりませんでした</span>';
-      return;
-    }
-
-    const areaWarningMap = new Map(); // class20コード -> 発表中の警報配列
-    (warnData.areaTypes || []).forEach(areaType => {
-      (areaType.areas || []).forEach(area => {
-        if (!orderedCodes.includes(area.code)) return;
-        const list = areaWarningMap.get(area.code) || [];
-        (area.warnings || []).forEach(w => {
-          if (w.status && w.status !== '解除' && w.status !== '発表警報・注意報はなし') list.push(w);
-        });
-        areaWarningMap.set(area.code, list);
-      });
-    });
-
-    const groupName = class15Code ? (master.class15s?.[class15Code]?.name || '') : '';
-    const displayCodes = orderedCodes.slice(0, 8); // 周辺含め最大8市区町村程度に絞って表示
-
-    let html = '';
-    displayCodes.forEach(code => {
-      const info = master.class20s?.[code];
-      const cityLabel = (info?.name || code) + (code === targetClass20Code ? '（選択地点）' : '');
-      const warnings = areaWarningMap.get(code) || [];
-
-      const badgesHtml = warnings.map(w => {
-        const rawName = JMA_WARNING_NAMES[w.code] || w.name || `警報コード${w.code}`;
-        const level = extractWarningLevel(w.code, rawName, w.status || '');
-        const label = baseCategoryName(rawName);
-        const isLeveled = LEVELED_KEYWORDS.some(k => label.includes(k));
-        const levelTag = (isLeveled && level > 0) ? `<span class="wb-level">レベル${level}</span>` : '';
-        return `<span class="warn-badge lv${level}">${levelTag}<span class="wb-name">${label}</span></span>`;
-      }).join('');
-
-      html += `<div class="warn-area-block">
-        <div class="warn-area-name">${cityLabel}</div>
-        <div class="warn-badges">${badgesHtml || '<span class="warn-none">発表中の警報・注意報はありません</span>'}</div>
-      </div>`;
-    });
-
-    const updatedTime = warnData.reportDatetime
-      ? new Date(warnData.reportDatetime).toLocaleString('ja-JP', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
-      : '不明';
-    html += `<div class="warn-updated">${groupName ? groupName + ' 発表: ' : '発表: '}${updatedTime}（10分ごとに自動更新）</div>`;
-
-    el.innerHTML = html;
-  } catch {
-    el.innerHTML = '<span class="warn-error">警報情報の取得に失敗しました</span>';
-  }
 }
 
 async function updateDetails(lat, lng){
