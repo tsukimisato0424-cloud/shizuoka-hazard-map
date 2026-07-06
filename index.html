@@ -175,10 +175,11 @@ body::before{
 .hazard-btn.route-alert{ animation:routeHazardBlink .9s ease-in-out infinite; border-width:2px; z-index:1; }
 
 .hazard-btn.route-alert .material-icons-round,
-.hazard-btn.route-alert span:not(.material-icons-round) {
-  animation: textGlow 1.2s ease-in-out infinite;
+.hazard-btn.route-alert span {
+  animation: textGlow 1.2s ease-in-out infinite !important;
+  color: #d32f2f !important;
 }
-
+   
 @keyframes textGlow {
   0%, 100% { text-shadow: 0 0 2px rgba(255, 0, 0, 0.3); }
   50% { text-shadow: 0 0 8px rgba(255, 0, 0, 0.8); }
