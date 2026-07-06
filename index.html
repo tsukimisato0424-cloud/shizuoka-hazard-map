@@ -324,6 +324,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
 .route-dist{ font-size:15px; color:#444b52; }
 
+#elevationProfileContainer { background: #ffffff; border: 1px solid #eee; border-radius: 10px; overflow: hidden; }
+
+.scroll-container { overflow: hidden; white-space: nowrap; width: 100%; height: 18px; margin-bottom: 2px; }
+.scroll-text { display: inline-block; padding-left: 100%; animation: scroll-left 10s linear infinite; font-size: 12px; color: #666; }
+@keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
 /* =========================================================================
    6b. 高低差断面図
    ========================================================================= */
@@ -509,28 +515,34 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="tab2" class="tab-content">
   <div class="panel-row">
-    <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
+    <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px; width: 45%;">
       <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">順路</div>
-      <div class="route-modes">
-        <div class="route-mode-box" style="width: 100%;">
-          <div class="route-icon-circle"><span class="material-icons-round">directions_walk</span></div>
+      <div class="route-modes" style="display:flex; flex-direction:column; gap:5px;">
+        <div class="route-mode-box" style="display:flex; align-items:center; gap:10px;">
+          <span class="material-icons-round" style="color:#1a73e8;">directions_walk</span>
           <div>
-            <div id="walkTime" style="font-size:18px; font-weight:bold; color:#1a73e8;">-- 分</div>
-            <div id="walkDist" style="font-size:14px; color:#4a5054;">-- km</div>
+            <div id="walkTime" style="font-weight:bold; font-size:17px;">-- 分</div>
+            <div id="walkDist" style="font-size:15px; color:#444;">-- km</div>
           </div>
         </div>
+        <div style="font-size:13px; margin-top:5px; color:#333;">
+          <div style="font-weight:bold;">最高: <span id="maxElv">--</span>m</div>
+          <div class="scroll-container"><div id="maxElvAddr" class="scroll-text">--</div></div>
+          <div style="font-weight:bold; margin-top:4px;">最低: <span id="minElv">--</span>m</div>
+          <div class="scroll-container"><div id="minElvAddr" class="scroll-text">--</div></div>
+        </div>
       </div>
-      </div>
-    <div class="panel-column" style="padding-left:10px;">
+    </div>
+    <div class="panel-column" style="padding-left:10px; width: 55%;">
       <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">高低差断面図</div>
       <div id="elevationProfileContainer">
-        <div id="elevationProfilePlaceholder">ルートを選択してください</div>
-        <svg id="elevationProfileSvg" viewBox="0 0 300 112" preserveAspectRatio="none" style="display:none;"></svg>
+        <div id="elevationProfilePlaceholder" style="text-align:center; padding-top:60px; color:#888;">ルートを選択してください</div>
+        <svg id="elevationProfileSvg" viewBox="0 0 300 112" preserveAspectRatio="none" style="display:none; width:100%; height:100%;"></svg>
       </div>
     </div>
   </div>
 </div>
-
+   
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="config.js"></script>
 
@@ -926,11 +938,13 @@ async function buildElevationProfileData(coordinates, pointFlags){
   const results = await Promise.all(indices.map(async idx => {
     const [lon, lat] = coordinates[idx];
     const { elevation } = await getElevationValue(lat, lon);
-    return {
-      dist: cumDist[idx],
-      elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
-      hazard: !!pointFlags[idx]
-    };
+　return {
+  dist: cumDist[idx],
+  lat, lon,
+  elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
+  hazard: !!pointFlags[idx],
+  addr: await getAddressSimple(lat, lon) 
+};
   }));
 
   return results.filter(r => r.elevation !== null);
@@ -995,6 +1009,17 @@ function renderElevationProfile(data){
     <rect x="2" y="${H - padB - 6}" width="28" height="12" fill="#ffffff" rx="2"/>
     <text x="16" y="${H - padB + 3}" font-size="10" font-weight="bold" fill="#333" text-anchor="middle">${Math.round(minE)}m</text>
   `;
+
+const elevations = data.map(d => d.elevation);
+const maxE = Math.max(...elevations);
+const minE = Math.min(...elevations);
+const maxIdx = elevations.indexOf(maxE);
+const minIdx = elevations.indexOf(minE);
+
+document.getElementById('maxElv').innerText = Math.round(maxE);
+document.getElementById('minElv').innerText = Math.round(minE);
+document.getElementById('maxElvAddr').innerText = data[maxIdx].addr;
+document.getElementById('minElvAddr').innerText = data[minIdx].addr;
 }
 
 async function drawRoute(){
@@ -1186,6 +1211,19 @@ map.on('click', e => {
   updateDetails(lat, lng);
   if (shelterActive) fetchAndShowShelters(e.latlng);
 });
+
+const addressCache = new Map();
+async function getAddressSimple(lat, lng) {
+  const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+  if (addressCache.has(key)) return addressCache.get(key);
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ja`);
+    const data = await res.json();
+    const addr = data.address ? (data.address.municipality || data.address.city || data.address.town || '周辺地点') : '地点';
+    addressCache.set(key, addr);
+    return addr;
+  } catch { return '地点'; }
+}
 
 /* =========================================================================
    G. 施設・住所検索（国土地理院 + OSM のハイブリッド検索）
