@@ -509,15 +509,6 @@ body::before{
 <script src="config.js"></script>
 
 <script>
-const JMA_WARNING_NAMES = {
-  '02':'暴風雪', '03':'大雨', '04':'洪水', '05':'暴風', '06':'大雪', '07':'波浪',
-  '08':'高潮', '09':'雷', '10':'強風', '11':'風雪', '12':'波浪', '13':'融雪',
-  '14':'濃霧', '15':'乾燥', '16':'なだれ', '18':'低温', '19':'霜', '20':'着氷',
-  '21':'着雪', '22':'大雨警報', '23':'大雨注意報',
-  '32':'大雨警報(土砂災害)', '33':'大雨警報(浸水害)',
-  '35':'大雨注意報(土砂災害)', '36':'大雨注意報(浸水害)'
-};
-   
 'use strict';
 
 /* =========================================================================
@@ -1057,71 +1048,80 @@ const JMA_WARNING_NAMES = {
   '35':'大雨注意報(土砂災害)', '36':'大雨注意報(浸水害)'
 };
 
-let weatherUpdateInterval = null;
-
-async function updateWeatherWarnings(addressText) {
+async function updateWeatherWarnings(addressText){
   const el = document.getElementById('weatherWarnings');
-  const panel = document.getElementById('statusPanel');
-
-  // 1. タイマーの管理（既存のものをクリアして新しく開始）
-  if (weatherUpdateInterval) clearInterval(weatherUpdateInterval);
-  weatherUpdateInterval = setInterval(() => updateWeatherWarnings(addressText), 10 * 60 * 1000);
-
-  // 2. エラー処理とスタイルリセットの共通化
-  const setInfo = (msg, isWarning = false) => {
-    el.innerHTML = `<div style="color:${isWarning ? '#ffb27a' : '#dfe6f0'};">${msg}</div>`;
-    panel.style.boxShadow = ''; // 警告用の赤枠をリセット
-  };
+  el.innerHTML = '警報・注意報を確認中...';
 
   const cityMatch = addressText?.match(/([^\s,、]+?(市|区|町|村))/);
   const cityName = cityMatch ? cityMatch[1] : null;
-  if (!cityName) { setInfo('地点を特定中...'); return; }
+  if (!cityName){ el.innerHTML = '地点の市区町村を特定できませんでした'; return; }
 
   try {
     const master = await getAreaMaster();
+    // area.json のトップレベルキーは centers / offices / class10s / class15s / class20s (末尾に s が付く)
     const stripSuffix = s => s.replace(/(市|区|町|村)$/, '');
-    
-    // エリア特定ロジック
+
+    // 1) まず二次細分区域(class20s = ほぼ市区町村単位)で地点を特定する。
+    //    これが警報判定における最も細かい粒度（従来の「市区町村単位」より一段階詳細）。
     let targetClass20Code = null;
-    for (const [code, info] of Object.entries(master.class20s || {})) {
-      if (info.name && cityName.includes(stripSuffix(info.name))) { targetClass20Code = code; break; }
+    for (const [code, info] of Object.entries(master.class20s || {})){
+      if (info.name && cityName.includes(stripSuffix(info.name))){ targetClass20Code = code; break; }
     }
 
-    let officeCode = null;
-    if (targetClass20Code) {
-      const class15 = master.class20s[targetClass20Code]?.parent;
-      const class10 = class15 ? master.class15s?.[class15]?.parent : null;
-      officeCode = class10 ? master.class10s?.[class10]?.parent : null;
+    // 2) class20s → class15s → class10s → offices と親をたどり、
+    //    警報JSONの取得に必要な府県予報区(office)コードを求める。
+    //    (JMAの警報データは office コード単位のファイルに、その中の市区町村がまとめて入っている)
+    let officeCode = null, class15Code = null, class10Code = null;
+    if (targetClass20Code){
+      class15Code = master.class20s[targetClass20Code]?.parent || null;
+      class10Code = class15Code ? (master.class15s?.[class15Code]?.parent || null) : null;
+      officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
     }
 
-    if (!officeCode) { setInfo('気象情報が確認できませんでした'); return; }
+    // フォールバック：class20sで見つからない場合はclass15s（郡などのまとまり）で照合
+    if (!officeCode){
+      for (const [code, info] of Object.entries(master.class15s || {})){
+        if (info.name && cityName.includes(stripSuffix(info.name))){
+          class10Code = info.parent || null;
+          officeCode = class10Code ? (master.class10s?.[class10Code]?.parent || null) : null;
+          break;
+        }
+      }
+    }
 
-    const response = await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${officeCode}.json`);
-    if (!response.ok) throw new Error();
-    const warnData = await response.json();
+    if (!officeCode){ el.innerHTML = '対応する気象庁エリアが見つかりませんでした'; return; }
+
+    const warnData = await (await fetch(`https://www.jma.go.jp/bosai/warning/data/warning/${officeCode}.json`)).json();
 
     const activeWarnings = [];
+    let matchedFineArea = false;
     (warnData.areaTypes || []).forEach(areaType => {
       (areaType.areas || []).forEach(area => {
-        if (targetClass20Code && area.code !== targetClass20Code) return;
+        // 二次細分区域(市区町村)コードが特定できている場合は、そのエリアのみに絞り込んで判定する。
+        // これにより「県全体」や「一次細分区域」単位ではなく、実際の地点が属する市区町村単位の
+        // より細かい粒度で警報・注意報を判定できる。
+        if (targetClass20Code){
+          if (area.code !== targetClass20Code) return;
+          matchedFineArea = true;
+        }
         (area.warnings || []).forEach(w => {
-          if (w.status && w.status !== '解除') {
-            // 安全装置：コードが不明な場合はスキップする
-            if (!JMA_WARNING_NAMES[w.code]) return; 
-            activeWarnings.push(`${JMA_WARNING_NAMES[w.code]}（${w.status}）`);
+          if (w.status && w.status !== '解除'){
+            const name = JMA_WARNING_NAMES[w.code] || `警報コード${w.code}`;
+            activeWarnings.push(`${name}（${w.status}）`);
           }
         });
       });
     });
 
-    if (activeWarnings.length > 0) {
-      el.innerHTML = [...new Set(activeWarnings)].map(w => `<div style="color:#ffb27a;">・${w}</div>`).join('');
-      panel.style.boxShadow = '0 0 15px rgba(255, 60, 60, 0.4)'; // 警告時のみ赤色シャドウ
-    } else {
-      setInfo('現在、発表中の警報・注意報はありません');
-    }
-  } catch (err) {
-    setInfo('気象情報が確認できませんでした');
+    const granularityNote = targetClass20Code && matchedFineArea
+      ? `<div style="color:#9fb3d1; font-size:12px; margin-top:4px;">判定範囲: 市区町村単位（二次細分区域）</div>`
+      : `<div style="color:#9fb3d1; font-size:12px; margin-top:4px;">判定範囲: 府県予報区単位（詳細エリア未特定）</div>`;
+
+    el.innerHTML = (activeWarnings.length
+      ? [...new Set(activeWarnings)].map(w => `<div style="color:#ffb27a;">・${w}</div>`).join('')
+      : `<div style="color:#6fe0a0;">現在、発表中の警報・注意報はありません</div>`) + granularityNote;
+  } catch {
+    el.innerHTML = '警報情報の取得に失敗しました';
   }
 }
 
