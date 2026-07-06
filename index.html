@@ -334,17 +334,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    6b. 高低差断面図
    ========================================================================= */
 #elevationProfileContainer {
+  flex: 1;
+  height: 140px; /* 高さを確保 */
   background: rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
   overflow: hidden;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
 }
 
 #elevationProfileSvg {
-  padding: 10px 5px;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* =========================================================================
@@ -969,9 +972,9 @@ function renderElevationProfile(data) {
   placeholder.style.display = 'none';
   svg.style.display = 'block';
 
-  // 1. 各種計算
-  const W = 300, H = 112;
-  const padL = 34, padR = 14, padT = 16, padB = 20;
+  // 描画領域をCSSの高さに合わせて拡大
+  const W = 300, H = 140; 
+  const padL = 35, padR = 15, padT = 20, padB = 25;
   const elevations = data.map(d => d.elevation);
   const minE = Math.min(...elevations);
   const maxE = Math.max(...elevations);
@@ -981,32 +984,28 @@ function renderElevationProfile(data) {
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
   const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
 
-  // 2. SVGパーツ作成
   let areaSegmentsHtml = '';
   let lineSegmentsHtml = '';
   
-  // セグメントごとに色分けして描画
   for (let i = 1; i < data.length; i++) {
     const p1 = data[i - 1], p2 = data[i];
     const isDanger = p1.hazard || p2.hazard;
-    const strokeColor = isDanger ? '#e53935' : '#1a73e8';
-    const areaColor = isDanger ? 'rgba(229,57,53,0.3)' : 'rgba(26,115,232,0.2)';
+    const strokeColor = isDanger ? '#ff5252' : '#4dabf7'; // 少し明るい色に変更
+    const areaColor = isDanger ? 'rgba(255, 82, 82, 0.4)' : 'rgba(77, 171, 247, 0.3)';
     
     areaSegmentsHtml += `<path d="M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z" fill="${areaColor}"/>`;
     lineSegmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round"/>`;
   }
 
-  // 3. 描画実行（目盛りとS/Gを追加）
   svg.innerHTML = `
-    <defs><linearGradient id="grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff" stop-opacity="0.3"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
-    <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="#ccc" stroke-width="1"/>
     ${areaSegmentsHtml}
     ${lineSegmentsHtml}
-    <text x="${padL-2}" y="${yAt(maxE)}" font-size="9" fill="#666" text-anchor="end">${Math.round(maxE)}m</text>
-    <text x="${padL-2}" y="${yAt(minE)}" font-size="9" fill="#666" text-anchor="end">${Math.round(minE)}m</text>
-    <text x="${xAt(data[0])}" y="${yAt(data[0].elevation)-8}" font-size="12" font-weight="bold" fill="#1a73e8" text-anchor="middle">S</text>
-    <text x="${xAt(data[data.length-1])}" y="${yAt(data[data.length-1].elevation)-8}" font-size="12" font-weight="bold" fill="#e53935" text-anchor="middle">G</text>
+    <text x="${padL-5}" y="${yAt(maxE)}" font-size="12" fill="#fff" text-anchor="end" font-weight="bold">${Math.round(maxE)}m</text>
+    <text x="${padL-5}" y="${yAt(minE)}" font-size="12" fill="#fff" text-anchor="end" font-weight="bold">${Math.round(minE)}m</text>
+    <text x="${xAt(data[0])}" y="${yAt(data[0].elevation)-10}" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">S</text>
+    <text x="${xAt(data[data.length-1])}" y="${yAt(data[data.length-1].elevation)-10}" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">G</text>
   `;
+}
 
   // 4. 数値表示の更新
   const maxIdx = elevations.indexOf(maxE);
