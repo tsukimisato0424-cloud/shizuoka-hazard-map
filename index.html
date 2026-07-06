@@ -1003,11 +1003,13 @@ function renderElevationProfile(data){
     <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="#e0e0e0" stroke-width="1"/>
     ${areaSegmentsHtml}
     ${lineSegmentsHtml}
+    <text x="${padL - 5}" y="${yAt(maxE)}" font-size="10" fill="#666" text-anchor="end" dominant-baseline="middle">${Math.round(maxE)}m</text>
+    <text x="${padL - 5}" y="${yAt(minE)}" font-size="10" fill="#666" text-anchor="end" dominant-baseline="middle">${Math.round(minE)}m</text>
+    
     <text x="${xAt(start)}" y="${yAt(start.elevation) - 5}" font-size="14" font-weight="bold" fill="#1a73e8" text-anchor="middle">S</text>
     <text x="${xAt(end)}" y="${yAt(end.elevation) - 5}" font-size="14" font-weight="bold" fill="#e53935" text-anchor="middle">G</text>
   `;
 
-  // 最後に数値を更新（先ほど計算した変数を使用）
   document.getElementById('maxElv').innerText = Math.round(maxE);
   document.getElementById('minElv').innerText = Math.round(minE);
   document.getElementById('maxElvAddr').innerText = data[maxIdx].addr;
