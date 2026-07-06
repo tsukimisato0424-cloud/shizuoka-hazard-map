@@ -946,13 +946,13 @@ async function buildElevationProfileData(coordinates, pointFlags){
   const results = await Promise.all(indices.map(async idx => {
     const [lon, lat] = coordinates[idx];
     const { elevation } = await getElevationValue(lat, lon);
-　return {
-  dist: cumDist[idx],
-  lat, lon,
-  elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
-  hazard: !!pointFlags[idx],
-  addr: await getAddressSimple(lat, lon) 
-};
+    return {
+      dist: cumDist[idx],
+      lat, lon,
+      elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
+      hazard: !!pointFlags[idx],
+      addr: await getAddressSimple(lat, lon) 
+    };
   }));
 
   return results.filter(r => r.elevation !== null);
@@ -990,7 +990,7 @@ function renderElevationProfile(data) {
   for (let i = 1; i < data.length; i++) {
     const p1 = data[i - 1], p2 = data[i];
     const isDanger = p1.hazard || p2.hazard;
-    const strokeColor = isDanger ? '#ff5252' : '#4dabf7'; // 少し明るい色に変更
+    const strokeColor = isDanger ? '#ff5252' : '#4dabf7';
     const areaColor = isDanger ? 'rgba(255, 82, 82, 0.4)' : 'rgba(77, 171, 247, 0.3)';
     
     areaSegmentsHtml += `<path d="M${xAt(p1)},${H - padB} L${xAt(p1)},${yAt(p1.elevation)} L${xAt(p2)},${yAt(p2.elevation)} L${xAt(p2)},${H - padB} Z" fill="${areaColor}"/>`;
@@ -1005,9 +1005,8 @@ function renderElevationProfile(data) {
     <text x="${xAt(data[0])}" y="${yAt(data[0].elevation)-10}" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">S</text>
     <text x="${xAt(data[data.length-1])}" y="${yAt(data[data.length-1].elevation)-10}" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">G</text>
   `;
-}
 
-  // 4. 数値表示の更新
+  // 数値表示の更新
   const maxIdx = elevations.indexOf(maxE);
   const minIdx = elevations.indexOf(minE);
   document.getElementById('maxElv').innerText = Math.round(maxE);
