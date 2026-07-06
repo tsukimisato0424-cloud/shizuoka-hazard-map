@@ -169,10 +169,22 @@ body::before{
 .hazard-btn.active .material-icons-round{ color:#fff; filter:none; }
 
 @keyframes routeHazardBlink{
-  0%,100%{ box-shadow:0 0 0 0 rgba(229,57,53,.9), 0 4px 10px rgba(0,0,0,.15); border-color:#e53935; }
-  50%{ box-shadow:0 0 16px 6px rgba(229,57,53,.85), 0 4px 10px rgba(0,0,0,.15); border-color:#ff8a80; }
+@keyframes routeHazardBlink {
+  0%, 100% {
+    /* 弱めの光 */
+    box-shadow: 0 0 5px rgba(255, 60, 60, 0.4), inset 0 0 10px rgba(255, 0, 0, 0.2);
+    border-color: rgba(255, 80, 80, 0.6);
+  }
+  50% {
+    /* 強い光（ランプが点灯したような輝き） */
+    box-shadow: 0 0 20px 4px rgba(255, 0, 0, 0.7), inset 0 0 15px rgba(255, 255, 255, 0.5);
+    border-color: rgba(255, 0, 0, 1);
+  }
+   .hazard-btn.route-alert {
+  animation: routeHazardBlink 1.2s ease-in-out infinite;
+  border-width: 3px !important; 
+  background: rgba(255, 230, 230, 0.9) !important;
 }
-.hazard-btn.route-alert{ animation:routeHazardBlink .9s ease-in-out infinite; border-width:2px; z-index:1; }
 
 /* =========================================================================
    4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
