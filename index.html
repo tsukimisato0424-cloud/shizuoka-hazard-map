@@ -1059,7 +1059,7 @@ async function updateDetails(lat, lng){
 
   let riskHtml = risk.isRisk
     ? `<div style="color:#ff8a80; font-weight:bold;">冠水危険あり<br>周囲より ${risk.diff}m 低地</div>`
-    : `<div style="color:#6fe0a0;">地形的な窪地リスクは低いです</div>`;
+    : `<div style="color:#6fe0a0;">地形的な窪地リスクは低い</div>`;
   if (risk.lowConfidence){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ この地点は低精度の可能性</div>`;
   } else if (risk.mixedResolution){
