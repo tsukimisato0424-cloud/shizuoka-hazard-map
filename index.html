@@ -258,7 +258,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
-#mapTypeContainer[open-state="true"]{ width:180px; height:220px; border-radius:16px; }
+#mapTypeContainer[open-state="true"]{ width:190px; height:280px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
@@ -299,7 +299,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 
-.maptype-content{ padding:8px 0; }
+.maptype-content{ padding:8px 0; height:calc(100% - 54px); overflow-y:auto; box-sizing:border-box; }
 .map-type-item{ padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
 .map-type-item:hover{ background:#f8f9fa; }
 
@@ -390,12 +390,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    6b. 高低差断面図
    ========================================================================= */
 #elevationProfileContainer{
-  width:100%; height:112px; position:relative;
-  background:rgba(255,255,255,.06); border-radius:10px; overflow:hidden;
+  width:100%; height:130px; position:relative;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
+    linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
+  border-radius:14px; overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,.35),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 4px 10px rgba(0,10,30,.25);
 }
 #elevationProfileSvg{ display:block; width:100%; height:100%; }
 #elevationProfilePlaceholder{
-  font-size:14px; color:#c3cfe8; text-align:center; line-height:112px;
+  font-size:14px; color:#c3cfe8; text-align:center; line-height:130px;
 }
 
 /* =========================================================================
@@ -590,17 +598,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab2" class="tab-content">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報</div>
-        <div class="route-modes" style="flex-direction:column; gap:5px;">
-          <div class="route-mode-box">
-            <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_walk</span>
-            <span id="walkTime" style="font-size:16px; font-weight:bold;">--分</span>
-            <span id="walkDist" style="font-size:15px; color:#4a5054;">--km</span>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報（徒歩）</div>
+        <div class="route-mode-box">
+          <div class="route-icon-circle"><span class="material-icons-round" style="font-size:18px;">directions_walk</span></div>
+          <div>
+            <div id="walkTime" class="route-time">-- 分</div>
+            <div id="walkDist" class="route-dist">-- km</div>
           </div>
-          <div class="route-mode-box">
-            <span class="material-icons-round" style="font-size:18px; color:#1a73e8;">directions_car</span>
-            <span id="carTime" style="font-size:16px; font-weight:bold;">--分</span>
-            <span id="carDist" style="font-size:15px; color:#4a5054;">--km</span>
+        </div>
+        <div style="font-weight:bold; font-size:14px; margin-top:10px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
+        <div id="elevationExtremeInfo" style="font-size:13px; line-height:1.5;">
+          <div style="margin-bottom:6px;">
+            <span style="color:#ff8a80; font-weight:bold;">▲ 最高地点</span><br>
+            <span id="highestPointAddr" style="color:#dfe6f0;">--</span>
+          </div>
+          <div>
+            <span style="color:#82b1ff; font-weight:bold;">▼ 最低地点</span><br>
+            <span id="lowestPointAddr" style="color:#dfe6f0;">--</span>
           </div>
         </div>
       </div>
@@ -608,9 +622,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">高低差断面図</div>
         <div id="elevationProfileContainer">
           <div id="elevationProfilePlaceholder">ルートを選択してください</div>
-          <svg id="elevationProfileSvg" viewBox="0 0 300 112" preserveAspectRatio="none" style="display:none;"></svg>
+          <svg id="elevationProfileSvg" viewBox="0 0 300 130" preserveAspectRatio="none" style="display:none;"></svg>
         </div>
-        <div id="weatherWarnings" style="display:none;"></div>
       </div>
     </div>
   </div>
@@ -1082,11 +1095,10 @@ document.getElementById('locationBtn').addEventListener('click', () => {
 
   document.getElementById('walkTime').innerText = '-- 分';
   document.getElementById('walkDist').innerText = '-- km';
-  document.getElementById('carTime').innerText = '-- 分';
-  document.getElementById('carDist').innerText = '-- km';
   document.getElementById('routeHazardStatus').innerHTML = '';
   clearRouteHazardAlert();
   renderElevationProfile(null);
+  updateElevationExtremes(null);
 
   updateCurrentLocation(false);
 });
@@ -1225,11 +1237,46 @@ async function buildElevationProfileData(coordinates, pointFlags){
     return {
       dist: cumDist[idx],
       elevation: (typeof elevation === 'number' && !isNaN(elevation)) ? elevation : null,
-      hazard: !!pointFlags[idx]
+      hazard: !!pointFlags[idx],
+      lat, lon
     };
   }));
 
   return results.filter(r => r.elevation !== null);
+}
+
+/* 経路上の最高地点／最低地点の住所を取得してサブ①タブに表示する */
+async function updateElevationExtremes(data){
+  const highestEl = document.getElementById('highestPointAddr');
+  const lowestEl = document.getElementById('lowestPointAddr');
+  if (!highestEl || !lowestEl) return;
+
+  if (!data || data.length < 2){
+    highestEl.innerText = '--';
+    lowestEl.innerText = '--';
+    return;
+  }
+
+  highestEl.innerText = '住所を取得中...';
+  lowestEl.innerText = '住所を取得中...';
+
+  let highest = data[0], lowest = data[0];
+  data.forEach(p => {
+    if (p.elevation > highest.elevation) highest = p;
+    if (p.elevation < lowest.elevation) lowest = p;
+  });
+
+  try {
+    const [highestAddr, lowestAddr] = await Promise.all([
+      getAddress(highest.lat, highest.lon),
+      getAddress(lowest.lat, lowest.lon)
+    ]);
+    highestEl.innerText = `${highestAddr}（標高 約${Math.round(highest.elevation)}m）`;
+    lowestEl.innerText = `${lowestAddr}（標高 約${Math.round(lowest.elevation)}m）`;
+  } catch {
+    highestEl.innerText = '住所取得に失敗しました';
+    lowestEl.innerText = '住所取得に失敗しました';
+  }
 }
 
 function renderElevationProfile(data){
@@ -1248,26 +1295,46 @@ function renderElevationProfile(data){
   placeholder.style.display = 'none';
   svg.style.display = 'block';
 
-  const W = 300, H = 112;
-  const padL = 34, padR = 14, padT = 16, padB = 20;
+  const W = 300, H = 130;
+  const padL = 36, padR = 14, padT = 18, padB = 24;
+  const extrude = 9; // 地形の「厚み」を表現する押し出し量(px)
 
   const elevations = data.map(d => d.elevation);
   const minE = Math.min(...elevations);
   const maxE = Math.max(...elevations);
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
+  const gain = data.reduce((acc, d, i) => i === 0 ? 0 : acc + Math.max(0, d.elevation - data[i - 1].elevation), 0);
 
+  const plotBottom = H - padB - extrude;
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
-  const yAt = e => padT + (1 - (e - minE) / rangeE) * (H - padT - padB);
+  const yAt = e => padT + (1 - (e - minE) / rangeE) * (plotBottom - padT);
 
-  const areaPoints = data.map(d => `${xAt(d)},${yAt(d.elevation)}`).join(' ');
-  const areaPath = `M${padL},${H - padB} L${areaPoints} L${xAt(data[data.length - 1])},${H - padB} Z`;
+  const topPts = data.map(d => `${xAt(d).toFixed(1)},${yAt(d.elevation).toFixed(1)}`);
+  const baseY = (H - padB).toFixed(1);
+
+  const areaPath = `M${padL},${baseY} L${topPts.join(' ')} L${xAt(data[data.length - 1]).toFixed(1)},${baseY} Z`;
+
+  // 「押し出し（3D厚み）」用シルエット：稜線を下にずらしたシルエットで奥行きを表現
+  const extrudePts = data.map(d => `${xAt(d).toFixed(1)},${(yAt(d.elevation) + extrude).toFixed(1)}`);
+  const extrudePath = `M${xAt(data[0]).toFixed(1)},${(yAt(data[0].elevation) + extrude).toFixed(1)} `
+    + `L${extrudePts.join(' ')} L${xAt(data[data.length - 1]).toFixed(1)},${baseY} L${padL},${baseY} Z`;
 
   let segmentsHtml = '';
   for (let i = 1; i < data.length; i++){
     const p1 = data[i - 1], p2 = data[i];
-    const color = (p1.hazard || p2.hazard) ? '#e53935' : '#1a73e8';
-    segmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const hazardous = p1.hazard || p2.hazard;
+    const stroke = hazardous ? '#ff5252' : 'url(#elevLineGradient)';
+    segmentsHtml += `<line x1="${xAt(p1).toFixed(1)}" y1="${yAt(p1.elevation).toFixed(1)}" x2="${xAt(p2).toFixed(1)}" y2="${yAt(p2.elevation).toFixed(1)}" stroke="${stroke}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#elevLineGlow)"/>`;
+  }
+
+  // 縦方向の目盛り（3段階）
+  let gridHtml = '';
+  for (let i = 0; i <= 2; i++){
+    const e = minE + (rangeE * i / 2);
+    const y = yAt(e).toFixed(1);
+    gridHtml += `<line x1="${padL}" y1="${y}" x2="${(W - padR).toFixed(1)}" y2="${y}" stroke="rgba(255,255,255,.10)" stroke-width="1" stroke-dasharray="2 3"/>`;
+    gridHtml += `<text x="${padL - 5}" y="${(Number(y) + 3).toFixed(1)}" font-size="9" fill="#8ea3c9" text-anchor="end">${Math.round(e)}</text>`;
   }
 
   const start = data[0], end = data[data.length - 1];
@@ -1275,15 +1342,39 @@ function renderElevationProfile(data){
   const ex = xAt(end).toFixed(1), ey = yAt(end.elevation).toFixed(1);
 
   svg.innerHTML = `
-    <path d="${areaPath}" fill="rgba(26,115,232,0.12)" stroke="none"/>
-    <line x1="${padL}" y1="${(H - padB).toFixed(1)}" x2="${(W - padR).toFixed(1)}" y2="${(H - padB).toFixed(1)}" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
-    <text x="2" y="${(padT + 4).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(maxE)}m</text>
-    <text x="2" y="${(H - padB).toFixed(1)}" font-size="10" fill="#c3cfe8">${Math.round(minE)}m</text>
+    <defs>
+      <linearGradient id="elevAreaGradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#4fc3f7" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#1a73e8" stop-opacity="0.05"/>
+      </linearGradient>
+      <linearGradient id="elevExtrudeGradient" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#123056" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#0a1830" stop-opacity="0.75"/>
+      </linearGradient>
+      <linearGradient id="elevLineGradient" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#42a5f5"/>
+        <stop offset="100%" stop-color="#00e5ff"/>
+      </linearGradient>
+      <filter id="elevLineGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="1.5" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    ${gridHtml}
+    <path d="${extrudePath}" fill="url(#elevExtrudeGradient)" stroke="none"/>
+    <path d="${areaPath}" fill="url(#elevAreaGradient)" stroke="none"/>
+    <line x1="${padL}" y1="${baseY}" x2="${(W - padR).toFixed(1)}" y2="${baseY}" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
     ${segmentsHtml}
+    <circle cx="${sx}" cy="${sy}" r="9" fill="none" stroke="#1a73e8" stroke-width="1" opacity="0.45"/>
     <circle cx="${sx}" cy="${sy}" r="5.5" fill="#1a73e8" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="${ex}" cy="${ey}" r="9" fill="none" stroke="#e53935" stroke-width="1" opacity="0.45"/>
     <circle cx="${ex}" cy="${ey}" r="5.5" fill="#e53935" stroke="#fff" stroke-width="1.5"/>
-    <text x="${sx}" y="${(Number(sy) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#8ec2ff" text-anchor="middle">現在地</text>
-    <text x="${ex}" y="${(Number(ey) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#ff9e9e" text-anchor="middle">目的地</text>
+    <text x="${sx}" y="${(Number(sy) - 12).toFixed(1)}" font-size="11" font-weight="bold" fill="#8ec2ff" text-anchor="middle">現在地</text>
+    <text x="${ex}" y="${(Number(ey) - 12).toFixed(1)}" font-size="11" font-weight="bold" fill="#ff9e9e" text-anchor="middle">目的地</text>
+    <text x="${(W - padR).toFixed(1)}" y="14" font-size="10" fill="#8ec2ff" text-anchor="end">↑累積上昇 約${Math.round(gain)}m</text>
   `;
 }
    
@@ -1300,10 +1391,8 @@ async function drawRoute(){
   const to = `${destination.lng},${destination.lat}`;
 
   try {
-    const [footRes, carRes] = await Promise.all([
-      fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson`).then(r => r.json()).catch(() => null),
-      fetch(`https://router.project-osrm.org/route/v1/driving/${from};${to}?overview=full&geometries=geojson`).then(r => r.json()).catch(() => null)
-    ]);
+    const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson`)
+      .then(r => r.json()).catch(() => null);
 
     if (footRes?.routes?.[0]){
       const route = footRes.routes[0];
@@ -1322,25 +1411,23 @@ async function drawRoute(){
         ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
         : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
 
-      buildElevationProfileData(coords, pointFlags).then(renderElevationProfile);
+      buildElevationProfileData(coords, pointFlags).then(data => {
+        renderElevationProfile(data);
+        updateElevationExtremes(data);
+      });
     } else {
+      document.getElementById('walkTime').innerText = '-- 分';
+      document.getElementById('walkDist').innerText = '-- km';
       hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
       clearRouteHazardAlert();
       renderElevationProfile(null);
-    }
-
-    if (carRes?.routes?.[0]){
-      const route = carRes.routes[0];
-      document.getElementById('carTime').innerText = `${Math.round(route.duration / 60)} 分`;
-      document.getElementById('carDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
-    } else {
-      document.getElementById('carTime').innerText = '-- 分';
-      document.getElementById('carDist').innerText = '-- km';
+      updateElevationExtremes(null);
     }
   } catch {
     hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>';
     clearRouteHazardAlert();
     renderElevationProfile(null);
+    updateElevationExtremes(null);
   }
 }
 
@@ -1707,6 +1794,7 @@ function deactivateEmergencyMode(silent){
     clearRouteHazardAlert();
     document.getElementById('routeHazardStatus').innerHTML = '';
     renderElevationProfile(null);
+    updateElevationExtremes(null);
   }
 }
 
@@ -1761,8 +1849,6 @@ function renderEmergencyResult(result, originLatLng){
 
   document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
   document.getElementById('walkDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
-  document.getElementById('carTime').innerText = '-- 分';
-  document.getElementById('carDist').innerText = '-- km';
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = `
@@ -1773,7 +1859,10 @@ function renderEmergencyResult(result, originLatLng){
       : `<div style="color:#6fe0a0; margin-top:5px;">危険区域を回避したルートです</div>`}
   `;
 
-  buildElevationProfileData(coords, pointFlags).then(renderElevationProfile);
+  buildElevationProfileData(coords, pointFlags).then(data => {
+    renderElevationProfile(data);
+    updateElevationExtremes(data);
+  });
 
   map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), { padding:[80, 160] });
   switchTab(1);
