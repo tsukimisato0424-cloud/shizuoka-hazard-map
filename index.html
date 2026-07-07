@@ -1553,7 +1553,7 @@ async function drawRoute(){
 
       updateRouteHazardAlert(foundTypes);
       hazardStatusEl.innerHTML = foundTypes.size > 0
-        ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+        ? `<div style="color:#ff8a80; font-weight:bold;">危 ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
         : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
 
       buildElevationProfileData(coords, pointFlags).then(data => {
@@ -1901,10 +1901,13 @@ fullscreenBtn.addEventListener('click', () => {
    I. 緊急避難ルート案内
    -------------------------------------------------------------------------
    現在地から半径圏内の避難所候補を複数取得し、それぞれの徒歩ルートに
-   ついてハザードタイル判定を行う。ハザード区域を一切通過しない
-   （hazardRatio === 0）避難所の中から最も近いものを最優先で選定し、
-   もし完全に危険区域を回避できるルートが見つからない場合のみ、
-   危険区域の通過割合が最も低いものを次点として選ぶ。
+   ついてハザードタイル判定を行う。さらに避難所そのものの所在地が
+   ハザード区域に該当していないかも判定する。
+   避難所自体がハザードに該当せず、かつ経路もハザード区域を一切
+   通過しない候補の中から最も近いものを最優先で選定する。該当が無い
+   場合は避難所自体がハザード非該当のものに絞って経路の危険度が
+   最も低いものを選び、それも無い場合のみハザード該当の避難所も
+   含めて最もリスクの低いものを次点として選ぶ。
    ========================================================================= */
 const emergencyBtn = document.getElementById('emergencyBtn');
 let emergencyModeActive = false;
@@ -1959,14 +1962,19 @@ async function evaluateShelterCandidate(originLatLng, candidate){
     const hazardCount = pointFlags.filter(Boolean).length;
     const hazardRatio = hazardCount / pointFlags.length;
 
-    return { candidate, route, coords, pointFlags, foundTypes, hazardRatio };
+    // 避難所の所在地そのものがハザード区域に該当していないかも確認する
+    // （経路上のハザードとは別に、避難所自体が危険区域内に立地しているケースを除外するため）
+    const destinationHazardTypes = await checkPointHazard(candidate.latlng.lat, candidate.latlng.lng);
+    const destinationHazardous = destinationHazardTypes.length > 0;
+
+    return { candidate, route, coords, pointFlags, foundTypes, hazardRatio, destinationHazardous, destinationHazardTypes };
   } catch {
     return null;
   }
 }
 
 function renderEmergencyResult(result, originLatLng){
-  const { candidate, route, coords, pointFlags, foundTypes, hazardRatio } = result;
+  const { candidate, route, coords, pointFlags, foundTypes, hazardRatio, destinationHazardous, destinationHazardTypes } = result;
   const props = candidate.feature.properties || {};
   const name = props['施設・場所名'] || '名称不明の避難所';
   const address = props['住所'] || '';
@@ -1998,12 +2006,19 @@ function renderEmergencyResult(result, originLatLng){
   document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
+  const destinationWarningHtml = destinationHazardous
+    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">危 この避難所自体が危険区域内に該当します（安全な避難所が近隣に見つかりませんでした）<br>(${[...destinationHazardTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+    : '';
+  const routeWarningHtml = foundTypes.size > 0
+    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">危 完全に安全なルートが見つからなかったため、最もリスクの低いルートを表示しています。一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+    : '';
   hazardStatusEl.innerHTML = `
     <div style="font-weight:bold; color:#ffab91;">緊急避難先: ${name}</div>
     <div style="font-size:14px; color:#dfe6f0; margin-top:2px;">${address}</div>
-    ${foundTypes.size > 0
-      ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">⚠ 完全に安全なルートが見つからなかったため、最もリスクの低いルートを表示しています。一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
-      : `<div style="color:#6fe0a0; margin-top:5px;">危険区域を回避した、最寄りの安全な避難所です</div>`}
+    ${destinationWarningHtml}${routeWarningHtml}
+    ${(!destinationHazardous && foundTypes.size === 0)
+      ? `<div style="color:#6fe0a0; margin-top:5px;">危険区域を回避した、最寄りの安全な避難所です</div>`
+      : ''}
   `;
 
   buildElevationProfileData(coords, pointFlags).then(data => {
@@ -2080,14 +2095,25 @@ async function startEmergencySearch(){
     return;
   }
 
-  // 最優先: ハザード区域を一切通過しない（hazardRatio === 0）避難所の中から
-  // 最も近い（徒歩距離が短い）ものを選ぶ。
-  // 該当が無い場合のみ、危険区域の通過割合が最も低いものを次点として選ぶ。
-  const safeCandidates = valid.filter(v => v.hazardRatio === 0);
+  // 選定の優先順位:
+  // 1. 避難所自体がハザード区域に該当せず、かつ経路もハザード区域を一切
+  //    通過しない候補の中から、最も近い（徒歩距離が短い）ものを選ぶ。
+  // 2. 該当が無い場合は、避難所自体はハザード非該当のものに絞り、その中で
+  //    経路の危険区域通過割合が最も低い（同程度なら最も近い）ものを選ぶ。
+  // 3. それも無い場合のみ、避難所自体がハザードに該当するものも含めて、
+  //    経路の危険区域通過割合が最も低いものを次点として選ぶ。
+  const nonHazardousShelters = valid.filter(v => !v.destinationHazardous);
+  const fullySafe = nonHazardousShelters.filter(v => v.hazardRatio === 0);
 
-  if (safeCandidates.length){
-    safeCandidates.sort((a, b) => a.route.distance - b.route.distance);
-    renderEmergencyResult(safeCandidates[0], origin);
+  if (fullySafe.length){
+    fullySafe.sort((a, b) => a.route.distance - b.route.distance);
+    renderEmergencyResult(fullySafe[0], origin);
+  } else if (nonHazardousShelters.length){
+    nonHazardousShelters.sort((a, b) => {
+      if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
+      return a.route.distance - b.route.distance;
+    });
+    renderEmergencyResult(nonHazardousShelters[0], origin);
   } else {
     valid.sort((a, b) => {
       if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
@@ -2117,4 +2143,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
