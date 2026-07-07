@@ -335,6 +335,27 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .custom-pin-icon{ background:transparent!important; border:none!important; }
 .custom-pin-icon svg{ display:block; filter:drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
 
+/* --- 現在地マーカー（中心の丸ドット＋方位を示すコーン） --- */
+.custom-current-location-icon{ background:transparent!important; border:none!important; }
+.current-location-marker{ position:relative; width:70px; height:70px; }
+.location-dot{
+  position:absolute; top:50%; left:50%; width:18px; height:18px;
+  margin:-9px 0 0 -9px; z-index:2;
+  background:#1a73e8; border:3px solid #fff; border-radius:50%;
+  box-shadow:0 2px 6px rgba(0,0,0,.45), 0 0 0 7px rgba(26,115,232,.22);
+}
+.heading-cone{
+  position:absolute; top:50%; left:50%; width:0; height:0; z-index:1;
+  border-left:15px solid transparent;
+  border-right:15px solid transparent;
+  border-top:38px solid rgba(26,115,232,.55);
+  transform-origin:0 0;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+  filter:drop-shadow(0 0 3px rgba(26,115,232,.6));
+}
+.heading-cone.visible{ opacity:1; }
+
 /* =========================================================================
    6. 下部ステータスパネル
    ========================================================================= */
@@ -373,7 +394,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:16px; height:190px !important; overflow:auto; box-sizing: border-box;}
+.tab-content{ display:none; padding:16px; height:200px !important; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -396,11 +417,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .panel-column{ flex:1; overflow-y:auto; }
 
 .route-modes{ display:flex; gap:8px; flex:1; }
-.route-mode-box{ flex:1; background:#f8f9fa; border-radius:6px; padding:7px 11px; display:flex; align-items:center; gap:6px; }
-.route-icon-circle{ width:26px; height:26px; border-radius:50%; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; }
+.route-mode-box{
+  flex:1; border-radius:10px; padding:9px 12px; display:flex; align-items:center; gap:10px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
+    linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,.3),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 4px 10px rgba(0,10,30,.2);
+}
+.route-icon-circle{ width:26px; height:26px; border-radius:50%; background:#e8f0fe; color:#1a73e8; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .route-icon-circle .material-icons-round{ font-size:16px; }
-.route-time{ font-size:17px; font-weight:800!important; color:#1a73e8!important; }
-.route-dist{ font-size:15px; color:#444b52; }
+.route-time-dist{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+.route-time{ font-size:17px; font-weight:800!important; }
+.route-dist{ font-size:14px; color:#c3cfe8; }
 
 /* =========================================================================
    6b. 高低差断面図
@@ -613,9 +645,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <!-- 下部ステータスパネル -->
 <div id="statusPanel" class="glass-panel" data-state="full">
   <div class="tab-container">
-    <div class="tab-btn active" onclick="switchTab(1)">メイン</div>
-    <div class="tab-btn" onclick="switchTab(2)">サブ①</div>
-    <div class="tab-btn" onclick="switchTab(3)">サブ②</div>
+    <div class="tab-btn active" onclick="switchTab(1)">タブ①</div>
+    <div class="tab-btn" onclick="switchTab(2)">タブ②</div>
+    <div class="tab-btn" onclick="switchTab(3)">タブ③</div>
   </div>
 
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
@@ -635,6 +667,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div id="addressDisplay" style="font-size:16px; line-height:1.4;">住所: 取得中...</div>
         <div id="latLngDisplay" style="font-size:15px; color:#e2eaf7; margin-top:2px;">緯度/経度: --</div>
         <div style="font-size:16px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
+        <div style="font-size:16px; margin-top:3px;">方位: <span id="headingDisplay">-- °</span></div>
       </div>
     </div>
   </div>
@@ -645,9 +678,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報（徒歩）</div>
         <div class="route-mode-box">
           <div class="route-icon-circle"><span class="material-icons-round" style="font-size:18px;">directions_walk</span></div>
-          <div>
-            <div id="walkTime" class="route-time">-- 分</div>
-            <div id="walkDist" class="route-dist">-- km</div>
+          <div class="route-time-dist">
+            <span id="walkTime" class="route-time">-- 分</span>
+            <span id="walkDist" class="route-dist">(-- km)</span>
           </div>
         </div>
         <div style="font-weight:bold; font-size:14px; margin-top:10px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
@@ -1092,10 +1125,76 @@ function createPinIcon(color, letter){
     </svg>`;
   return L.divIcon({ className:'custom-pin-icon', html:svg, iconSize:[36,48], iconAnchor:[18,46] });
 }
-const currentLocationIcon = createPinIcon('#1a73e8', '');
+
+/* 現在地マーカー：中心の丸ドット＋端末の向きを示す方位コーン */
+function createCurrentLocationIcon(){
+  const html = `
+    <div class="current-location-marker">
+      <div class="heading-cone"></div>
+      <div class="location-dot"></div>
+    </div>`;
+  return L.divIcon({ className:'custom-current-location-icon', html, iconSize:[70,70], iconAnchor:[35,35] });
+}
+
+const currentLocationIcon = createCurrentLocationIcon();
 const destinationIcon = createPinIcon('#e53935', 'G');
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
+
+/* --- 方位（コンパス）表示 --- */
+let currentHeadingDeg = null;
+let compassListenerAttached = false;
+
+function normalizeHeading(deg){
+  return ((deg % 360) + 360) % 360;
+}
+
+function applyHeadingToMarker(){
+  const headingEl = document.getElementById('headingDisplay');
+  if (currentHeadingDeg === null){
+    if (headingEl) headingEl.innerText = '-- °';
+    return;
+  }
+  if (headingEl) headingEl.innerText = `${Math.round(currentHeadingDeg)}°`;
+  if (!currentMarker) return;
+  const el = currentMarker.getElement();
+  if (!el) return;
+  const cone = el.querySelector('.heading-cone');
+  if (cone){
+    cone.classList.add('visible');
+    cone.style.transform = `rotate(${currentHeadingDeg}deg)`;
+  }
+}
+
+function handleOrientationEvent(event){
+  let heading = null;
+  if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)){
+    heading = event.webkitCompassHeading; // iOS Safari: 0=北、時計回りで既に方位角
+  } else if (typeof event.alpha === 'number' && !isNaN(event.alpha)){
+    heading = normalizeHeading(360 - event.alpha); // Android等: alphaは反時計回りの回転角
+  }
+  if (heading === null) return;
+  currentHeadingDeg = heading;
+  applyHeadingToMarker();
+}
+
+function attachCompassListener(){
+  if (compassListenerAttached) return;
+  if (typeof window.DeviceOrientationEvent === 'undefined') return;
+  const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+  window.addEventListener(eventName, handleOrientationEvent, true);
+  compassListenerAttached = true;
+}
+
+function enableCompass(){
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') attachCompassListener();
+    }).catch(() => { /* iOSでユーザー操作なしに呼ばれた場合等は無視 */ });
+  } else {
+    attachCompassListener();
+  }
+}
 
 function updateCurrentLocation(isInitial = false){
   if (navigator.permissions){
@@ -1117,6 +1216,7 @@ function executeGeolocation(isInitial){
 
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation, { icon: currentLocationIcon }).addTo(map);
+    applyHeadingToMarker();
 
     if (isInitial || !destination) map.setView(currentLocation, 14);
 
@@ -1132,13 +1232,14 @@ function executeGeolocation(isInitial){
 }
 
 document.getElementById('locationBtn').addEventListener('click', () => {
+  enableCompass();
   deactivateEmergencyMode();
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
   destination = null;
 
   document.getElementById('walkTime').innerText = '-- 分';
-  document.getElementById('walkDist').innerText = '-- km';
+  document.getElementById('walkDist').innerText = '(-- km)';
   document.getElementById('routeHazardStatus').innerHTML = '';
   clearRouteHazardAlert();
   renderElevationProfile(null);
@@ -1444,7 +1545,7 @@ async function drawRoute(){
       const latlngs = coords.map(c => [c[1], c[0]]);
 
       document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
-      document.getElementById('walkDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
+      document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
 
       const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
       const segments = buildColoredRouteSegments(latlngs, pointFlags);
@@ -1461,7 +1562,7 @@ async function drawRoute(){
       });
     } else {
       document.getElementById('walkTime').innerText = '-- 分';
-      document.getElementById('walkDist').innerText = '-- km';
+      document.getElementById('walkDist').innerText = '(-- km)';
       hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
       clearRouteHazardAlert();
       renderElevationProfile(null);
@@ -1894,7 +1995,7 @@ function renderEmergencyResult(result, originLatLng){
   updateRouteHazardAlert(foundTypes);
 
   document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
-  document.getElementById('walkDist').innerText = `${(route.distance / 1000).toFixed(1)} km`;
+  document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = `
@@ -1931,6 +2032,7 @@ async function startEmergencySearch(){
       currentLocation = origin;
       if (currentMarker) map.removeLayer(currentMarker);
       currentMarker = L.marker(origin, { icon: currentLocationIcon }).addTo(map);
+      applyHeadingToMarker();
     } catch {
       hazardStatusEl.innerHTML = '<span style="color:#ff8a80;">現在地を取得できませんでした。位置情報の許可を確認してください</span>';
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -1996,6 +2098,7 @@ async function startEmergencySearch(){
 }
 
 emergencyBtn.addEventListener('click', () => {
+  enableCompass();
   if (emergencyModeActive){
     deactivateEmergencyMode();
   } else {
@@ -2009,6 +2112,7 @@ emergencyBtn.addEventListener('click', () => {
    ========================================================================= */
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 renderElevationProfile(null);
+attachCompassListener();
 updateCurrentLocation(true);
 </script>
 </body>
