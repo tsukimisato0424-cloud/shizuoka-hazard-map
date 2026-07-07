@@ -509,10 +509,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="authOverlay">
   <div class="auth-card">
+    <img src="icon.png" alt="Icon" style="width: 80px; height: 80px; margin-bottom: 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    
     <div class="auth-title">防災支援マップ</div>
-    <input type="password" id="passInput" placeholder="PASSWORD">
+    <input type="password" id="passInput" placeholder="PASSWORD" inputmode="numeric" pattern="\d*">
     <button class="auth-btn" onclick="checkPassword()">認証</button>
-    <p id="errorMsg" style="color:#ff4444; font-size:12px; margin-top:10px;"></p>
+    <p id="errorMsg" style="color:#e02020; font-size:16px; font-weight:bold; margin-top:10px;"></p>
     
     <div class="footer-credit">
       © 2026 H.Tsukimisato All Rights Reserved.<br>
