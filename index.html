@@ -462,7 +462,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   color:#e7edf7; padding-right:4px;
 }
 #landformLegendContent .legend-section-title{ color:#8ec2ff!important; font-size:15px!important; }
-.landform-legend-item{ display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+.landform-legend-item{ display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; padding:4px 6px; border-radius:8px; transition:background .3s, box-shadow .3s; }
+.landform-legend-item.landform-legend-highlight{
+  background:rgba(255,255,255,.10);
+  box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
+  animation:landformHighlightPulse 1.4s ease-in-out infinite;
+}
+@keyframes landformHighlightPulse{
+  0%,100%{ box-shadow:0 0 0 2px #ffd54f, 0 0 8px 2px rgba(255,213,79,.4); }
+  50%{ box-shadow:0 0 0 2px #ffe082, 0 0 20px 7px rgba(255,213,79,.75); }
+}
 .landform-legend-swatch{ width:15px; height:15px; border-radius:3px; flex-shrink:0; margin-top:2px; border:1px solid rgba(255,255,255,.4); }
 .landform-legend-text b{ color:#fff; }
 .landform-legend-text span{ display:block; color:#c3cfe8; font-size:13px; }
@@ -773,6 +782,12 @@ function changeMap(type){
   }
   currentBaseLayer.bringToBack();
 
+  if (type === 'landform_overlay'){
+    switchTab(3);
+    const panel = document.getElementById('statusPanel');
+    if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
+  }
+
   mapTypeDetails.open = false;
   mapTypeCard.setAttribute('open-state', 'false');
 }
@@ -949,7 +964,7 @@ function getLandformColor(code){
    国土地理院「ベクトルタイル『地形分類』」解説ページの内容を要約。 */
 const LANDFORM_LEGEND = {
   natural: [
-    ['山地', '#d9cbae', '大雨や地震で崖崩れ・土石流・地すべりの土砂災害リスクがある。'],
+    ['山地', '#d9cbae', '大雨や地震で崖崩れ・土石流・地すべりの土砂災害リスクがある。火山地形もこの分類に含まれ、噴火に伴う噴石・火砕流・溶岩流・降灰等のリスクにも注意が必要。'],
     ['崖・段丘崖', '#9466ab', '大雨や地震で崖崩れなどの土砂災害リスクがある急斜面。'],
     ['地すべり地形', '#cc99ff', '大雨・雪解け水や地震で土地が滑り土砂災害を起こすことがある。'],
     ['台地・段丘', '#ffaa00', '河川氾濫の恐れは小さいが、縁辺部の崖崩れに注意。地盤は良好。'],
@@ -982,7 +997,7 @@ function buildLandformLegendHtml(){
     let html = `<span class="legend-section-title">【${title}】</span>`;
     items.forEach(([name, color, risk]) => {
       html += `
-        <div class="landform-legend-item">
+        <div class="landform-legend-item" data-color="${color}">
           <div class="landform-legend-swatch" style="background:${color};"></div>
           <div class="landform-legend-text"><b>${name}</b><span>${risk}</span></div>
         </div>`;
@@ -1081,6 +1096,83 @@ map.on('zoomend', () => {
     /* 参考表示のみ（詳細データはZL16まで）。非表示にはしない。 */
   }
 });
+
+/* --- 指定地点の地形分類コードを判定し、タブ③の凡例項目を光らせる --- */
+function pointInRing(lon, lat, ring){
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function isPointInGeometry(lon, lat, geometry){
+  if (!geometry) return false;
+  const polygons = geometry.type === 'Polygon' ? [geometry.coordinates]
+                  : geometry.type === 'MultiPolygon' ? geometry.coordinates
+                  : null;
+  if (!polygons) return false;
+  return polygons.some(rings => {
+    let inside = false;
+    rings.forEach(ring => { if (pointInRing(lon, lat, ring)) inside = !inside; });
+    return inside;
+  });
+}
+
+function lonLatToTileXY(lon, lat, zoom){
+  const n = 2 ** zoom;
+  const x = Math.floor((lon + 180) / 360 * n);
+  const latRad = lat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  return { x, y };
+}
+
+async function getLandformCodeAt(lat, lon){
+  const zoom = LANDFORM_MAX_ZOOM;
+  const { x, y } = lonLatToTileXY(lon, lat, zoom);
+  const naturalUrl = L.Util.template(LANDFORM_URLS.natural, { z: zoom, x, y });
+  const artificialUrl = L.Util.template(LANDFORM_URLS.artificial, { z: zoom, x, y });
+  const [natural, artificial] = await Promise.all([
+    fetchLandformTileJson(naturalUrl),
+    fetchLandformTileJson(artificialUrl)
+  ]);
+
+  // 人工地形（切土・盛土等）が自然地形の上に重なる想定のため、人工地形を優先して判定する
+  for (const gj of [artificial, natural]){
+    if (!gj || !gj.features) continue;
+    for (const feature of gj.features){
+      if (isPointInGeometry(lon, lat, feature.geometry)){
+        return feature.properties && (feature.properties.code ?? feature.properties.Code ?? feature.properties.CODE);
+      }
+    }
+  }
+  return null;
+}
+
+function highlightLandformLegendByColor(color){
+  document.querySelectorAll('.landform-legend-item').forEach(el => el.classList.remove('landform-legend-highlight'));
+  if (!color) return;
+  const target = document.querySelector(`.landform-legend-item[data-color="${color}"]`);
+  if (!target) return;
+  target.classList.add('landform-legend-highlight');
+  switchTab(3);
+  const panel = document.getElementById('statusPanel');
+  if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
+  setTimeout(() => target.scrollIntoView({ behavior:'smooth', block:'center' }), 60);
+}
+
+async function maybeHighlightLandformAt(lat, lng){
+  if (!map.hasLayer(landformLayer)) return;
+  try {
+    const code = await getLandformCodeAt(lat, lng);
+    const color = (code !== null && code !== undefined) ? getLandformColor(code) : null;
+    highlightLandformLegendByColor(color);
+  } catch { /* ignore */ }
+}
 
 /* =========================================================================
    D. アコーディオン（凡例／地図切替）・ステータスパネルの開閉
@@ -1553,7 +1645,7 @@ async function drawRoute(){
 
       updateRouteHazardAlert(foundTypes);
       hazardStatusEl.innerHTML = foundTypes.size > 0
-        ? `<div style="color:#ff8a80; font-weight:bold;">危 ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+        ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
         : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
 
       buildElevationProfileData(coords, pointFlags).then(data => {
@@ -1712,6 +1804,7 @@ async function updateDetails(lat, lng){
   riskStatus.innerHTML = riskHtml;
 
   updateWeatherWarnings(address);
+  maybeHighlightLandformAt(lat, lng);
 }
 
 map.on('click', e => {
@@ -2007,10 +2100,10 @@ function renderEmergencyResult(result, originLatLng){
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   const destinationWarningHtml = destinationHazardous
-    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">危 この避難所自体が危険区域内に該当します（安全な避難所が近隣に見つかりませんでした）<br>(${[...destinationHazardTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">⚠ この避難所自体が危険区域内に該当します（安全な避難所が近隣に見つかりませんでした）<br>(${[...destinationHazardTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
     : '';
   const routeWarningHtml = foundTypes.size > 0
-    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">危 完全に安全なルートが見つからなかったため、最もリスクの低いルートを表示しています。一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+    ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">⚠ 完全に安全なルートが見つからなかったため、最もリスクの低いルートを表示しています。一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
     : '';
   hazardStatusEl.innerHTML = `
     <div style="font-weight:bold; color:#ffab91;">緊急避難先: ${name}</div>
