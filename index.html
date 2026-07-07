@@ -1286,7 +1286,7 @@ function renderElevationProfile(data){
     <text x="${ex}" y="${(Number(ey) - 9).toFixed(1)}" font-size="11" font-weight="bold" fill="#ff9e9e" text-anchor="middle">目的地</text>
   `;
 }
-
+   
 async function drawRoute(){
   if (!currentLocation || !destination) return;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
