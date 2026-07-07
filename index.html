@@ -373,7 +373,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:16px; height:190px; overflow:auto;}
+.tab-content{ display:none; padding:16px; height:190px; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -428,7 +428,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #tab3{
   padding: 16px;
   height: 190px;
-  box-sizing: border-box;
+  overflow: hidden;
 }
    
 #landformLegendContent{
