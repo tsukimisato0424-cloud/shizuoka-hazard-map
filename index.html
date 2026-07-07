@@ -104,7 +104,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   left:0; right:0; padding:0 10px; z-index:99999; touch-action:none;
 }
-.custom-search-bar{ border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
+.search-row{
+  display:flex; align-items:center; gap:10px;
+}
+.custom-search-bar{ flex:1; min-width:0; border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
 .custom-search-bar input, .search-icon-btn{ position:relative; z-index:1; }
 .custom-search-bar input{
   flex:1; border:none; outline:none; font-size:19px!important;
@@ -181,53 +184,66 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .hazard-btn.route-alert{ animation:routeHazardBlink .9s ease-in-out infinite; border-width:2px; z-index:1; }
 
 /* =========================================================================
-   3b. 緊急避難ボタン（常時点灯オフの赤ランプ／押下で警告灯のように点滅）
+   3b. 緊急避難ボタン（検索バー横の丸型・消防用回転灯風ランプ）
    ========================================================================= */
-.emergency-btn{
-  grid-column: 1 / -1;
-  position:relative; z-index:1; overflow:hidden;
-  height:60px; border-radius:16px; margin-top:2px;
-  border:1px solid rgba(255,255,255,.28);
-  background:linear-gradient(160deg,#262b35 0%,#181b22 100%);
-  display:flex; align-items:center; justify-content:center; gap:10px;
-  color:#f2f2f2; font-size:16px!important; font-weight:800; letter-spacing:.4px;
-  box-shadow:0 8px 18px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.06) inset;
-  transition:background .25s, border-color .25s, transform .2s;
+.emergency-round-btn{
+  position:relative; z-index:1500; overflow:visible; flex-shrink:0;
+  width:56px; height:56px; border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #3a1414 0%, #1c0707 70%);
+  border:2px solid rgba(255,255,255,.28);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 18px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.08) inset;
+  transition:transform .2s, border-color .25s, background .25s;
 }
-.emergency-btn::before{
-  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 18% 12%, rgba(255,255,255,.12), rgba(255,255,255,0) 55%);
+.emergency-round-btn::before{
+  content:""; position:absolute; top:4px; left:9px; width:40%; height:26%;
+  border-radius:50%; pointer-events:none; z-index:2;
+  background:radial-gradient(circle, rgba(255,255,255,.5), rgba(255,255,255,0) 70%);
 }
-.emergency-btn:active{ transform:translateY(2px); }
-.emergency-btn .material-icons-round{ position:relative; z-index:1; font-size:24px; color:#ff8a80; }
-.emergency-btn span:not(.material-icons-round){ position:relative; z-index:1; }
+.emergency-round-btn:active{ transform:translateY(2px); }
+.emergency-round-btn .material-icons-round{
+  position:relative; z-index:3; font-size:26px; color:#ff8a80;
+  filter:drop-shadow(0 1px 0 rgba(0,0,0,.4));
+  transition:color .25s;
+}
 
-/* 常時見えている赤いランプ（デフォルトは消灯状態） */
-.emergency-lamp{
-  position:relative; z-index:1; width:13px; height:13px; border-radius:50%; flex-shrink:0;
-  background:radial-gradient(circle at 35% 30%, #6e1a1a, #2c0808 75%);
-  box-shadow:0 0 2px rgba(0,0,0,.7) inset, 0 1px 0 rgba(255,255,255,.05);
+/* 常時見える丸いランプ本体（内側の球体・消灯時は暗い赤） */
+.emergency-round-btn::after{
+  content:""; position:absolute; inset:0; border-radius:50%; z-index:1; pointer-events:none;
+  box-shadow:0 0 0 0 rgba(255,45,40,0); transition:box-shadow .25s;
 }
-.emergency-btn.searching .emergency-lamp,
-.emergency-btn.active .emergency-lamp{
-  animation:emergencyLampBlink .8s steps(1,end) infinite;
+
+/* 回転灯風の光の帯（点灯中のみ表示・回転） */
+.emergency-lamp-ring{
+  position:absolute; inset:-3px; border-radius:50%; z-index:0; pointer-events:none; opacity:0;
 }
-@keyframes emergencyLampBlink{
-  0%, 45%{
-    background:radial-gradient(circle at 35% 30%, #ff6b5c, #d90000 75%);
-    box-shadow:0 0 10px 4px rgba(255,45,40,.9), 0 0 2px rgba(0,0,0,.5) inset;
-  }
-  50%, 100%{
-    background:radial-gradient(circle at 35% 30%, #6e1a1a, #2c0808 75%);
-    box-shadow:0 0 2px rgba(0,0,0,.7) inset;
-  }
-}
-.emergency-btn.searching{ border-color:rgba(255,138,128,.5); }
-.emergency-btn.active{
-  background:linear-gradient(160deg,#7a1512 0%,#3a0a08 100%);
+
+.emergency-round-btn.searching,
+.emergency-round-btn.active{
   border-color:#ff5c5c;
+  background:radial-gradient(circle at 32% 28%, #7a1512 0%, #3a0a08 70%);
 }
-.emergency-btn.active .material-icons-round{ color:#fff; }
+.emergency-round-btn.searching .material-icons-round,
+.emergency-round-btn.active .material-icons-round{ color:#fff; }
+
+.emergency-round-btn.searching .emergency-lamp-ring,
+.emergency-round-btn.active .emergency-lamp-ring{
+  opacity:1;
+  background:conic-gradient(from 0deg,
+    rgba(255,45,40,0) 0deg, rgba(255,60,50,.95) 35deg, rgba(255,45,40,0) 90deg,
+    rgba(255,45,40,0) 200deg, rgba(255,60,50,.7) 235deg, rgba(255,45,40,0) 290deg,
+    rgba(255,45,40,0) 360deg);
+  animation: emergencyBeaconSpin 1.1s linear infinite;
+}
+.emergency-round-btn.searching::after,
+.emergency-round-btn.active::after{
+  animation: emergencyBeaconFlash .8s steps(1,end) infinite;
+}
+@keyframes emergencyBeaconSpin{ to{ transform:rotate(360deg); } }
+@keyframes emergencyBeaconFlash{
+  0%, 45%{ box-shadow:0 0 14px 5px rgba(255,45,40,.85), 0 0 28px 10px rgba(255,45,40,.35); }
+  50%, 100%{ box-shadow:0 0 0 0 rgba(255,45,40,0); }
+}
 
 /* 目的地方向へ動的に流れる緊急避難ルート線 */
 .emergency-route-line{
@@ -357,7 +373,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:16px; height:190px; overflow:hidden; }
+.tab-content{ display:none; padding:16px; height:150px; overflow:hidden; }
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -411,7 +427,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    ========================================================================= */
 #tab3{ padding:0; }
 #landformLegendContent{
-  height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
+  height:150px; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
   color:#e7edf7; padding-right:4px;
 }
 #landformLegendContent .legend-section-title{ color:#8ec2ff!important; font-size:15px!important; }
@@ -498,12 +514,18 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="map"></div>
 
-<!-- 検索バー -->
+<!-- 検索バー + 緊急避難ボタン -->
 <div id="searchContainer">
-  <div class="custom-search-bar glass-panel">
-    <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
-    <button class="search-icon-btn" id="customSearchBtn">
-      <span class="material-icons-round">search</span>
+  <div class="search-row">
+    <div class="custom-search-bar glass-panel">
+      <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
+      <button class="search-icon-btn" id="customSearchBtn">
+        <span class="material-icons-round">search</span>
+      </button>
+    </div>
+    <button id="emergencyBtn" class="emergency-round-btn" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
+      <span class="emergency-lamp-ring"></span>
+      <span class="material-icons-round">emergency</span>
     </button>
   </div>
   <div id="customSuggestions"></div>
@@ -515,11 +537,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
   <button class="hazard-btn" data-type="tsunami"><span class="material-icons-round">tsunami</span>津波浸水</button>
   <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
-  <button id="emergencyBtn" class="emergency-btn" type="button">
-    <span class="emergency-lamp"></span>
-    <span class="material-icons-round">emergency</span>
-    <span>緊急避難ルート案内</span>
-  </button>
 </div>
 
 <!-- 右側フローティングコントロール -->
@@ -1756,8 +1773,10 @@ fullscreenBtn.addEventListener('click', () => {
    I. 緊急避難ルート案内
    -------------------------------------------------------------------------
    現在地から半径圏内の避難所候補を複数取得し、それぞれの徒歩ルートに
-   ついてハザードタイル判定を行い、危険区域の通過割合が最も低く、かつ
-   近い避難所を「最寄りの安全な避難所」として自動選定してルート表示する。
+   ついてハザードタイル判定を行う。ハザード区域を一切通過しない
+   （hazardRatio === 0）避難所の中から最も近いものを最優先で選定し、
+   もし完全に危険区域を回避できるルートが見つからない場合のみ、
+   危険区域の通過割合が最も低いものを次点として選ぶ。
    ========================================================================= */
 const emergencyBtn = document.getElementById('emergencyBtn');
 let emergencyModeActive = false;
@@ -1855,8 +1874,8 @@ function renderEmergencyResult(result, originLatLng){
     <div style="font-weight:bold; color:#ffab91;">緊急避難先: ${name}</div>
     <div style="font-size:14px; color:#dfe6f0; margin-top:2px;">${address}</div>
     ${foundTypes.size > 0
-      ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">⚠ 周辺で最もリスクの低いルートですが、一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
-      : `<div style="color:#6fe0a0; margin-top:5px;">危険区域を回避したルートです</div>`}
+      ? `<div style="color:#ff8a80; font-weight:bold; margin-top:5px;">⚠ 完全に安全なルートが見つからなかったため、最もリスクの低いルートを表示しています。一部危険区域を通過します<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+      : `<div style="color:#6fe0a0; margin-top:5px;">危険区域を回避した、最寄りの安全な避難所です</div>`}
   `;
 
   buildElevationProfileData(coords, pointFlags).then(data => {
@@ -1932,13 +1951,21 @@ async function startEmergencySearch(){
     return;
   }
 
-  // 危険区域の通過割合が低い順、同程度なら距離が短い順に選定
-  valid.sort((a, b) => {
-    if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
-    return a.route.distance - b.route.distance;
-  });
+  // 最優先: ハザード区域を一切通過しない（hazardRatio === 0）避難所の中から
+  // 最も近い（徒歩距離が短い）ものを選ぶ。
+  // 該当が無い場合のみ、危険区域の通過割合が最も低いものを次点として選ぶ。
+  const safeCandidates = valid.filter(v => v.hazardRatio === 0);
 
-  renderEmergencyResult(valid[0], origin);
+  if (safeCandidates.length){
+    safeCandidates.sort((a, b) => a.route.distance - b.route.distance);
+    renderEmergencyResult(safeCandidates[0], origin);
+  } else {
+    valid.sort((a, b) => {
+      if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
+      return a.route.distance - b.route.distance;
+    });
+    renderEmergencyResult(valid[0], origin);
+  }
 }
 
 emergencyBtn.addEventListener('click', () => {
