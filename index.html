@@ -190,25 +190,27 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .emergency-round-btn{
   position:relative; z-index:1500; overflow:visible; flex-shrink:0;
   width:56px; height:56px; border-radius:50%;
-  background:radial-gradient(circle at 32% 28%, #3a1414 0%, #1c0707 70%);
-  border:2px solid rgba(255,255,255,.28);
+  /* 常時、明るい赤色ガラスのランプのように光らせる */
+  background:radial-gradient(circle at 32% 26%, #ff8f7a 0%, #ff3b30 42%, #9e1109 88%);
+  border:2px solid rgba(255,255,255,.55);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.08) inset;
-  transition:transform .2s, border-color .25s, background .25s;
+  box-shadow:0 8px 20px rgba(200,20,10,.55), 0 0 16px 3px rgba(255,70,55,.55), 0 2px 3px rgba(255,255,255,.35) inset;
+  transition:transform .2s, border-color .25s, background .25s, box-shadow .25s;
 }
 .emergency-round-btn::before{
   content:""; position:absolute; top:4px; left:9px; width:40%; height:26%;
   border-radius:50%; pointer-events:none; z-index:2;
-  background:radial-gradient(circle, rgba(255,255,255,.5), rgba(255,255,255,0) 70%);
+  background:radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
 }
 .emergency-round-btn:active{ transform:translateY(2px); }
-.emergency-round-btn .material-icons-round{
-  position:relative; z-index:3; font-size:26px; color:#ff8a80;
-  filter:drop-shadow(0 1px 0 rgba(0,0,0,.4));
+.emergency-round-btn .emergency-kanji-mark{
+  position:relative; z-index:3; font-size:22px; font-weight:900; color:#fff;
+  line-height:1; letter-spacing:0;
+  text-shadow:0 0 6px rgba(255,255,255,.9), 0 0 16px rgba(255,90,70,.95), 0 1px 1px rgba(0,0,0,.45);
   transition:color .25s;
 }
 
-/* 常時見える丸いランプ本体（内側の球体・消灯時は暗い赤） */
+/* 常時見える丸いランプ本体（内側の球体・消灯時も明るい赤ガラス） */
 .emergency-round-btn::after{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:1; pointer-events:none;
   box-shadow:0 0 0 0 rgba(255,45,40,0); transition:box-shadow .25s;
@@ -221,11 +223,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 .emergency-round-btn.searching,
 .emergency-round-btn.active{
-  border-color:#ff5c5c;
-  background:radial-gradient(circle at 32% 28%, #7a1512 0%, #3a0a08 70%);
+  border-color:#fff;
+  background:radial-gradient(circle at 32% 26%, #ffb3a0 0%, #ff4433 46%, #c31d12 92%);
+  box-shadow:0 8px 24px rgba(255,40,20,.7), 0 0 24px 6px rgba(255,80,60,.8), 0 2px 3px rgba(255,255,255,.4) inset;
 }
-.emergency-round-btn.searching .material-icons-round,
-.emergency-round-btn.active .material-icons-round{ color:#fff; }
+.emergency-round-btn.searching .emergency-kanji-mark,
+.emergency-round-btn.active .emergency-kanji-mark{ color:#fff; }
 
 .emergency-round-btn.searching .emergency-lamp-ring,
 .emergency-round-btn.active .emergency-lamp-ring{
@@ -345,15 +348,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:#1a73e8; border:3px solid #fff; border-radius:50%;
   box-shadow:0 2px 6px rgba(0,0,0,.45), 0 0 0 7px rgba(26,115,232,.22);
 }
+/* Googleマップ風の方位ビーム：中心から扇状に淡く光が広がる表現。
+   conic-gradientをマスクとして使い扇形を作り、radial-gradientで
+   中心が明るく外側にいくほど淡くなるライト（懐中電灯）風のグラデーションを重ねる。 */
 .heading-cone{
-  position:absolute; top:50%; left:50%; width:0; height:0; z-index:1;
-  border-left:15px solid transparent;
-  border-right:15px solid transparent;
-  border-top:38px solid rgba(26,115,232,.55);
-  transform-origin:0 0;
+  position:absolute; top:0; left:0; width:70px; height:70px; z-index:1;
+  border-radius:50%;
+  background: radial-gradient(circle at 50% 50%, rgba(26,115,232,.60) 0%, rgba(26,115,232,.32) 42%, rgba(26,115,232,0) 74%);
+  -webkit-mask-image: conic-gradient(from -36deg at 50% 50%,
+    rgba(0,0,0,0) 0deg, rgba(0,0,0,1) 10deg, rgba(0,0,0,1) 62deg, rgba(0,0,0,0) 72deg, rgba(0,0,0,0) 360deg);
+  mask-image: conic-gradient(from -36deg at 50% 50%,
+    rgba(0,0,0,0) 0deg, rgba(0,0,0,1) 10deg, rgba(0,0,0,1) 62deg, rgba(0,0,0,0) 72deg, rgba(0,0,0,0) 360deg);
+  transform-origin:50% 50%;
   opacity:0; pointer-events:none;
   transition:opacity .3s ease;
-  filter:drop-shadow(0 0 3px rgba(26,115,232,.6));
 }
 .heading-cone.visible{ opacity:1; }
 
@@ -593,8 +601,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     </div>
     <button id="emergencyBtn" class="emergency-round-btn" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
       <span class="emergency-lamp-ring"></span>
-      <span class="material-icons-round">emergency</span>
-      <span style="position:absolute; font-size:12px; font-weight:bold; color:#ff8a80; pointer-events:none;">危</span>
+      <span class="emergency-kanji-mark">危</span>
     </button>
   </div>
   <div id="customSuggestions"></div>
@@ -643,6 +650,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
         <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
         <div class="map-type-item" onclick="changeMap('landform_overlay')">地形分類</div>
+        <div class="map-type-item" onclick="changeMap('volcano_overlay')">火山地形</div>
       </div>
     </details>
   </div>
@@ -765,12 +773,17 @@ const baseLayers = {
 };
 const reliefOverlay = L.tileLayer(`${GSI}/relief/{z}/{x}/{y}.png`, { opacity:0.5, attribution:'© 国土地理院' });
 
+/* 火山土地条件図（火山地形分類）ラスタオーバーレイ。
+   火山周辺のみデータが存在し、それ以外の範囲は透過表示となる。 */
+const volcanoOverlay = L.tileLayer(`${GSI}/vlcd/{z}/{x}/{y}.png`, { opacity:0.75, maxZoom:17, attribution:'© 国土地理院（火山土地条件図）' });
+
 let currentBaseLayer = baseLayers.pale.addTo(map);
 
 function changeMap(type){
   if (currentBaseLayer) map.removeLayer(currentBaseLayer);
   if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
   if (map.hasLayer(landformLayer)) map.removeLayer(landformLayer);
+  if (map.hasLayer(volcanoOverlay)) map.removeLayer(volcanoOverlay);
 
   if (type === 'relief_overlay'){
     currentBaseLayer = baseLayers.pale.addTo(map);
@@ -778,16 +791,24 @@ function changeMap(type){
   } else if (type === 'landform_overlay'){
     currentBaseLayer = baseLayers.pale.addTo(map);
     landformLayer.addTo(map);
+  } else if (type === 'volcano_overlay'){
+    currentBaseLayer = baseLayers.pale.addTo(map);
+    volcanoOverlay.addTo(map);
   } else {
     currentBaseLayer = (baseLayers[type] || baseLayers.pale).addTo(map);
   }
   currentBaseLayer.bringToBack();
 
-  if (type === 'landform_overlay'){
+  if (type === 'landform_overlay' || type === 'volcano_overlay'){
     switchTab(3);
     const panel = document.getElementById('statusPanel');
     if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
   }
+
+  // 地形分類（自然地形／人工地形）レイヤー以外に切り替えた場合は、
+  // 前回選択していた地点の地形分類ハイライトが凡例に残ってしまうため
+  // ここで明示的にクリアする（現在地・目的地選択時の表示不整合を防止）。
+  if (type !== 'landform_overlay') highlightLandformLegendByColor(null);
 
   mapTypeDetails.open = false;
   mapTypeCard.setAttribute('open-state', 'false');
@@ -993,6 +1014,23 @@ const LANDFORM_LEGEND = {
   ]
 };
 
+/* 火山地形（火山土地条件図）参考凡例。
+   国土地理院「火山土地条件図」は火山ごとに個別の凡例（色）が用意されており
+   全国統一の色分けではないため、ここでは代表的によく使われる分類区分と
+   一般的な災害リスクの要点を参考情報として掲載する（実際の色は火山や
+   図幅により異なる場合がある）。地図切替の「火山地形」を選択すると、
+   国土地理院の火山土地条件図ラスタ（火山周辺のみデータあり）が重なる。 */
+const VOLCANO_LEGEND = [
+  ['火口・爆裂火口', '#e74c3c', '噴火時に噴石・火山ガスが直接及ぶ最も危険性の高い区域。'],
+  ['中央火口丘・溶岩ドーム', '#922b21', 'ドームの成長・崩壊に伴う火砕流発生の起点になりやすい。'],
+  ['溶岩流', '#8e44ad', '高温の溶岩による焼失域。谷筋など低い地形に沿って流下する。'],
+  ['火砕流堆積地', '#e67e22', '高速・高温の火砕流が到達する範囲。生命に関わる極めて高いリスク。'],
+  ['岩屑なだれ堆積物', '#a9784f', '山体崩壊により発生した土砂が高速で広範囲に到達した地形。'],
+  ['火山泥流堆積地', '#c9a66b', '噴火時の融雪や豪雨により谷筋・山麓に泥流が広がる区域。'],
+  ['降下火砕物（スコリア・軽石丘等）', '#f1c40f', '噴石・軽石・火山灰の降下・堆積による建物被害や交通障害のリスク。'],
+  ['火山体（山腹斜面）', '#8d6e63', '急傾斜地形のため、土石流・崖崩れなど一般的な土砂災害にも注意が必要。']
+];
+
 function buildLandformLegendHtml(){
   const section = (title, items) => {
     let html = `<span class="legend-section-title">【${title}】</span>`;
@@ -1005,7 +1043,20 @@ function buildLandformLegendHtml(){
     });
     return html;
   };
-  return section('自然地形', LANDFORM_LEGEND.natural) + section('人工地形', LANDFORM_LEGEND.artificial);
+
+  let volcanoHtml = `<span class="legend-section-title">【火山地形（参考）】</span>
+    <div style="font-size:12px; color:#c3cfe8; margin:-2px 0 6px;">
+      ※火山土地条件図は火山ごとに凡例が異なるため、代表的な区分の例です。地図切替の「火山地形」で該当エリアに重畳表示されます。
+    </div>`;
+  VOLCANO_LEGEND.forEach(([name, color, risk]) => {
+    volcanoHtml += `
+      <div class="landform-legend-item" data-color="${color}">
+        <div class="landform-legend-swatch" style="background:${color};"></div>
+        <div class="landform-legend-text"><b>${name}</b><span>${risk}</span></div>
+      </div>`;
+  });
+
+  return section('自然地形', LANDFORM_LEGEND.natural) + section('人工地形', LANDFORM_LEGEND.artificial) + volcanoHtml;
 }
 
 function lonLatToTilePixel(lon, lat, coords){
@@ -1167,7 +1218,13 @@ function highlightLandformLegendByColor(color){
 }
 
 async function maybeHighlightLandformAt(lat, lng){
-  if (!map.hasLayer(landformLayer)) return;
+  if (!map.hasLayer(landformLayer)){
+    // 地形分類レイヤーが表示されていない場合は、前回のハイライトが
+    // 残ったままにならないようクリアしておく（現在地取得時などに
+    // 古い目的地の凡例ハイライトが表示され続けるのを防ぐ）。
+    highlightLandformLegendByColor(null);
+    return;
+  }
   try {
     const code = await getLandformCodeAt(lat, lng);
     const color = (code !== null && code !== undefined) ? getLandformColor(code) : null;
