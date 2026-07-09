@@ -413,7 +413,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:16px; height:168px !important; overflow:auto; box-sizing: border-box;}
+.tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -458,7 +458,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    6b. 高低差断面図
    ========================================================================= */
 #elevationProfileContainer{
-  width:100%; flex:1; min-height:170px; position:relative;
+  width:100%; flex:1; min-height:130px; position:relative;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -496,6 +496,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .landform-legend-swatch{ width:15px; height:15px; border-radius:3px; flex-shrink:0; margin-top:2px; border:1px solid rgba(255,255,255,.4); }
 .landform-legend-text b{ color:#fff; }
 .landform-legend-text span{ display:block; color:#c3cfe8; font-size:13px; }
+
+/* =========================================================================
+   6d. 緊急避難：代替避難所リスト
+   ========================================================================= */
+.emergency-alt-list{ margin-top:6px; display:flex; flex-direction:column; gap:6px; }
+.emergency-alt-title{ font-size:13px; font-weight:bold; color:#ffd54f; margin-bottom:2px; }
+.emergency-alt-item{
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  padding:8px 10px; border-radius:10px; cursor:pointer;
+  background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
+  transition:background .2s, border-color .2s;
+}
+.emergency-alt-item:active{ background:rgba(255,255,255,.20); }
+.emergency-alt-item .alt-name{ font-size:14px; font-weight:bold; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.emergency-alt-item .alt-meta{ font-size:12px; color:#6fe0a0; flex-shrink:0; white-space:nowrap; }
+.emergency-alt-item.hazardous .alt-meta{ color:#ff8a80; }
 
 /* =========================================================================
    7. Leaflet ポップアップ調整
@@ -697,6 +713,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div id="sub1-content" style="font-size:16px; line-height:1.5;">地点を選択してください</div>
         <div style="font-weight:bold; font-size:17px; margin-top:9px; margin-bottom:5px;">経路リスク判定</div>
         <div id="routeHazardStatus" style="font-size:16px; line-height:1.5;"></div>
+        <div id="emergencyAltContainer" style="margin-top:8px;"></div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
         <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">地点情報</div>
@@ -2279,7 +2296,7 @@ async function evaluateShelterCandidate(originLatLng, candidate){
   }
 }
 
-function renderEmergencyResult(result, originLatLng){
+function renderEmergencyResult(result, originLatLng, opts = {}){
   const { candidate, route, coords, pointFlags, foundTypes, hazardRatio, destinationHazardous, destinationHazardTypes } = result;
   const props = candidate.feature.properties || {};
   const name = props['施設・場所名'] || '名称不明の避難所';
@@ -2341,13 +2358,62 @@ function renderEmergencyResult(result, originLatLng){
 
   emergencyBtn.classList.remove('searching');
   emergencyBtn.classList.add('active');
+
+  renderEmergencyAlternatives(originLatLng, opts.noSafeShelterFound);
 }
+
+/* 現在選択中以外の避難所候補を「別の避難所を選ぶ」リストとして表示し、
+   タップで選択先を切り替えられるようにする。 */
+function renderEmergencyAlternatives(originLatLng, noSafeShelterFound){
+  const container = document.getElementById('emergencyAltContainer');
+  if (!container) return;
+
+  if (!emergencyOptions || emergencyOptions.length < 2){
+    container.innerHTML = '';
+    return;
+  }
+
+  const title = noSafeShelterFound
+    ? '他の避難所候補（近隣にハザード非該当の避難所が見つかりませんでした）'
+    : '他の避難所候補（タップで変更）';
+
+  let html = `<div class="emergency-alt-list"><div class="emergency-alt-title">${title}</div>`;
+  emergencyOptions.forEach((opt, idx) => {
+    if (idx === emergencyOptionIndex) return; // 現在選択中の候補は一覧に出さない
+    const props = opt.candidate.feature.properties || {};
+    const name = props['施設・場所名'] || '名称不明の避難所';
+    const mins = Math.round(opt.route.duration / 60);
+    const km = (opt.route.distance / 1000).toFixed(1);
+    const hazardous = opt.destinationHazardous || opt.hazardRatio > 0;
+    html += `
+      <div class="emergency-alt-item${hazardous ? ' hazardous' : ''}" onclick="selectEmergencyOption(${idx})">
+        <span class="alt-name">${name}</span>
+        <span class="alt-meta">${mins}分 (${km}km)${hazardous ? ' ⚠' : ' ✓'}</span>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+window.selectEmergencyOption = function(idx){
+  if (!emergencyOptions || !emergencyOptions[idx] || !currentLocation) return;
+  emergencyOptionIndex = idx;
+  const noSafeShelterFound = emergencyOptions.every(o => o.destinationHazardous);
+  renderEmergencyResult(emergencyOptions[idx], currentLocation, { noSafeShelterFound });
+};
+
+let emergencyOptions = [];
+let emergencyOptionIndex = -1;
 
 async function startEmergencySearch(){
   emergencyBtn.classList.add('searching');
   switchTab(1);
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:現在地を確認中...</span>';
+  const altContainer = document.getElementById('emergencyAltContainer');
+  if (altContainer) altContainer.innerHTML = '';
+  emergencyOptions = [];
+  emergencyOptionIndex = -1;
 
   let origin = currentLocation;
   if (!origin){
@@ -2379,23 +2445,50 @@ async function startEmergencySearch(){
     return;
   }
 
-  const candidates = features
+  const nearbyPool = features
     .map(f => {
       const [lng, lat] = f.geometry.coordinates;
       const latlng = L.latLng(lat, lng);
       return { feature: f, latlng, straightDist: origin.distanceTo(latlng) };
     })
-    .filter(c => c.straightDist < 10000)
+    .filter(c => c.straightDist < 12000)
     .sort((a, b) => a.straightDist - b.straightDist)
-    .slice(0, 8);
+    .slice(0, 25);
 
-  if (!candidates.length){
-    hazardStatusEl.innerHTML = '<span style="color:#ff8a80;">近隣(10km以内)に避難所データが見つかりませんでした</span>';
+  if (!nearbyPool.length){
+    hazardStatusEl.innerHTML = '<span style="color:#ff8a80;">近隣(12km以内)に避難所データが見つかりませんでした</span>';
     deactivateEmergencyMode(true);
     return;
   }
 
-  const evaluations = await Promise.all(candidates.map(c => evaluateShelterCandidate(origin, c)));
+  if (!emergencyModeActive) return;
+  hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:避難所の安全性を確認中...</span>';
+
+  // まず避難所そのものがハザード区域に該当するかどうかだけを軽量に判定し、
+  // 「ハザードに該当しない避難所」を優先的な候補プールとして絞り込む。
+  // （経路の詳細計算は候補を絞り込んだ後にのみ行い、通信量を抑える）
+  const destinationChecks = await Promise.all(nearbyPool.map(async c => {
+    const types = await checkPointHazard(c.latlng.lat, c.latlng.lng);
+    return { ...c, destinationHazardTypesPrecheck: types };
+  }));
+  if (!emergencyModeActive) return;
+
+  const safePool = destinationChecks
+    .filter(c => c.destinationHazardTypesPrecheck.length === 0)
+    .sort((a, b) => a.straightDist - b.straightDist)
+    .slice(0, 5);
+  const hazardousPool = destinationChecks
+    .filter(c => c.destinationHazardTypesPrecheck.length > 0)
+    .sort((a, b) => a.straightDist - b.straightDist)
+    .slice(0, 5);
+
+  const noSafeShelterFound = safePool.length === 0;
+  const evalPool = safePool.length ? safePool : hazardousPool;
+
+  if (!emergencyModeActive) return;
+  hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:徒歩ルートを計算中...</span>';
+
+  const evaluations = await Promise.all(evalPool.map(c => evaluateShelterCandidate(origin, c)));
   if (!emergencyModeActive) return;
 
   const valid = evaluations.filter(Boolean);
@@ -2405,32 +2498,16 @@ async function startEmergencySearch(){
     return;
   }
 
-  // 選定の優先順位:
-  // 1. 避難所自体がハザード区域に該当せず、かつ経路もハザード区域を一切
-  //    通過しない候補の中から、最も近い（徒歩距離が短い）ものを選ぶ。
-  // 2. 該当が無い場合は、避難所自体はハザード非該当のものに絞り、その中で
-  //    経路の危険区域通過割合が最も低い（同程度なら最も近い）ものを選ぶ。
-  // 3. それも無い場合のみ、避難所自体がハザードに該当するものも含めて、
-  //    経路の危険区域通過割合が最も低いものを次点として選ぶ。
-  const nonHazardousShelters = valid.filter(v => !v.destinationHazardous);
-  const fullySafe = nonHazardousShelters.filter(v => v.hazardRatio === 0);
+  // 経路の危険区域通過割合が低いもの（同程度なら近いもの）を優先して並べる。
+  // このリストが「タップで選択できる避難所候補」の一覧になる。
+  valid.sort((a, b) => {
+    if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
+    return a.route.distance - b.route.distance;
+  });
 
-  if (fullySafe.length){
-    fullySafe.sort((a, b) => a.route.distance - b.route.distance);
-    renderEmergencyResult(fullySafe[0], origin);
-  } else if (nonHazardousShelters.length){
-    nonHazardousShelters.sort((a, b) => {
-      if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
-      return a.route.distance - b.route.distance;
-    });
-    renderEmergencyResult(nonHazardousShelters[0], origin);
-  } else {
-    valid.sort((a, b) => {
-      if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
-      return a.route.distance - b.route.distance;
-    });
-    renderEmergencyResult(valid[0], origin);
-  }
+  emergencyOptions = valid;
+  emergencyOptionIndex = 0;
+  renderEmergencyResult(valid[0], origin, { noSafeShelterFound });
 }
 
 emergencyBtn.addEventListener('click', () => {
