@@ -580,6 +580,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   margin-top: 25px; color: #666; font-size: 11px;
   line-height: 1.6; text-align: center;
 }
+
+/* =========================================================================
+   10. 航空写真ハイブリッド（写真＋標準地図注記の重ね合わせ）
+   ========================================================================= */
+.gsi-label-overlay{ mix-blend-mode: multiply; }
    
 </style>
 </head>
@@ -682,6 +687,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       <div class="maptype-content">
         <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
         <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
+        <div class="map-type-item" onclick="changeMap('hybrid')">航空写真+注記</div>
         <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
         <div class="map-type-item" onclick="changeMap('landform_overlay')">地形分類</div>
         <div class="map-type-item" onclick="changeMap('volcano_overlay')">火山地形</div>
@@ -749,7 +755,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
       </div>
       <div class="panel-column profile-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">高低差断面図</div>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">
+          高低差断面図<span id="elevGainDisplay" style="font-size:13px; font-weight:600; color:#ffd54f; margin-left:6px;"></span>
+        </div>
         <div id="elevationProfileContainer">
           <div id="elevationProfilePlaceholder">ルートを選択してください</div>
           <svg id="elevationProfileSvg" viewBox="0 0 300 170" preserveAspectRatio="none" style="display:none;"></svg>
@@ -808,6 +816,17 @@ const baseLayers = {
 };
 const reliefOverlay = L.tileLayer(`${GSI}/relief/{z}/{x}/{y}.png`, { opacity:0.5, attribution:'© 国土地理院' });
 
+/* 航空写真の上に標準地図（淡色地図）を「乗算(multiply)」ブレンドで重ねる
+   ハイブリッド表示。淡色地図タイルの白～薄い背景色が写真に溶け込んで消え、
+   道路線・注記（文字）・境界線などが写真の上に浮かんで見える。
+   ただし淡色地図には緑地・水面などの塗り色も含まれるため、完全な
+   「注記のみ」ではなく、それらは写真にわずかに色味として重なる点に注意。
+   国土地理院は注記のみの独立したタイルを公式には提供していないための
+   代替アプローチ。 */
+const paleLabelOverlay = L.tileLayer(`${GSI}/pale/{z}/{x}/{y}.png`, {
+  opacity:1, className:'gsi-label-overlay', attribution:'© 国土地理院'
+});
+
 /* 火山土地条件図（火山地形分類）ラスタオーバーレイ。
    国土地理院「vlcd」データは全国一律ではなく、全国の主要な活火山
    （富士山・浅間山・桜島など約40火山）周辺のみ整備・公開されている。
@@ -841,6 +860,7 @@ function changeMap(type){
   if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
   if (map.hasLayer(landformLayer)) map.removeLayer(landformLayer);
   if (map.hasLayer(volcanoOverlay)) map.removeLayer(volcanoOverlay);
+  if (map.hasLayer(paleLabelOverlay)) map.removeLayer(paleLabelOverlay);
 
   if (type === 'relief_overlay'){
     currentBaseLayer = baseLayers.pale.addTo(map);
@@ -851,10 +871,14 @@ function changeMap(type){
   } else if (type === 'volcano_overlay'){
     currentBaseLayer = baseLayers.pale.addTo(map);
     volcanoOverlay.addTo(map);
+  } else if (type === 'hybrid'){
+    currentBaseLayer = baseLayers.ort.addTo(map);
+    paleLabelOverlay.addTo(map);
   } else {
     currentBaseLayer = (baseLayers[type] || baseLayers.pale).addTo(map);
   }
   currentBaseLayer.bringToBack();
+  if (type === 'hybrid') paleLabelOverlay.bringToFront();
 
   if (type !== 'volcano_overlay') hideVolcanoCoverageNotice();
 
@@ -1361,6 +1385,9 @@ const lowestPointIcon = createTriangleIcon('#1a73e8');
 let highestPointMarker = null, lowestPointMarker = null;
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
+let greenRouteLayer = null;
+let routeCandidates = [];
+let activeRouteIdx = 0;
 
 /* --- 方位（コンパス）表示 --- */
 let currentHeadingDeg = null;
@@ -1534,6 +1561,8 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   enableCompass();
   deactivateEmergencyMode();
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  routeCandidates = []; activeRouteIdx = 0;
   if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
   destination = null;
 
@@ -1740,6 +1769,7 @@ async function updateElevationExtremes(data){
 function renderElevationProfile(data){
   const svg = document.getElementById('elevationProfileSvg');
   const placeholder = document.getElementById('elevationProfilePlaceholder');
+  const gainEl = document.getElementById('elevGainDisplay');
   if (!svg || !placeholder) return;
 
   if (!data || data.length < 2){
@@ -1747,6 +1777,7 @@ function renderElevationProfile(data){
     svg.innerHTML = '';
     placeholder.style.display = 'block';
     placeholder.innerText = 'ルートを選択してください';
+    if (gainEl) gainEl.innerText = '';
     return;
   }
 
@@ -1763,6 +1794,7 @@ function renderElevationProfile(data){
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
   const gain = data.reduce((acc, d, i) => i === 0 ? 0 : acc + Math.max(0, d.elevation - data[i - 1].elevation), 0);
+  if (gainEl) gainEl.innerText = `（↑累積上昇 約${Math.round(gain)}m）`;
 
   const plotBottom = H - padB - extrude;
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
@@ -1841,13 +1873,70 @@ function renderElevationProfile(data){
     <circle cx="${ex}" cy="${ey}" r="6.5" fill="#e53935" stroke="#fff" stroke-width="1.8"/>
     <text x="${sx}" y="${Math.max(padT - 2, Number(sy) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#1a73e8" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">S</text>
     <text x="${ex}" y="${Math.max(padT - 2, Number(ey) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#e53935" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">G</text>
-    <text x="${(W - padR).toFixed(1)}" y="16" font-size="13" fill="#ffffff" text-anchor="end">↑累積上昇 約${Math.round(gain)}m</text>
   `;
 }
-   
+
+/* 主ルート（危険区域判定を行い赤/青で色分け）を有効化して描画する。
+   タップでの入れ替え時にも使う共通処理。 */
+async function activateHazardRoute(idx){
+  const cand = routeCandidates[idx];
+  if (!cand) return;
+  activeRouteIdx = idx;
+  const { coords, route } = cand;
+  const latlngs = coords.map(c => [c[1], c[0]]);
+
+  document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
+  document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
+
+  const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
+  cand.pointFlags = pointFlags; cand.foundTypes = foundTypes;
+
+  if (routeLayer) map.removeLayer(routeLayer);
+  const segments = buildColoredRouteSegments(latlngs, pointFlags);
+  routeLayer = L.layerGroup(segments.map(seg =>
+    L.polyline(seg.points, { color: seg.color, weight:5, opacity:0.85 })
+      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); })
+  )).addTo(map);
+
+  updateRouteHazardAlert(foundTypes);
+  document.getElementById('routeHazardStatus').innerHTML = foundTypes.size > 0
+    ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
+    : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
+
+  buildElevationProfileData(coords, pointFlags).then(data => {
+    renderElevationProfile(data);
+    updateElevationExtremes(data);
+  });
+}
+
+/* もう一方のルート（大きい通り・曲がり角少なめ想定）を緑一色で描画する。
+   リスク判定は行わない。 */
+function drawGreenRoute(idx){
+  const cand = routeCandidates[idx];
+  if (!cand) return;
+  const latlngs = cand.coords.map(c => [c[1], c[0]]);
+  if (greenRouteLayer) map.removeLayer(greenRouteLayer);
+  greenRouteLayer = L.polyline(latlngs, { color:'#27ae60', weight:5, opacity:0.85 })
+    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); })
+    .addTo(map);
+}
+
+/* いずれかのルート線がタップされたとき、ハザード判定側と緑ルート側を
+   入れ替える（タップされた方が新たにハザード判定＝赤/青表示になる）。 */
+function onRouteTapped(tappedIdx){
+  if (tappedIdx === activeRouteIdx) return;
+  const newGreenIdx = activeRouteIdx;
+  if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  activateHazardRoute(tappedIdx);
+  drawGreenRoute(newGreenIdx);
+}
+
 async function drawRoute(){
   if (!currentLocation || !destination) return;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  routeCandidates = []; activeRouteIdx = 0;
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルートを計算中...</span>';
@@ -1858,38 +1947,47 @@ async function drawRoute(){
   const to = `${destination.lng},${destination.lat}`;
 
   try {
-    const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson`)
+    /* alternatives=true / steps=true を付けて、可能であれば複数ルートを
+       まとめて取得する（OSRMのデモサーバーは代替ルートを返さない場合もある）。 */
+    const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson&alternatives=true&steps=true`)
       .then(r => r.json()).catch(() => null);
 
-    if (footRes?.routes?.[0]){
-      const route = footRes.routes[0];
-      const coords = route.geometry.coordinates;
-      const latlngs = coords.map(c => [c[1], c[0]]);
-
-      document.getElementById('walkTime').innerText = `${Math.round(route.duration / 60)} 分`;
-      document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
-
-      const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
-      const segments = buildColoredRouteSegments(latlngs, pointFlags);
-      routeLayer = L.layerGroup(segments.map(seg => L.polyline(seg.points, { color: seg.color, weight:5, opacity:0.85 }))).addTo(map);
-
-      updateRouteHazardAlert(foundTypes);
-      hazardStatusEl.innerHTML = foundTypes.size > 0
-        ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
-        : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
-
-      buildElevationProfileData(coords, pointFlags).then(data => {
-        renderElevationProfile(data);
-        updateElevationExtremes(data);
-      });
-    } else {
+    const routes = footRes?.routes;
+    if (!routes?.length){
       document.getElementById('walkTime').innerText = '-- 分';
       document.getElementById('walkDist').innerText = '(-- km)';
       hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
       clearRouteHazardAlert();
       renderElevationProfile(null);
       updateElevationExtremes(null);
+      return;
     }
+
+    const mainIdx = 0;
+
+    // 「大きい通り・曲がり角少なめ」の緑ルートは、案内ステップ数
+    // （＝曲がり角の数）が最も少ない代替ルートを採用する近似ロジック。
+    let greenIdx = -1, bestTurns = Infinity;
+    routes.forEach((r, i) => {
+      if (i === mainIdx) return;
+      const turns = r.legs.reduce((sum, leg) => sum + leg.steps.length, 0);
+      if (turns < bestTurns){ bestTurns = turns; greenIdx = i; }
+    });
+
+    routeCandidates = routes
+      .map((r, i) => ({
+        coords: r.geometry.coordinates,
+        route: r,
+        role: i === mainIdx ? 'hazard' : (i === greenIdx ? 'green' : null)
+      }))
+      .filter(c => c.role);
+
+    const hazardCandIdx = routeCandidates.findIndex(c => c.role === 'hazard');
+    await activateHazardRoute(hazardCandIdx);
+
+    const greenCandIdx = routeCandidates.findIndex(c => c.role === 'green');
+    if (greenCandIdx !== -1) drawGreenRoute(greenCandIdx);
+
   } catch {
     hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>';
     clearRouteHazardAlert();
