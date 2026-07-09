@@ -267,6 +267,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ box-shadow:0 0 0 0 rgba(39,174,96,0); }
 }
 
+#volcanoCoverageNotice{
+  position:absolute; top:calc(158px + env(safe-area-inset-top,0px));
+  left:10px; right:10px; z-index:1900; border-radius:14px; padding:10px 14px;
+  align-items:center; font-size:14px!important; line-height:1.4!important;
+}
+
 /* =========================================================================
    4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
    ========================================================================= */
@@ -355,7 +361,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    conic-gradientをマスクとして使い扇形を作り、radial-gradientで
    中心が明るく外側にいくほど淡くなるライト（懐中電灯）風のグラデーションを重ねる。 */
 .heading-cone{
-  position:absolute; top:-140px; left:-140px; width:350px; height:350px; z-index:1;
+  position:absolute; top:-53px; left:-53px; width:175px; height:175px; z-index:1;
   border-radius:50%;
   background: radial-gradient(circle at 50% 50%, rgba(26,115,232,.60) 0%, rgba(26,115,232,.32) 42%, rgba(26,115,232,0) 74%);
   -webkit-mask-image: conic-gradient(from -36deg at 50% 50%,
@@ -374,6 +380,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #statusPanel{
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:10px; right:10px; z-index:1500; overflow:visible; border-radius:24px!important;
+  height:200px;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
@@ -406,7 +413,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
 
-.tab-content{ display:none; padding:16px; height:260px !important; overflow:auto; box-sizing: border-box;}
+.tab-content{ display:none; padding:16px; height:168px !important; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
 
 #toggleStatusBtn{
@@ -427,7 +434,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 .panel-row{ display:flex; height:100%; }
 .panel-column{ flex:1; overflow-y:auto; }
-.profile-column{ display:flex; flex-direction:column; flex:1.7 !important; min-width:0; }
+.profile-column{ display:flex; flex-direction:column; flex:1 !important; min-width:0; }
 
 .route-modes{ display:flex; gap:8px; flex:1; }
 .route-mode-box{
@@ -620,6 +627,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
 </div>
 
+<!-- 火山土地条件図：整備範囲外の通知 -->
+<div id="volcanoCoverageNotice" class="glass-panel" style="display:none;">
+  <span class="material-icons-round" style="font-size:20px; margin-right:8px; flex-shrink:0;">info</span>
+  <span>この付近には火山土地条件図データが整備されていません（主要な活火山周辺のみ提供）</span>
+</div>
+
 <!-- 右側フローティングコントロール -->
 <div id="rightControlContainer">
 
@@ -779,8 +792,30 @@ const baseLayers = {
 const reliefOverlay = L.tileLayer(`${GSI}/relief/{z}/{x}/{y}.png`, { opacity:0.5, attribution:'© 国土地理院' });
 
 /* 火山土地条件図（火山地形分類）ラスタオーバーレイ。
-   火山周辺のみデータが存在し、それ以外の範囲は透過表示となる。 */
-const volcanoOverlay = L.tileLayer(`${GSI}/vlcd/{z}/{x}/{y}.png`, { opacity:0.75, maxZoom:17, attribution:'© 国土地理院（火山土地条件図）' });
+   国土地理院「vlcd」データは全国一律ではなく、全国の主要な活火山
+   （富士山・浅間山・桜島など約40火山）周辺のみ整備・公開されている。
+   そのため、対象火山から離れた地域を表示している場合は、タイル自体が
+   存在せず（404）、地図上に赤系の火山地形が一切表示されないのが正しい
+   挙動となる。これが「色が出ない」と誤解されやすい点のため、対象範囲
+   外を検知した場合は明示的に通知を出す。 */
+const volcanoOverlay = L.tileLayer(`${GSI}/vlcd/{z}/{x}/{y}.png`, { opacity:0.85, minZoom:10, maxZoom:17, attribution:'© 国土地理院（火山土地条件図）' });
+let volcanoTileLoadCount = 0, volcanoTileErrorCount = 0;
+volcanoOverlay.on('loading', () => { volcanoTileLoadCount = 0; volcanoTileErrorCount = 0; });
+volcanoOverlay.on('tileload', () => { volcanoTileLoadCount++; hideVolcanoCoverageNotice(); });
+volcanoOverlay.on('tileerror', () => { volcanoTileErrorCount++; });
+volcanoOverlay.on('load', () => {
+  if (map.hasLayer(volcanoOverlay) && volcanoTileLoadCount === 0 && volcanoTileErrorCount > 0){
+    showVolcanoCoverageNotice();
+  }
+});
+function showVolcanoCoverageNotice(){
+  const el = document.getElementById('volcanoCoverageNotice');
+  if (el) el.style.display = 'flex';
+}
+function hideVolcanoCoverageNotice(){
+  const el = document.getElementById('volcanoCoverageNotice');
+  if (el) el.style.display = 'none';
+}
 
 let currentBaseLayer = baseLayers.pale.addTo(map);
 
@@ -803,6 +838,8 @@ function changeMap(type){
     currentBaseLayer = (baseLayers[type] || baseLayers.pale).addTo(map);
   }
   currentBaseLayer.bringToBack();
+
+  if (type !== 'volcano_overlay') hideVolcanoCoverageNotice();
 
   if (type === 'landform_overlay' || type === 'volcano_overlay'){
     switchTab(3);
@@ -1363,6 +1400,79 @@ function enableCompass(){
   }
 }
 
+/* --- 端末上のみで完結する、なめらかな現在地追従（Googleマップ風）---
+   navigator.geolocation.watchPosition() でGPS更新を受け取るが、これは
+   端末のGPS/位置情報チップからのイベントであり、サーバへの通信は
+   一切発生しない。受け取った新しい座標へは瞬間移動させず、
+   requestAnimationFrame で数百ミリ秒かけて滑らかに補間しながら
+   マーカーを動かすことで、ブレのない滑らかな移動を実現する。
+   住所・標高・ハザード判定などサーバAPIを呼ぶ重い処理は、初回取得時や
+   「現在地」ボタンを押した時など、明示的なタイミングでのみ実行し、
+   GPS更新のたびには呼び出さないことでサーバ負荷を避ける。 */
+let geoWatchId = null;
+let displayedLocation = null;
+let markerAnimFrame = null;
+
+function easeInOutQuad(t){ return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+function animateMarkerTo(target){
+  if (!currentMarker){ displayedLocation = target; return; }
+  const start = displayedLocation || target;
+  if (markerAnimFrame) cancelAnimationFrame(markerAnimFrame);
+
+  // 移動距離が極端に大きい場合（初回取得や大幅なワープ）は補間せず即座に反映
+  if (start.distanceTo(target) > 300){
+    currentMarker.setLatLng(target);
+    displayedLocation = target;
+    return;
+  }
+
+  const duration = 600;
+  const startTime = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - startTime) / duration);
+    const e = easeInOutQuad(t);
+    const interp = L.latLng(
+      start.lat + (target.lat - start.lat) * e,
+      start.lng + (target.lng - start.lng) * e
+    );
+    currentMarker.setLatLng(interp);
+    displayedLocation = interp;
+    if (t < 1) markerAnimFrame = requestAnimationFrame(step);
+    else displayedLocation = target;
+  }
+  markerAnimFrame = requestAnimationFrame(step);
+}
+
+function startContinuousTracking(){
+  if (geoWatchId !== null || !navigator.geolocation) return;
+  geoWatchId = navigator.geolocation.watchPosition(pos => {
+    const newLoc = L.latLng(pos.coords.latitude, pos.coords.longitude);
+    currentLocation = newLoc;
+
+    if (!currentMarker){
+      currentMarker = L.marker(newLoc, { icon: currentLocationIcon }).addTo(map);
+      displayedLocation = newLoc;
+      applyHeadingToMarker();
+    } else {
+      animateMarkerTo(newLoc);
+    }
+    // GPS更新のたびに住所・標高・ハザードAPIへ問い合わせるとサーバ負荷が
+    // 大きいため、ここではマーカーの滑らかな移動のみ行う。
+  }, error => {
+    if (error.code === error.PERMISSION_DENIED){
+      document.getElementById('locationHelpOverlay').style.display = 'flex';
+    }
+  }, { enableHighAccuracy:true, maximumAge:2000, timeout:15000 });
+}
+
+function stopContinuousTracking(){
+  if (geoWatchId !== null){
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+  }
+}
+
 function updateCurrentLocation(isInitial = false){
   if (navigator.permissions){
     navigator.permissions.query({ name:'geolocation' }).then(result => {
@@ -1383,6 +1493,7 @@ function executeGeolocation(isInitial){
 
     if (currentMarker) map.removeLayer(currentMarker);
     currentMarker = L.marker(currentLocation, { icon: currentLocationIcon }).addTo(map);
+    displayedLocation = currentLocation;
     applyHeadingToMarker();
 
     if (isInitial || !destination) map.setView(currentLocation, 14);
@@ -1391,6 +1502,10 @@ function executeGeolocation(isInitial){
 
     if (shelterActive) fetchAndShowShelters(currentLocation);
     if (destination) drawRoute();
+
+    // 初回の正式な現在地取得ができたら、以降は端末内蔵GPSの更新のみで
+    // マーカーを滑らかに動かし続ける（サーバには接続しない）。
+    startContinuousTracking();
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -1666,7 +1781,17 @@ function renderElevationProfile(data){
     const e = minE + (rangeE * i / 2);
     const y = yAt(e).toFixed(1);
     gridHtml += `<line x1="${padL}" y1="${y}" x2="${(W - padR).toFixed(1)}" y2="${y}" stroke="rgba(255,255,255,.18)" stroke-width="1" stroke-dasharray="2 3"/>`;
-    gridHtml += `<text x="${padL - 6}" y="${(Number(y) + 4).toFixed(1)}" font-size="13" fill="#ffffff" text-anchor="end">${Math.round(e)}</text>`;
+    gridHtml += `<text x="${padL - 6}" y="${(Number(y) + 4).toFixed(1)}" font-size="13" fill="#ffffff" text-anchor="end">${Math.round(e)}m</text>`;
+  }
+
+  // 横方向（距離）の目盛り ― km表記でベースラインの下に表示
+  let xGridHtml = '';
+  const xTickCount = 3;
+  for (let i = 0; i <= xTickCount; i++){
+    const d = maxDist * i / xTickCount;
+    const tx = (padL + (d / maxDist) * (W - padL - padR)).toFixed(1);
+    const anchor = i === 0 ? 'start' : (i === xTickCount ? 'end' : 'middle');
+    xGridHtml += `<text x="${tx}" y="${(H - padB + 15).toFixed(1)}" font-size="12" fill="#c3cfe8" text-anchor="${anchor}">${(d / 1000).toFixed(1)}km</text>`;
   }
 
   const start = data[0], end = data[data.length - 1];
@@ -1692,12 +1817,13 @@ function renderElevationProfile(data){
     ${areaSegmentsHtml}
     <line x1="${padL}" y1="${baseY}" x2="${(W - padR).toFixed(1)}" y2="${baseY}" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
     ${segmentsHtml}
+    ${xGridHtml}
     <circle cx="${sx}" cy="${sy}" r="10" fill="none" stroke="#1a73e8" stroke-width="1.2" opacity="0.45"/>
     <circle cx="${sx}" cy="${sy}" r="6.5" fill="#1a73e8" stroke="#fff" stroke-width="1.8"/>
     <circle cx="${ex}" cy="${ey}" r="10" fill="none" stroke="#e53935" stroke-width="1.2" opacity="0.45"/>
     <circle cx="${ex}" cy="${ey}" r="6.5" fill="#e53935" stroke="#fff" stroke-width="1.8"/>
-    <text x="${sx}" y="${(Number(sy) - 14).toFixed(1)}" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">現在地</text>
-    <text x="${ex}" y="${(Number(ey) - 14).toFixed(1)}" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">目的地</text>
+    <text x="${sx}" y="${Math.max(padT - 2, Number(sy) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#1a73e8" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">S</text>
+    <text x="${ex}" y="${Math.max(padT - 2, Number(ey) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#e53935" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">G</text>
     <text x="${(W - padR).toFixed(1)}" y="16" font-size="13" fill="#ffffff" text-anchor="end">↑累積上昇 約${Math.round(gain)}m</text>
   `;
 }
@@ -2168,11 +2294,15 @@ function renderEmergencyResult(result, originLatLng){
     pane: 'shelterPane',
     icon: createEmergencyTargetIcon()
   }).addTo(map).bindPopup(`
-    <div style="font-family:sans-serif; min-width:200px;">
+    <div style="font-family:sans-serif; min-width:220px;">
       <strong style="font-size:18px; display:block; margin-bottom:4px;">${name}</strong>
       <div style="font-size:15px; color:#333;">${address}</div>
+      <button onclick="triggerRouteToShelter(${candidate.latlng.lat}, ${candidate.latlng.lng})"
+              style="margin-top:12px; width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">
+        この避難所を目的地に設定
+      </button>
     </div>
-  `);
+  `).openPopup();
 
   const latlngs = coords.map(c => [c[1], c[0]]);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
