@@ -585,6 +585,34 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    10. 航空写真ハイブリッド（写真＋標準地図注記の重ね合わせ）
    ========================================================================= */
 .gsi-label-overlay{ mix-blend-mode: multiply; }
+
+/* =========================================================================
+   11. ルート選択バッジ（タップしやすいラベル）
+   ========================================================================= */
+.route-label-icon-wrap{ background:transparent!important; border:none!important; }
+.route-label-badge{
+  position:absolute; left:0; top:0; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:0;
+  padding:6px 12px; border-radius:14px; cursor:pointer; white-space:nowrap;
+  font-weight:800; font-size:13px; line-height:1.25;
+  background:rgba(255,255,255,.97); color:#1a3c6e;
+  border:2px solid #1a73e8;
+  box-shadow:0 4px 12px rgba(0,20,50,.4), 0 0 0 1px rgba(255,255,255,.5) inset;
+  transition:transform .15s ease, box-shadow .15s ease;
+  touch-action:manipulation;
+}
+.route-label-badge:active{ transform:translate(-50%,-50%) scale(0.94); }
+.route-label-badge .route-label-title{ font-size:11px; opacity:.8; letter-spacing:.3px; }
+.route-label-badge .route-label-meta{ font-size:14.5px; }
+.route-label-badge.route-label-green{ border-color:#27ae60; color:#1e6b3c; }
+.route-label-badge.is-active{ box-shadow:0 0 0 3px rgba(26,115,232,.35), 0 4px 14px rgba(0,20,50,.45); }
+.route-label-badge.route-label-green.is-active{ box-shadow:0 0 0 3px rgba(39,174,96,.35), 0 4px 14px rgba(0,20,50,.45); }
+
+.elev-gain-badge{
+  display:inline-block; font-size:12px!important; font-weight:800!important;
+  color:#3a2a06!important; background:rgba(255,213,79,.85);
+  border-radius:8px; padding:2px 7px; white-space:nowrap; flex-shrink:0;
+}
    
 </style>
 </head>
@@ -755,8 +783,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
       </div>
       <div class="panel-column profile-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">
-          高低差断面図<span id="elevGainDisplay" style="font-size:13px; font-weight:600; color:#ffd54f; margin-left:6px;"></span>
+        <div style="font-weight:bold; font-size:17px; margin-bottom:5px; display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden;">
+          <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
         </div>
         <div id="elevationProfileContainer">
           <div id="elevationProfilePlaceholder">ルートを選択してください</div>
@@ -1388,6 +1416,7 @@ let currentLocation = null, destination = null, currentMarker = null, destMarker
 let greenRouteLayer = null;
 let routeCandidates = [];
 let activeRouteIdx = 0;
+let routeLabelMarkers = [];
 
 /* --- 方位（コンパス）表示 --- */
 let currentHeadingDeg = null;
@@ -1562,6 +1591,7 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   deactivateEmergencyMode();
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLabels();
   routeCandidates = []; activeRouteIdx = 0;
   if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
   destination = null;
@@ -1688,6 +1718,54 @@ function clearRouteHazardAlert(){
 }
 
 /* =========================================================================
+   E-1b. ルート選択バッジ（距離・時間を表示するタップ可能なラベル）
+   ========================================================================= */
+function clearRouteLabels(){
+  routeLabelMarkers.forEach(m => map.removeLayer(m));
+  routeLabelMarkers = [];
+}
+
+function computeRouteMidpoint(coords){
+  const latlngs = coords.map(c => L.latLng(c[1], c[0]));
+  if (latlngs.length === 1) return latlngs[0];
+  let total = 0;
+  const dists = [0];
+  for (let i = 1; i < latlngs.length; i++){
+    total += latlngs[i - 1].distanceTo(latlngs[i]);
+    dists.push(total);
+  }
+  const half = total / 2;
+  for (let i = 1; i < dists.length; i++){
+    if (dists[i] >= half){
+      const segStart = dists[i - 1], segEnd = dists[i];
+      const t = segEnd > segStart ? (half - segStart) / (segEnd - segStart) : 0;
+      const a = latlngs[i - 1], b = latlngs[i];
+      return L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t);
+    }
+  }
+  return latlngs[Math.floor(latlngs.length / 2)];
+}
+
+/* idx: routeCandidates 内でのインデックス（番号は固定・スワップしても不変）
+   styleClass: 'route-label-hazard' | 'route-label-green'
+   isActive: 現在ハザード判定表示（赤/青）中のルートかどうか */
+function addRouteLabel(idx, coords, route, styleClass, isActive){
+  const mid = computeRouteMidpoint(coords);
+  const mins = Math.round(route.duration / 60);
+  const km = (route.distance / 1000).toFixed(1);
+  const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}">
+      <span class="route-label-title">ルート${idx + 1}${isActive ? '（選択中）' : ''}</span>
+      <span class="route-label-meta">${mins}分・${km}km</span>
+    </div>`;
+  const icon = L.divIcon({ className:'route-label-icon-wrap', html, iconSize:[1,1], iconAnchor:[0,0] });
+  const marker = L.marker(mid, { icon, interactive:true, zIndexOffset: 900, keyboard:false });
+  marker.on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+  marker.addTo(map);
+  routeLabelMarkers.push(marker);
+  return marker;
+}
+
+/* =========================================================================
    E-2. 高低差断面図（ルートの標高プロファイル）
    ========================================================================= */
 async function buildElevationProfileData(coordinates, pointFlags){
@@ -1794,7 +1872,7 @@ function renderElevationProfile(data){
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
   const gain = data.reduce((acc, d, i) => i === 0 ? 0 : acc + Math.max(0, d.elevation - data[i - 1].elevation), 0);
-  if (gainEl) gainEl.innerText = `（↑累積上昇 約${Math.round(gain)}m）`;
+  if (gainEl) gainEl.innerText = `↑約${Math.round(gain)}m`;
 
   const plotBottom = H - padB - extrude;
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
@@ -1893,15 +1971,22 @@ async function activateHazardRoute(idx){
 
   if (routeLayer) map.removeLayer(routeLayer);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
-  routeLayer = L.layerGroup(segments.map(seg =>
-    L.polyline(seg.points, { color: seg.color, weight:5, opacity:0.85 })
-      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); })
-  )).addTo(map);
+  // タップでの入れ替えをしやすくするため、見た目の線（太め）の下に、
+  // 透明で幅の広い「当たり判定専用」の線を重ねて配置する。
+  routeLayer = L.layerGroup(segments.flatMap(seg => {
+    const hit = L.polyline(seg.points, { color:'#000000', weight:26, opacity:0.01 })
+      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+    const visible = L.polyline(seg.points, { color: seg.color, weight:6, opacity:0.85 })
+      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+    return [hit, visible];
+  })).addTo(map);
 
   updateRouteHazardAlert(foundTypes);
   document.getElementById('routeHazardStatus').innerHTML = foundTypes.size > 0
     ? `<div style="color:#ff8a80; font-weight:bold;">⚠ ルートが危険区域を通過<br>(${[...foundTypes].map(h => HAZARD_NAME_MAP[h]).join(' / ')})</div>`
     : `<div style="color:#6fe0a0;">ルート上に危険区域なし</div>`;
+
+  addRouteLabel(idx, coords, route, 'route-label-hazard', true);
 
   buildElevationProfileData(coords, pointFlags).then(data => {
     renderElevationProfile(data);
@@ -1916,9 +2001,13 @@ function drawGreenRoute(idx){
   if (!cand) return;
   const latlngs = cand.coords.map(c => [c[1], c[0]]);
   if (greenRouteLayer) map.removeLayer(greenRouteLayer);
-  greenRouteLayer = L.polyline(latlngs, { color:'#27ae60', weight:5, opacity:0.85 })
-    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); })
-    .addTo(map);
+  const hit = L.polyline(latlngs, { color:'#000000', weight:26, opacity:0.01 })
+    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+  const visible = L.polyline(latlngs, { color:'#27ae60', weight:6, opacity:0.85 })
+    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+  greenRouteLayer = L.layerGroup([hit, visible]).addTo(map);
+
+  addRouteLabel(idx, cand.coords, cand.route, 'route-label-green', false);
 }
 
 /* いずれかのルート線がタップされたとき、ハザード判定側と緑ルート側を
@@ -1928,6 +2017,7 @@ function onRouteTapped(tappedIdx){
   const newGreenIdx = activeRouteIdx;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLabels();
   activateHazardRoute(tappedIdx);
   drawGreenRoute(newGreenIdx);
 }
@@ -1936,6 +2026,7 @@ async function drawRoute(){
   if (!currentLocation || !destination) return;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLabels();
   routeCandidates = []; activeRouteIdx = 0;
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
