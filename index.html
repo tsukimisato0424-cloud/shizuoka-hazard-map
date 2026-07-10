@@ -114,8 +114,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
 }
 .custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
-.search-icon-btn{ background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
+.search-icon-btn{ background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; transition:transform .15s ease, opacity .15s ease; }
 .search-icon-btn .material-icons-round{ font-size:26px; }
+.search-icon-btn:active{ transform:scale(0.88); opacity:0.6; }
 
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
@@ -123,10 +124,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .suggestion-item{
   display:flex; align-items:center; padding:13px 16px; font-size:18px!important;
-  letter-spacing:.3px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .2s;
+  letter-spacing:.3px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .2s, transform .12s ease;
 }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
+.suggestion-item:active{ background-color:#e8f0fe; transform:scale(0.98); }
 .suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
 
 /* =========================================================================
@@ -161,7 +163,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .hazard-btn span:not(.material-icons-round){ position:relative; z-index:1; }
 .hazard-btn:active{
-  transform:translateY(2px);
+  transform:translateY(2px) scale(0.96);
   box-shadow:0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 8px rgba(90,150,190,.35) inset;
   border-color:#1a73e8;
 }
@@ -202,7 +204,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   border-radius:50%; pointer-events:none; z-index:2;
   background:radial-gradient(circle, rgba(255,255,255,.6), rgba(255,255,255,0) 70%);
 }
-.emergency-round-btn:active{ transform:translateY(2px); }
+.emergency-round-btn:active{ transform:translateY(2px) scale(0.94); }
 .emergency-round-btn .emergency-kanji-mark{
   position:relative; z-index:3; font-size:22px; font-weight:900; color:#ffcdc5;
   line-height:1; letter-spacing:0;
@@ -287,7 +289,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
-#mapTypeContainer[open-state="true"]{ width:190px; height:280px; border-radius:16px; }
+#mapTypeContainer[open-state="true"]{ width:190px; height:320px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
@@ -304,6 +306,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #legendAccordion summary::-webkit-details-marker, #mapTypeContainer summary::-webkit-details-marker{ display:none; }
 #legendAccordion summary:hover{ background-color:rgba(255,255,255,.25); }
+#legendAccordion summary:active, #mapTypeContainer summary:active{ background-color:rgba(255,255,255,.35); }
 
 #legendAccordion summary .legend-icon{ font-size:24px; color:var(--ink); margin:0; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #legendAccordion summary .legend-text{ font-size:13px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
@@ -329,8 +332,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 
 .maptype-content{ padding:8px 0; height:calc(100% - 54px); overflow-y:auto; box-sizing:border-box; }
-.map-type-item{ padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
+.map-type-item{ padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .15s ease, transform .12s ease; }
 .map-type-item:hover{ background:#f8f9fa; }
+.map-type-item:active{ background:#e8f0fe; transform:scale(0.98); }
 
 #locationBtn, #refreshBtn, #fullscreenBtn{ width:54px; height:54px; color:var(--ink); cursor:pointer; border-radius:50%; }
 @keyframes spinRefresh{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
@@ -403,10 +407,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
   color:#c3cfe8; transition:all .3s cubic-bezier(.4,0,.2,1); position:relative;
 }
+.tab-btn:active{ transform:translateY(1px) scale(0.96); }
 .tab-btn.active{
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
   color:#fff; z-index:3; box-shadow:0 -5px 15px rgba(0,100,255,.3); transform:translateY(-2px);
 }
+.tab-btn.active:active{ transform:translateY(-1px) scale(0.97); }
 
 #elevationDisplay, .route-time{
   color:#fff!important; font-weight:800!important;
@@ -421,9 +427,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:transparent!important; border:none!important; color:#202124!important;
   cursor:pointer; display:flex!important; align-items:center!important; justify-content:center!important;
   padding:4px!important; box-shadow:none!important; outline:none!important;
+  transition:transform .15s ease, opacity .15s ease;
 }
 #toggleStatusBtn .material-icons-round{ font-size:28px; }
-#toggleStatusBtn:hover, #toggleStatusBtn:active, #toggleStatusBtn:focus{ background:transparent!important; }
+#toggleStatusBtn:hover, #toggleStatusBtn:focus{ background:transparent!important; }
+#toggleStatusBtn:active{ background:transparent!important; transform:scale(0.82); opacity:0.6; }
 
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
@@ -506,9 +514,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   display:flex; justify-content:space-between; align-items:center; gap:8px;
   padding:8px 10px; border-radius:10px; cursor:pointer;
   background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
-  transition:background .2s, border-color .2s;
+  transition:background .2s, border-color .2s, transform .12s ease;
 }
-.emergency-alt-item:active{ background:rgba(255,255,255,.20); }
+.emergency-alt-item:active{ background:rgba(255,255,255,.20); transform:scale(0.98); }
 .emergency-alt-item .alt-name{ font-size:14px; font-weight:bold; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .emergency-alt-item .alt-meta{ font-size:12px; color:#6fe0a0; flex-shrink:0; white-space:nowrap; }
 .emergency-alt-item.hazardous .alt-meta{ color:#ff8a80; }
@@ -523,6 +531,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:rgba(255,255,255,.98)!important; border-radius:16px!important;
   box-shadow:0 10px 20px rgba(0,0,0,.2)!important;
 }
+.leaflet-popup-content button{ transition:transform .12s ease, filter .12s ease; }
+.leaflet-popup-content button:active{ transform:scale(0.96); filter:brightness(0.9); }
 
 /* =========================================================================
    8. 表示/非表示アニメーション（全画面トグル用）
@@ -574,7 +584,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .auth-btn {
   width: 100%; padding: 14px; background: #1a73e8; color: white;
   border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
+  transition: transform .12s ease, filter .12s ease;
 }
+.auth-btn:active{ transform: scale(0.97); filter: brightness(0.92); }
 
 .footer-credit {
   margin-top: 25px; color: #666; font-size: 11px;
@@ -714,8 +726,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </summary>
       <div class="maptype-content">
         <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
-        <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
-        <div class="map-type-item" onclick="changeMap('hybrid')">航空写真+注記</div>
+        <div class="map-type-item" onclick="changeMap('hybrid')">航空写真</div>
         <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
         <div class="map-type-item" onclick="changeMap('landform_overlay')">地形分類</div>
         <div class="map-type-item" onclick="changeMap('volcano_overlay')">火山地形</div>
@@ -807,6 +818,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 'use strict';
 
 /* =========================================================================
+   0. タップ時の触覚フィードバック（対応端末のみ・簡易ヘルパー）
+   ========================================================================= */
+function haptic(ms = 10){
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* 非対応環境は無視 */ }
+}
+
+/* =========================================================================
    A. 認証
    ========================================================================= */
 function checkPassword(){
@@ -884,6 +902,7 @@ function hideVolcanoCoverageNotice(){
 let currentBaseLayer = baseLayers.pale.addTo(map);
 
 function changeMap(type){
+  haptic();
   if (currentBaseLayer) map.removeLayer(currentBaseLayer);
   if (map.hasLayer(reliefOverlay)) map.removeLayer(reliefOverlay);
   if (map.hasLayer(landformLayer)) map.removeLayer(landformLayer);
@@ -947,6 +966,7 @@ let shelterDataCache = null;
 
 document.querySelectorAll('.hazard-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    haptic();
     const type = btn.dataset.type;
     btn.classList.toggle('active');
     const isActive = btn.classList.contains('active');
@@ -962,6 +982,7 @@ document.querySelectorAll('.hazard-btn').forEach(btn => {
 });
 
 document.getElementById('refreshBtn').addEventListener('click', function(){
+  haptic();
   this.classList.add('loading');
   location.reload();
 });
@@ -1034,6 +1055,7 @@ async function fetchAndShowShelters(centerLatLng){
 }
 
 window.triggerRouteToShelter = (lat, lng) => {
+  haptic();
   map.closePopup();
   deactivateEmergencyMode();
   selectLocation(lat, lng);
@@ -1348,13 +1370,14 @@ async function maybeHighlightLandformAt(lat, lng){
    ========================================================================= */
 const legendCard = document.getElementById('legendAccordion');
 const legendDetails = document.getElementById('legendDetails');
-legendDetails.addEventListener('toggle', () => legendCard.setAttribute('open-state', legendDetails.open));
+legendDetails.addEventListener('toggle', () => { haptic(); legendCard.setAttribute('open-state', legendDetails.open); });
 
 const mapTypeCard = document.getElementById('mapTypeContainer');
 const mapTypeDetails = document.getElementById('mapTypeDetails');
-mapTypeDetails.addEventListener('toggle', () => mapTypeCard.setAttribute('open-state', mapTypeDetails.open));
+mapTypeDetails.addEventListener('toggle', () => { haptic(); mapTypeCard.setAttribute('open-state', mapTypeDetails.open); });
 
 function toggleStatusPanel(){
+  haptic();
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('toggleIcon');
   const isMinimized = panel.getAttribute('data-state') === 'full';
@@ -1368,6 +1391,7 @@ function toggleStatusPanel(){
 }
 
 function switchTab(tabNumber){
+  haptic();
   document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
@@ -1583,10 +1607,11 @@ function executeGeolocation(isInitial){
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
     }
-  }, { enableHighAccuracy:true, timeout:5000, maximumAge:0 });
+  }, { enableHighAccuracy:true, timeout:5000, maximumAge:3000 });
 }
 
 document.getElementById('locationBtn').addEventListener('click', () => {
+  haptic();
   enableCompass();
   deactivateEmergencyMode();
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
@@ -1603,7 +1628,16 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   renderElevationProfile(null);
   updateElevationExtremes(null);
 
-  updateCurrentLocation(false);
+  // 既に端末GPSの継続追尾（watchPosition）で現在地を保持している場合は、
+  // 改めてenableHighAccuracy・maximumAge:0の重いGPS取得を待たず、
+  // 保持している最新座標へ即座に地図を戻す（体感速度を優先）。
+  if (currentLocation && geoWatchId !== null){
+    map.setView(currentLocation, 14);
+    updateDetails(currentLocation.lat, currentLocation.lng);
+    if (shelterActive) fetchAndShowShelters(currentLocation);
+  } else {
+    updateCurrentLocation(false);
+  }
 });
 
 /* --- ハザード判定（タイル画素サンプリング、結果はキャッシュ）--- */
@@ -1759,7 +1793,7 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
     </div>`;
   const icon = L.divIcon({ className:'route-label-icon-wrap', html, iconSize:[1,1], iconAnchor:[0,0] });
   const marker = L.marker(mid, { icon, interactive:true, zIndexOffset: 900, keyboard:false });
-  marker.on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+  marker.on('click', e => { haptic(); L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
   marker.addTo(map);
   routeLabelMarkers.push(marker);
   return marker;
@@ -1973,13 +2007,16 @@ async function activateHazardRoute(idx){
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
   // タップでの入れ替えをしやすくするため、見た目の線（太め）の下に、
   // 透明で幅の広い「当たり判定専用」の線を重ねて配置する。
+  // リスク判定ルートは緑ルートより太く・不透明度も高くして、Googleマップのように
+  // 「安全性を判定しているメインルート」であることが一目でわかるようにする。
   routeLayer = L.layerGroup(segments.flatMap(seg => {
-    const hit = L.polyline(seg.points, { color:'#000000', weight:26, opacity:0.01 })
-      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-    const visible = L.polyline(seg.points, { color: seg.color, weight:6, opacity:0.85 })
-      .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+    const hit = L.polyline(seg.points, { color:'#000000', weight:28, opacity:0.01 })
+      .on('click', e => { haptic(); L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+    const visible = L.polyline(seg.points, { color: seg.color, weight:8, opacity:0.92, lineCap:'round', lineJoin:'round' })
+      .on('click', e => { haptic(); L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
     return [hit, visible];
   })).addTo(map);
+  routeLayer.bringToFront();
 
   updateRouteHazardAlert(foundTypes);
   document.getElementById('routeHazardStatus').innerHTML = foundTypes.size > 0
@@ -1994,32 +2031,40 @@ async function activateHazardRoute(idx){
   });
 }
 
-/* もう一方のルート（大きい通り・曲がり角少なめ想定）を緑一色で描画する。
-   リスク判定は行わない。 */
+/* もう一方のルート（大きい通り・曲がり角少なめ想定）を緑系統で描画する。
+   Googleマップの代替ルートのように、リスク判定中のメインルートより
+   細く・薄い色にし、外側に少し濃い緑の縁取りを重ねることで
+   「補助的な選択肢」であることを視覚的に示す。リスク判定は行わない。 */
 function drawGreenRoute(idx){
   const cand = routeCandidates[idx];
   if (!cand) return;
   const latlngs = cand.coords.map(c => [c[1], c[0]]);
   if (greenRouteLayer) map.removeLayer(greenRouteLayer);
-  const hit = L.polyline(latlngs, { color:'#000000', weight:26, opacity:0.01 })
-    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-  const visible = L.polyline(latlngs, { color:'#27ae60', weight:6, opacity:0.85 })
-    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-  greenRouteLayer = L.layerGroup([hit, visible]).addTo(map);
+
+  const tapHandler = e => { haptic(); L.DomEvent.stopPropagation(e); onRouteTapped(idx); };
+  const hit = L.polyline(latlngs, { color:'#000000', weight:28, opacity:0.01 }).on('click', tapHandler);
+  // 縁取り（濃い緑・太め）→ 本体（薄い緑・細め）の順に重ねてボーダー効果を出す
+  const border = L.polyline(latlngs, { color:'#1b5e20', weight:7, opacity:0.55, lineCap:'round', lineJoin:'round' }).on('click', tapHandler);
+  const visible = L.polyline(latlngs, { color:'#8fd6a0', weight:4, opacity:0.9, lineCap:'round', lineJoin:'round' }).on('click', tapHandler);
+  greenRouteLayer = L.layerGroup([hit, border, visible]).addTo(map);
 
   addRouteLabel(idx, cand.coords, cand.route, 'route-label-green', false);
+
+  // ルートが重なる区間では、リスク判定ルート（赤/青）を必ず前面に表示する
+  if (routeLayer) routeLayer.bringToFront();
 }
 
 /* いずれかのルート線がタップされたとき、ハザード判定側と緑ルート側を
    入れ替える（タップされた方が新たにハザード判定＝赤/青表示になる）。 */
-function onRouteTapped(tappedIdx){
+async function onRouteTapped(tappedIdx){
   if (tappedIdx === activeRouteIdx) return;
   const newGreenIdx = activeRouteIdx;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
   clearRouteLabels();
-  activateHazardRoute(tappedIdx);
   drawGreenRoute(newGreenIdx);
+  await activateHazardRoute(tappedIdx);
+  if (routeLayer) routeLayer.bringToFront();
 }
 
 async function drawRoute(){
@@ -2365,6 +2410,7 @@ async function executeHybridSearch(query){
           <span style="color:#4a4f54; font-size:15px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.address}</span>
         </div>`;
       div.addEventListener('click', () => {
+        haptic();
         deactivateEmergencyMode();
         selectLocation(item.lat, item.lon);
         map.setView([item.lat, item.lon], 16);
@@ -2381,7 +2427,7 @@ async function executeHybridSearch(query){
 
 const searchInput = document.getElementById('customSearchInput');
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHybridSearch(searchInput.value); });
-document.getElementById('customSearchBtn').addEventListener('click', () => executeHybridSearch(searchInput.value));
+document.getElementById('customSearchBtn').addEventListener('click', () => { haptic(); executeHybridSearch(searchInput.value); });
 
 /* =========================================================================
    H. 全画面表示トグル（UI要素の一括表示/非表示）
@@ -2393,6 +2439,7 @@ const floatingSubElements = [legendCard, mapTypeCard];
 let isUIVisible = true;
 
 fullscreenBtn.addEventListener('click', () => {
+  haptic();
   isUIVisible = !isUIVisible;
 
   if (!isUIVisible){
@@ -2445,6 +2492,25 @@ function createEmergencyTargetIcon(){
 function clearEmergencyLayers(){
   if (emergencyRouteLayer){ map.removeLayer(emergencyRouteLayer); emergencyRouteLayer = null; }
   if (emergencyTargetMarker){ map.removeLayer(emergencyTargetMarker); emergencyTargetMarker = null; }
+}
+
+/* 通常のルート検索（現在地→タップ地点／検索結果）の表示を一括で
+   クリアする共通処理。緊急避難モード開始時にも呼び出し、
+   直前のルート検索結果が地図・パネルに残ったままにならないようにする。 */
+function clearNormalRouteState(){
+  if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLabels();
+  routeCandidates = []; activeRouteIdx = 0;
+  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
+  if (highestPointMarker){ map.removeLayer(highestPointMarker); highestPointMarker = null; }
+  if (lowestPointMarker){ map.removeLayer(lowestPointMarker); lowestPointMarker = null; }
+  destination = null;
+
+  document.getElementById('walkTime').innerText = '-- 分';
+  document.getElementById('walkDist').innerText = '(-- km)';
+  clearRouteHazardAlert();
+  renderElevationProfile(null);
 }
 
 function deactivateEmergencyMode(silent){
@@ -2513,7 +2579,7 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   const latlngs = coords.map(c => [c[1], c[0]]);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
   emergencyRouteLayer = L.layerGroup(segments.map(seg =>
-    L.polyline(seg.points, { color: seg.color, weight:6, opacity:0.95, className:'emergency-route-line' })
+    L.polyline(seg.points, { color: seg.color, weight:8, opacity:0.95, lineCap:'round', lineJoin:'round', className:'emergency-route-line' })
   )).addTo(map);
 
   updateRouteHazardAlert(foundTypes);
@@ -2585,6 +2651,7 @@ function renderEmergencyAlternatives(originLatLng, noSafeShelterFound){
 }
 
 window.selectEmergencyOption = function(idx){
+  haptic();
   if (!emergencyOptions || !emergencyOptions[idx] || !currentLocation) return;
   emergencyOptionIndex = idx;
   const noSafeShelterFound = emergencyOptions.every(o => o.destinationHazardous);
@@ -2597,6 +2664,11 @@ let emergencyOptionIndex = -1;
 async function startEmergencySearch(){
   emergencyBtn.classList.add('searching');
   switchTab(1);
+
+  // 通常のルート検索（現在地→目的地）の結果が地図・パネルに残っていると
+  // 緊急避難ルートと混在して分かりづらいため、先にクリアしておく。
+  clearNormalRouteState();
+
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:現在地を確認中...</span>';
   const altContainer = document.getElementById('emergencyAltContainer');
@@ -2700,6 +2772,7 @@ async function startEmergencySearch(){
 }
 
 emergencyBtn.addEventListener('click', () => {
+  haptic();
   enableCompass();
   if (emergencyModeActive){
     deactivateEmergencyMode();
