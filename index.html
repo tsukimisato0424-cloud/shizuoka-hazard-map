@@ -287,7 +287,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
-#mapTypeContainer[open-state="true"]{ width:190px; height:280px; border-radius:16px; }
+#mapTypeContainer[open-state="true"]{ width:200px; height:360px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
@@ -1980,6 +1980,9 @@ async function activateHazardRoute(idx){
       .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
     return [hit, visible];
   })).addTo(map);
+  // リスク判定ルート（赤/青）は、緑ルートと重なる区間でも常に上に
+  // 表示されるようにする（追加順やタイミングに関係なく確実に前面へ）。
+  bringHazardRouteToFront();
 
   updateRouteHazardAlert(foundTypes);
   document.getElementById('routeHazardStatus').innerHTML = foundTypes.size > 0
@@ -1992,6 +1995,14 @@ async function activateHazardRoute(idx){
     renderElevationProfile(data);
     updateElevationExtremes(data);
   });
+}
+
+/* リスク判定ルート（routeLayer・赤/青）を、緑ルートより常に手前に表示する。
+   どちらが先に地図へ追加されたかに関わらず呼び出せるよう、
+   両レイヤーが揃うタイミング（activateHazardRoute末尾／drawGreenRoute末尾）
+   の両方から呼び出す。 */
+function bringHazardRouteToFront(){
+  if (routeLayer) routeLayer.eachLayer(l => { if (l.bringToFront) l.bringToFront(); });
 }
 
 /* もう一方のルート（大きい通り・曲がり角少なめ想定）を緑一色で描画する。
@@ -2008,6 +2019,10 @@ function drawGreenRoute(idx){
   greenRouteLayer = L.layerGroup([hit, visible]).addTo(map);
 
   addRouteLabel(idx, cand.coords, cand.route, 'route-label-green', false);
+
+  // 緑ルートを新たに手前へ追加した直後は、重なる区間でリスク判定ルート
+  // （赤/青）が緑の下に隠れてしまうため、必ずリスク判定ルートを前面に戻す。
+  bringHazardRouteToFront();
 }
 
 /* いずれかのルート線がタップされたとき、ハザード判定側と緑ルート側を
@@ -2073,11 +2088,14 @@ async function drawRoute(){
       }))
       .filter(c => c.role);
 
-    const hazardCandIdx = routeCandidates.findIndex(c => c.role === 'hazard');
-    await activateHazardRoute(hazardCandIdx);
-
+    // 先に緑ルート（重なりの下側）を描画し、続けてリスク判定ルート
+    // （赤/青・上側）を描画することで、重なる区間は常にリスク判定側が
+    // 手前に表示されるようにする。
     const greenCandIdx = routeCandidates.findIndex(c => c.role === 'green');
     if (greenCandIdx !== -1) drawGreenRoute(greenCandIdx);
+
+    const hazardCandIdx = routeCandidates.findIndex(c => c.role === 'hazard');
+    await activateHazardRoute(hazardCandIdx);
 
   } catch {
     hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>';
