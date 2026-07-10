@@ -714,11 +714,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </summary>
       <div class="maptype-content">
         <div class="map-type-item" onclick="changeMap('pale')">標準地図</div>
-        <div class="map-type-item" onclick="changeMap('ort')">航空写真</div>
         <div class="map-type-item" onclick="changeMap('hybrid')">航空写真+注記</div>
         <div class="map-type-item" onclick="changeMap('relief_overlay')">標高図</div>
         <div class="map-type-item" onclick="changeMap('landform_overlay')">地形分類</div>
-        <div class="map-type-item" onclick="changeMap('volcano_overlay')">火山地形</div>
       </div>
     </details>
   </div>
@@ -896,8 +894,6 @@ function changeMap(type){
   } else if (type === 'landform_overlay'){
     currentBaseLayer = baseLayers.pale.addTo(map);
     landformLayer.addTo(map);
-  } else if (type === 'volcano_overlay'){
-    currentBaseLayer = baseLayers.pale.addTo(map);
     volcanoOverlay.addTo(map);
   } else if (type === 'hybrid'){
     currentBaseLayer = baseLayers.ort.addTo(map);
@@ -908,9 +904,9 @@ function changeMap(type){
   currentBaseLayer.bringToBack();
   if (type === 'hybrid') paleLabelOverlay.bringToFront();
 
-  if (type !== 'volcano_overlay') hideVolcanoCoverageNotice();
+  if (type !== 'landform_overlay') hideVolcanoCoverageNotice();
 
-  if (type === 'landform_overlay' || type === 'volcano_overlay'){
+  if (type === 'landform_overlay'){
     switchTab(3);
     const panel = document.getElementById('statusPanel');
     if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
@@ -1129,8 +1125,9 @@ const LANDFORM_LEGEND = {
    国土地理院「火山土地条件図」は火山ごとに個別の凡例（色）が用意されており
    全国統一の色分けではないため、ここでは代表的によく使われる分類区分と
    一般的な災害リスクの要点を参考情報として掲載する（実際の色は火山や
-   図幅により異なる場合がある）。地図切替の「火山地形」を選択すると、
-   国土地理院の火山土地条件図ラスタ（火山周辺のみデータあり）が重なる。 */
+   図幅により異なる場合がある）。地図切替の「地形分類」を選択すると、
+   国土地理院の火山土地条件図ラスタ（火山周辺のみデータあり）が
+   自然地形／人工地形と一緒に重なる。 */
 const VOLCANO_LEGEND = [
   ['火口・爆裂火口', '#e74c3c', '噴火時に噴石・火山ガスが直接及ぶ最も危険性の高い区域。'],
   ['中央火口丘・溶岩ドーム', '#922b21', 'ドームの成長・崩壊に伴う火砕流発生の起点になりやすい。'],
@@ -1157,7 +1154,7 @@ function buildLandformLegendHtml(){
 
   let volcanoHtml = `<span class="legend-section-title">【火山地形（参考）】</span>
     <div style="font-size:12px; color:#c3cfe8; margin:-2px 0 6px;">
-      ※火山土地条件図は火山ごとに凡例が異なるため、代表的な区分の例です。地図切替の「火山地形」で該当エリアに重畳表示されます。
+      ※火山土地条件図は火山ごとに凡例が異なるため、代表的な区分の例です。地図切替の「地形分類」で該当エリアに重畳表示されます。
     </div>`;
   VOLCANO_LEGEND.forEach(([name, color, risk]) => {
     volcanoHtml += `
@@ -1746,14 +1743,43 @@ function computeRouteMidpoint(coords){
   return latlngs[Math.floor(latlngs.length / 2)];
 }
 
+/* 既存のルートラベルとの画面上の重なりを検知し、重なる場合はバッジを
+   縦方向にずらして表示する。優先度の高い方（isActive=true、すなわち
+   ハザード判定中＝選択中ルート）は実際の中点位置を保ち、既存のラベルが
+   その位置と近い場合は既存ラベル側（=緑ルート等）をずらす。逆に、
+   追加中のラベル自身が非アクティブ側の場合は自分自身をずらす。 */
+function resolveLabelCollision(newPos, isActive){
+  const threshold = 46;   // これ未満の画面距離(px)は重なりとみなす
+  const offsetPx = 34;    // ずらす量(px)
+  const newPt = map.latLngToContainerPoint(newPos);
+
+  for (const m of routeLabelMarkers){
+    const mp = map.latLngToContainerPoint(m.getLatLng());
+    const dist = Math.hypot(newPt.x - mp.x, newPt.y - mp.y);
+    if (dist < threshold){
+      if (isActive){
+        // 自分(選択中ルート)は正しい位置に保ち、既存の非選択ラベルをずらす
+        const el = m.getElement();
+        const badge = el && el.querySelector('.route-label-badge');
+        if (badge) badge.style.transform = `translate(-50%,-50%) translateY(${offsetPx}px)`;
+        return 0;
+      }
+      return offsetPx;
+    }
+  }
+  return 0;
+}
+
 /* idx: routeCandidates 内でのインデックス（番号は固定・スワップしても不変）
    styleClass: 'route-label-hazard' | 'route-label-green'
    isActive: 現在ハザード判定表示（赤/青）中のルートかどうか */
 function addRouteLabel(idx, coords, route, styleClass, isActive){
   const mid = computeRouteMidpoint(coords);
+  const selfOffset = resolveLabelCollision(mid, isActive);
   const mins = Math.round(route.duration / 60);
   const km = (route.distance / 1000).toFixed(1);
-  const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}">
+  const offsetAttr = selfOffset ? ` style="transform:translate(-50%,-50%) translateY(${selfOffset}px);"` : '';
+  const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}"${offsetAttr}>
       <span class="route-label-title">ルート${idx + 1}${isActive ? '（選択中）' : ''}</span>
       <span class="route-label-meta">${mins}分・${km}km</span>
     </div>`;
