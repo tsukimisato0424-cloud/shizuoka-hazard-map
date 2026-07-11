@@ -120,7 +120,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    ========================================================================= */
 #searchContainer{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
-  left:0; right:0; padding:0 10px; z-index:99999; touch-action:none;
+  left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
+  padding:0; z-index:99999; touch-action:none;
 }
 .search-row{
   display:flex; align-items:center; gap:10px;
@@ -128,11 +129,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .custom-search-bar{ flex:1; min-width:0; border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
 .custom-search-bar input, .search-icon-btn{ position:relative; z-index:1; }
 .custom-search-bar input{
-  flex:1; border:none; outline:none; font-size:19px!important;
+  flex:1; min-width:0; border:none; outline:none; font-size:19px!important;
   letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
 }
 .custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
-.search-icon-btn{ position:relative; overflow:hidden; border-radius:10px; background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
+.search-icon-btn{ position:relative; overflow:hidden; border-radius:10px; background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; flex-shrink:0; }
 .search-icon-btn .material-icons-round{ font-size:26px; }
 
 #customSuggestions{
@@ -153,7 +154,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    ========================================================================= */
 #hazardMenuCard{
   position:absolute; top:calc(78px + env(safe-area-inset-top,0px));
-  left:10px; right:10px; z-index:2000; border-radius:18px; padding:10px;
+  left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
+  z-index:2000; border-radius:18px; padding:10px;
   display:grid; grid-template-columns:repeat(4,1fr); gap:6px; touch-action:none;
 }
 #hazardMenuCard::before{ background-position:12% 6%; }
@@ -293,7 +295,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 #volcanoCoverageNotice{
   position:absolute; top:calc(158px + env(safe-area-inset-top,0px));
-  left:10px; right:10px; z-index:1900; border-radius:14px; padding:10px 14px;
+  left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
+  z-index:1900; border-radius:14px; padding:10px 14px;
   align-items:center; font-size:14px!important; line-height:1.4!important;
 }
 
@@ -301,7 +304,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
    ========================================================================= */
 #rightControlContainer{
-  position:absolute; top:calc(230px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(176px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -310,7 +313,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"]{
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
-#legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
+#legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; max-height:calc(100vh - 260px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
 #mapTypeContainer[open-state="true"]{ width:200px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
@@ -405,7 +408,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
    ========================================================================= */
 #statusPanel{
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
-  left:10px; right:10px; z-index:1500; overflow:visible; border-radius:24px!important;
+  left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
+  z-index:1500; overflow:visible; border-radius:24px!important;
   height:200px;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
@@ -421,10 +425,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,0));
 }
 
-.tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; }
+.tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .tab-btn{
   position:relative; overflow:hidden;
-  width:96px; padding:11px 12px; text-align:center; cursor:pointer;
+  width:clamp(78px, 24vw, 96px); padding:11px 12px; text-align:center; cursor:pointer;
   font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
@@ -460,7 +464,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #elevationDisplay{ font-weight:bold; color:#d35400; }
 
 .panel-row{ display:flex; height:100%; }
-.panel-column{ flex:1; overflow-y:auto; }
+.panel-column{ flex:1; overflow-y:auto; min-width:0; }
 .profile-column{ display:flex; flex-direction:column; flex:1 !important; min-width:0; }
 
 .route-modes{ display:flex; gap:8px; flex:1; }
@@ -655,6 +659,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   z-index:5;
 }
 .tap-highlight{ filter:brightness(1.15); }
+
+/* =========================================================================
+   13. 狭幅端末向けの微調整（レイアウト自体は変えず、詰まりだけを緩和）
+   ========================================================================= */
+@media (max-width: 380px){
+  .hazard-btn{ font-size:13.5px!important; padding:6px 2px; }
+  .hazard-btn .material-icons-round{ font-size:28px; }
+  #hazardMenuCard{ gap:4px; padding:8px; }
+  .round-btn, .emergency-round-btn{ width:50px; height:50px; }
+  #locationBtn, #refreshBtn, #fullscreenBtn{ width:48px; height:48px; }
+  .search-icon-btn .material-icons-round{ font-size:24px; }
+  .custom-search-bar input{ font-size:17px!important; padding:13px 10px; }
+}
+@media (max-height: 700px){
+  #rightControlContainer{ gap:7px; }
+  #statusPanel{ height:180px; }
+}
 </style>
 </head>
 <body>
@@ -1667,6 +1688,12 @@ function stopContinuousTracking(){
 }
 
 function updateCurrentLocation(isInitial = false){
+  /* 継続追跡（watchPosition）がすでに動いている＝位置情報の許可は取得済みなので、
+     許可確認の非同期往復を省略していきなり位置取得へ進む（体感速度の向上）。 */
+  if (geoWatchId !== null){
+    executeGeolocation(isInitial);
+    return;
+  }
   if (navigator.permissions){
     navigator.permissions.query({ name:'geolocation' }).then(result => {
       if (result.state === 'denied'){
@@ -1684,8 +1711,11 @@ function executeGeolocation(isInitial){
   navigator.geolocation.getCurrentPosition(pos => {
     currentLocation = L.latLng(pos.coords.latitude, pos.coords.longitude);
 
-    if (currentMarker) map.removeLayer(currentMarker);
-    currentMarker = L.marker(currentLocation, { icon: currentLocationIcon }).addTo(map);
+    if (currentMarker){
+      currentMarker.setLatLng(currentLocation);
+    } else {
+      currentMarker = L.marker(currentLocation, { icon: currentLocationIcon }).addTo(map);
+    }
     displayedLocation = currentLocation;
     applyHeadingToMarker();
 
@@ -1701,7 +1731,7 @@ function executeGeolocation(isInitial){
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
     }
-  }, { enableHighAccuracy:true, timeout:5000, maximumAge:0 });
+  }, { enableHighAccuracy:true, timeout:5000, maximumAge:4000 });
 }
 
 document.getElementById('locationBtn').addEventListener('click', () => {
@@ -1721,7 +1751,17 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   renderElevationProfile(null);
   updateElevationExtremes(null);
 
-  updateCurrentLocation(false);
+  /* 継続追跡ですでに現在地を把握している場合は、新しいGPS測位を待たずに
+     キャッシュ済みの位置へ即座に地図を移動する（反応速度を優先）。
+     住所・海抜などの詳細情報や精緻な位置の再取得はバックグラウンドで行う。 */
+  if (currentLocation && geoWatchId !== null){
+    map.setView(currentLocation, 14, { animate:true });
+    updateDetails(currentLocation.lat, currentLocation.lng);
+    if (shelterActive) fetchAndShowShelters(currentLocation);
+    updateCurrentLocation(false);
+  } else {
+    updateCurrentLocation(true);
+  }
 });
 
 /* --- ハザード判定（タイル画素サンプリング、結果はキャッシュ）--- */
