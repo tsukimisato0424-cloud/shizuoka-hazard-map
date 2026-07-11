@@ -342,7 +342,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 #legendAccordion[open-state="true"] summary, #mapTypeContainer[open-state="true"] summary{
   width:100%; height:54px; padding:0 14px; flex-direction:row; justify-content:flex-start;
-  border-bottom:1px solid #f1f3f4; background:#fff;
+  border-bottom:1px solid #f1f3f4; background:#fff; flex-shrink:0;
 }
 #legendAccordion[open-state="true"] summary .legend-text{ font-size:18px; margin-top:0; margin-left:8px; flex:1; color:#202124; }
 #legendAccordion[open-state="true"] summary .legend-arrow{ display:block; }
@@ -1399,6 +1399,16 @@ function pulseLegendAttention(){
 }
 function clearLegendAttention(){
   legendCard.classList.remove('legend-attention');
+}
+
+/* 凡例パネルが開いている間は、専用トグル(summary)以外の場所（中身のどこでも）
+   タップしただけで閉じられるようにする。見出しの三角トグルが小さくて押しづらい
+   という声への対応。summary自体はネイティブのdetails開閉動作に任せる。 */
+const legendContentEl = document.querySelector('#legendAccordion .legend-content');
+if (legendContentEl){
+  legendContentEl.addEventListener('click', () => {
+    if (legendDetails.open) legendDetails.open = false;
+  });
 }
 
 const mapTypeCard = document.getElementById('mapTypeContainer');
@@ -3004,4 +3014,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
