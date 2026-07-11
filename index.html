@@ -352,8 +352,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 .legend-content{ padding:10px 12px; height:calc(100% - 54px); overflow-y:auto; font-size:17px!important; line-height:1.8!important; color:#3c4043; }
 .legend-section-title{ font-weight:800!important; color:#1a73e8!important; margin:6px 0 3px!important; display:block; }
-.legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; }
+.legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; padding:3px 4px; border-radius:8px; transition:background .3s, box-shadow .3s; }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
+.legend-item.legend-item-highlight{
+  background:rgba(255,213,79,.18);
+  box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
+  animation:landformHighlightPulse 1.4s ease-in-out infinite;
+}
+
+/* 凡例ボタン(丸)が格納された状態で、該当ハザードがある時に点滅させて開封を促す */
+@keyframes legendAttentionGlow{
+  0%,100%{ box-shadow:0 0 14px 3px rgba(255,193,7,.85), var(--bubble-shadow); border-color:#ffd54f; }
+  50%{ box-shadow:0 0 30px 11px rgba(255,193,7,.95), var(--bubble-shadow); border-color:#fff; }
+}
+#legendAccordion.legend-attention{ animation:legendAttentionGlow 1s ease-in-out infinite; }
 
 .maptype-content{ padding:8px 0; box-sizing:border-box; }
 .map-type-item{ position:relative; overflow:hidden; padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
@@ -757,13 +769,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </summary>
       <div class="legend-content">
         <span class="legend-section-title">【洪水/津波 浸水深】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
-        <div class="legend-item"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
-        <div class="legend-item"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
-        <div class="legend-item"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
+        <div class="legend-item" data-color="#ff5c5c"><div class="legend-color" style="background:#ff5c5c;"></div>10.0m以上</div>
+        <div class="legend-item" data-color="#ff9e9e"><div class="legend-color" style="background:#ff9e9e;"></div>5.0m〜10.0m</div>
+        <div class="legend-item" data-color="#f3db52"><div class="legend-color" style="background:#f3db52;"></div>3.0m〜5.0m</div>
+        <div class="legend-item" data-color="#56ccf2"><div class="legend-color" style="background:#56ccf2;"></div>0.5m〜3.0m</div>
         <span class="legend-section-title">【土砂災害】</span>
-        <div class="legend-item"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
-        <div class="legend-item"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
+        <div class="legend-item" data-color="#ff3b30"><div class="legend-color" style="background:#ff3b30;"></div>特別警戒区域 (レッド)</div>
+        <div class="legend-item" data-color="#ffcc00"><div class="legend-color" style="background:#ffcc00;"></div>警戒区域 (イエロー)</div>
       </div>
     </details>
   </div>
@@ -1375,7 +1387,19 @@ async function maybeHighlightLandformAt(lat, lng){
    ========================================================================= */
 const legendCard = document.getElementById('legendAccordion');
 const legendDetails = document.getElementById('legendDetails');
-legendDetails.addEventListener('toggle', () => legendCard.setAttribute('open-state', legendDetails.open));
+legendDetails.addEventListener('toggle', () => {
+  legendCard.setAttribute('open-state', legendDetails.open);
+  if (legendDetails.open) clearLegendAttention();
+});
+
+/* 凡例ボタン（丸）の点滅で開封を促す。ユーザーがすでに開いている場合は不要。 */
+function pulseLegendAttention(){
+  if (legendDetails.open) return;
+  legendCard.classList.add('legend-attention');
+}
+function clearLegendAttention(){
+  legendCard.classList.remove('legend-attention');
+}
 
 const mapTypeCard = document.getElementById('mapTypeContainer');
 const mapTypeDetails = document.getElementById('mapTypeDetails');
@@ -1648,6 +1672,7 @@ headingToggleBtn.addEventListener('click', () => {
     map.invalidateSize({ pan:false });
     map.dragging.enable();
     applyHeadingToMarker();
+    if (currentLocation) map.panTo(currentLocation, { animate:true });
   }
 });
 
@@ -1837,6 +1862,62 @@ async function checkPointHazard(lat, lon){
     } catch { /* ignore CORS/pixel errors */ }
   }
   return hits;
+}
+
+/* --- 目的地のハザード色を凡例(#legendAccordion)の項目に対応付ける --- */
+const FLOOD_LEGEND_PALETTE = ['#ff5c5c', '#ff9e9e', '#f3db52', '#56ccf2']; // 10m+ / 5-10m / 3-5m / 0.5-3m
+const LANDSLIDE_LEGEND_PALETTE = ['#ff3b30', '#ffcc00']; // 特別警戒区域(レッド) / 警戒区域(イエロー)
+
+function hexToRgbArr(hex){
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function nearestLegendColor(r, g, b, palette){
+  let best = null, bestDist = Infinity;
+  palette.forEach(hex => {
+    const [pr, pg, pb] = hexToRgbArr(hex);
+    const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
+    if (d < bestDist){ bestDist = d; best = hex; }
+  });
+  return best;
+}
+
+/* 地点(destination等)における洪水/津波/土砂災害の色を判定し、
+   凡例の該当スウォッチ色（#legendAccordion内のdata-color値）を返す。
+   優先順位: 洪水 > 津波 > 土砂災害。該当なしは null。 */
+async function getPointHazardLegendColor(lat, lon){
+  const zoom = 15;
+  const { x, y } = lonLatToTileFloat(lon, lat, zoom);
+  const tx = Math.floor(x), ty = Math.floor(y);
+  const px = Math.floor((x - tx) * 256), py = Math.floor((y - ty) * 256);
+
+  const sources = [
+    { url:`${DISAPORTAL}/01_flood_l2_shinsuishin_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_LEGEND_PALETTE },
+    { url:`${DISAPORTAL}/04_tsunami_newlegend_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_LEGEND_PALETTE },
+    { url:`${DISAPORTAL}/05_dosekiryukeikaikuiki/${zoom}/${tx}/${ty}.png`, palette: LANDSLIDE_LEGEND_PALETTE }
+  ];
+
+  for (const src of sources){
+    const canvas = await getTileCanvas(src.url);
+    if (!canvas) continue;
+    try {
+      const [r, g, b, a] = canvas.getContext('2d').getImageData(px, py, 1, 1).data;
+      const isNearWhite = r > 235 && g > 235 && b > 235;
+      if (a > 60 && !isNearWhite) return nearestLegendColor(r, g, b, src.palette);
+    } catch { /* ignore CORS/pixel errors */ }
+  }
+  return null;
+}
+
+/* 右側フローティングの丸型凡例ボタン内、該当スウォッチをタブ③の地形分類凡例と
+   同じ光り方でハイライトする。パネルが格納中（未展開）なら丸ボタン自体も点滅させる。 */
+function highlightHazardLegendByColor(color){
+  document.querySelectorAll('#legendAccordion .legend-item').forEach(el => el.classList.remove('legend-item-highlight'));
+  if (!color){ clearLegendAttention(); return; }
+  const target = document.querySelector(`#legendAccordion .legend-item[data-color="${color}"]`);
+  if (!target){ clearLegendAttention(); return; }
+  target.classList.add('legend-item-highlight');
+  pulseLegendAttention();
 }
 
 async function analyzeRouteHazards(coordinates){
@@ -2275,6 +2356,8 @@ function selectLocation(lat, lng){
   }
 
   if (shelterActive) setTimeout(() => fetchAndShowShelters(destination), 500);
+
+  getPointHazardLegendColor(lat, lng).then(color => highlightHazardLegendByColor(color));
 }
 
 /* =========================================================================
