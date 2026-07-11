@@ -497,6 +497,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-time{ font-size:17px; font-weight:800!important; }
 .route-dist{ font-size:14px; color:#c3cfe8; }
 
+/* ステータスパネル内の各セクション見出し：四角く縁取った「盛り上がった」ラベル風 */
+.panel-heading-label{
+  display:inline-block;
+  font-size:13.5px!important;
+  font-weight:800!important;
+  letter-spacing:.3px;
+  line-height:1.3;
+  padding:5px 12px;
+  margin:0 0 8px 0;
+  border-radius:9px;
+  color:#eaf2ff!important;
+  background:linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.04));
+  border:1px solid rgba(255,255,255,.4);
+  box-shadow:0 3px 7px rgba(0,10,30,.4), 0 1px 0 rgba(255,255,255,.35) inset, 0 -3px 5px rgba(0,0,0,.3) inset;
+  text-shadow:0 1px 1px rgba(0,0,0,.55)!important;
+}
+
 /* =========================================================================
    6b. 高低差断面図
    ========================================================================= */
@@ -662,15 +679,21 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 /* =========================================================================
    12. タップフィードバック（リップル・押下ハイライト）
    ========================================================================= */
-@keyframes rippleAnim{ to{ transform:scale(2.6); opacity:0; } }
+@keyframes rippleAnim{ to{ transform:scale(3.4); opacity:0; } }
 .ripple-span{
   position:absolute; border-radius:50%; pointer-events:none;
-  background:rgba(255,255,255,.55);
-  transform:scale(0); opacity:.65;
-  animation:rippleAnim .55s ease-out forwards;
+  background:radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,.6) 50%, rgba(255,255,255,.2) 78%, rgba(255,255,255,0) 100%);
+  transform:scale(0); opacity:.9;
+  animation:rippleAnim .65s cubic-bezier(.22,.8,.32,1) forwards;
   z-index:5;
 }
 .tap-highlight{ filter:brightness(1.15); }
+
+/* タップ可能だが独自のリップル用背景を持たない要素向けの共通足場
+   （位置・クリッピングだけを補い、見た目のスタイルには影響しない） */
+#toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn{
+  position:relative; overflow:hidden;
+}
 
 /* =========================================================================
    13. 狭幅端末向けの微調整（レイアウト自体は変えず、詰まりだけを緩和）
@@ -821,14 +844,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab1" class="tab-content active">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">地点リスク判定</div>
+        <div class="panel-heading-label">地点リスク判定</div>
         <div id="sub1-content" style="font-size:16px; line-height:1.5;">地点を選択してください</div>
-        <div style="font-weight:bold; font-size:17px; margin-top:9px; margin-bottom:5px;">経路リスク判定</div>
+        <div class="panel-heading-label" style="margin-top:9px;">経路リスク判定</div>
         <div id="routeHazardStatus" style="font-size:16px; line-height:1.5;"></div>
         <div id="emergencyAltContainer" style="margin-top:8px;"></div>
       </div>
       <div class="panel-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">地点情報</div>
+        <div class="panel-heading-label">地点情報</div>
         <div id="addressDisplay" style="font-size:16px; line-height:1.4;">住所: 取得中...</div>
         <div id="latLngDisplay" style="font-size:15px; color:#e2eaf7; margin-top:2px;">緯度/経度: --</div>
         <div style="font-size:16px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
@@ -840,7 +863,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab2" class="tab-content">
     <div class="panel-row">
       <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px;">ルート情報（徒歩）</div>
+        <div class="panel-heading-label">ルート情報（徒歩）</div>
         <div class="route-mode-box">
           <div class="route-icon-circle"><span class="material-icons-round" style="font-size:18px;">directions_walk</span></div>
           <div class="route-time-dist">
@@ -861,7 +884,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
       </div>
       <div class="panel-column profile-column" style="padding-left:10px;">
-        <div style="font-weight:bold; font-size:17px; margin-bottom:5px; display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden;">
+        <div class="panel-heading-label" style="display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden; max-width:100%;">
           <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
         </div>
         <div id="elevationProfileContainer">
@@ -873,7 +896,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </div>
    
   <div id="tab3" class="tab-content">
-    <div style="font-weight:bold; font-size:16px; margin-bottom:6px;">地形分類 凡例（国土地理院）</div>
+    <div class="panel-heading-label">地形分類 凡例（国土地理院）</div>
     <div id="landformLegendContent"></div>
   </div>
 </div>
@@ -1079,7 +1102,7 @@ async function fetchAndShowShelters(centerLatLng){
           <div style="font-size:16px; color:#333;">住所: ${address}</div>
           <div style="font-size:16px; margin-top:6px;">避難場所: ${isEmergencySite}</div>
           ${hazardDisplay}
-          <button onclick="triggerRouteToShelter(${lat}, ${lng})"
+          <button onclick="triggerRouteToShelter(${lat}, ${lng})" class="popup-action-btn"
                   style="margin-top:12px; width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">
             ルート検索を開始
           </button>
@@ -1522,6 +1545,7 @@ function resetRouteStatusUI(hazardHtml){
   document.getElementById('walkDist').innerText = '(-- km)';
   document.getElementById('routeHazardStatus').innerHTML = hazardHtml;
   clearRouteHazardAlert();
+  highlightHazardLegendByColor(null);
   const altContainer = document.getElementById('emergencyAltContainer');
   if (altContainer) altContainer.innerHTML = '';
   renderElevationProfile(null);
@@ -2759,7 +2783,7 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
     <div style="font-family:sans-serif; min-width:220px;">
       <strong style="font-size:18px; display:block; margin-bottom:4px;">${name}</strong>
       <div style="font-size:15px; color:#333;">${address}</div>
-      <button onclick="triggerRouteToShelter(${candidate.latlng.lat}, ${candidate.latlng.lng})"
+      <button onclick="triggerRouteToShelter(${candidate.latlng.lat}, ${candidate.latlng.lng})" class="popup-action-btn"
               style="margin-top:12px; width:100%; padding:10px; background:#1a73e8; color:white; border:none; border-radius:6px; cursor:pointer; font-size:16px;">
         この避難所を目的地に設定
       </button>
@@ -2971,7 +2995,7 @@ function hapticTap(ms = 8){
 
 function spawnRipple(target, clientX, clientY){
   const rect = target.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height) * 1.4;
+  const size = Math.max(rect.width, rect.height) * 1.9;
   const span = document.createElement('span');
   span.className = 'ripple-span';
   span.style.width = span.style.height = size + 'px';
@@ -2982,7 +3006,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
