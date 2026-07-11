@@ -1464,6 +1464,36 @@ let routeCandidates = [];
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
 
+/* --- 通常ルート（ハザードルート／グリーンルート）関連の共通クリア処理 ---
+   複数箇所（現在地ボタン・緊急避難開始・ルート再検索）で同じ後始末が
+   必要なため、ここに集約する。 */
+function clearRouteLayers(){
+  if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLabels();
+  routeCandidates = []; activeRouteIdx = 0;
+}
+
+function clearNormalRouteState(){
+  clearRouteLayers();
+  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
+  destination = null;
+}
+
+/* ステータスパネルのルート関連表示（所要時間・経路リスク判定・代替避難所
+   候補・高低差断面図）をまとめてリセットする。hazardHtml は「経路リスク
+   判定」欄に表示するメッセージ（空文字なら非表示）。 */
+function resetRouteStatusUI(hazardHtml){
+  document.getElementById('walkTime').innerText = '-- 分';
+  document.getElementById('walkDist').innerText = '(-- km)';
+  document.getElementById('routeHazardStatus').innerHTML = hazardHtml;
+  clearRouteHazardAlert();
+  const altContainer = document.getElementById('emergencyAltContainer');
+  if (altContainer) altContainer.innerHTML = '';
+  renderElevationProfile(null);
+  updateElevationExtremes(null);
+}
+
 /* --- 方位（コンパス）表示 --- */
 let currentHeadingDeg = null;
 let compassListenerAttached = false;
@@ -1737,19 +1767,8 @@ function executeGeolocation(isInitial){
 document.getElementById('locationBtn').addEventListener('click', () => {
   enableCompass();
   deactivateEmergencyMode();
-  if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
-  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
-  clearRouteLabels();
-  routeCandidates = []; activeRouteIdx = 0;
-  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
-  destination = null;
-
-  document.getElementById('walkTime').innerText = '-- 分';
-  document.getElementById('walkDist').innerText = '(-- km)';
-  document.getElementById('routeHazardStatus').innerHTML = '';
-  clearRouteHazardAlert();
-  renderElevationProfile(null);
-  updateElevationExtremes(null);
+  clearNormalRouteState();
+  resetRouteStatusUI('');
 
   /* 継続追跡ですでに現在地を把握している場合は、新しいGPS測位を待たずに
      キャッシュ済みの位置へ即座に地図を移動する（反応速度を優先）。
@@ -2194,10 +2213,7 @@ function onRouteTapped(tappedIdx){
 
 async function drawRoute(){
   if (!currentLocation || !destination) return;
-  if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
-  if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
-  clearRouteLabels();
-  routeCandidates = []; activeRouteIdx = 0;
+  clearRouteLayers();
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルートを計算中...</span>';
@@ -2213,12 +2229,7 @@ async function drawRoute(){
 
     const routes = footRes?.routes;
     if (!routes?.length){
-      document.getElementById('walkTime').innerText = '-- 分';
-      document.getElementById('walkDist').innerText = '(-- km)';
-      hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>';
-      clearRouteHazardAlert();
-      renderElevationProfile(null);
-      updateElevationExtremes(null);
+      resetRouteStatusUI('<span style="color:#dfe6f0;">徒歩ルートを算出できず</span>');
       return;
     }
 
@@ -2246,10 +2257,7 @@ async function drawRoute(){
     await activateHazardRoute(hazardCandIdx);
 
   } catch {
-    hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>';
-    clearRouteHazardAlert();
-    renderElevationProfile(null);
-    updateElevationExtremes(null);
+    resetRouteStatusUI('<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>');
   }
 }
 
@@ -2607,11 +2615,13 @@ function deactivateEmergencyMode(silent){
   emergencyModeActive = false;
   emergencyBtn.classList.remove('active', 'searching');
   clearEmergencyLayers();
+  emergencyOptions = [];
+  emergencyOptionIndex = -1;
+  /* silent=true は緊急検索の途中失敗時に使われ、その時点のエラーメッセージを
+     ステータスパネルに残したいので、UIリセットは通常キャンセル時のみ行う。 */
   if (!silent){
-    clearRouteHazardAlert();
-    document.getElementById('routeHazardStatus').innerHTML = '';
-    renderElevationProfile(null);
-    updateElevationExtremes(null);
+    destination = null;
+    resetRouteStatusUI('');
   }
 }
 
@@ -2850,6 +2860,10 @@ emergencyBtn.addEventListener('click', () => {
   if (emergencyModeActive){
     deactivateEmergencyMode();
   } else {
+    /* 通常のルート検索結果が残っていれば、緊急避難ルートと重ならないよう
+       先に消してから緊急検索を開始する。 */
+    clearNormalRouteState();
+    resetRouteStatusUI('');
     emergencyModeActive = true;
     startEmergencySearch();
   }
