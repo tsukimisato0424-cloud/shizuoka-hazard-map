@@ -57,7 +57,8 @@ body::before, body::after{
 body::before{ top:0; height:env(safe-area-inset-top,0px); }
 body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
-#map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; }
+#map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
+#map.heading-rotate-mode{ height:150vh; width:150vw; top:50%; left:50%; }
 
 /* =========================================================================
    1. 共通パーツ：ガラスパネル / 丸ボタン（検索バー・ハザードメニュー・
@@ -98,6 +99,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 
 /* =========================================================================
+   1b. ヘディングアップ切替ボタン
+   ========================================================================= */
+#headingToggleBtn{ position:relative; }
+#headingToggleBtn .north-indicator{
+  position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
+  width:24px; height:24px; border-radius:50%; font-size:12px; font-weight:900;
+  color:#e53935; background:#ffffff; box-shadow:0 0 0 2px rgba(70,130,180,.25) inset;
+  transform:rotate(0deg); transition:transform .25s linear;
+}
+#headingToggleBtn.active{
+  background:linear-gradient(135deg,#2f80ed,#0d47a1);
+  border-color:#fff;
+  box-shadow:0 0 18px 4px rgba(47,128,237,.75), 0 4px 10px rgba(0,0,0,.25);
+}
+#headingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
+
+/* =========================================================================
    2. 検索バー
    ========================================================================= */
 #searchContainer{
@@ -114,7 +132,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
 }
 .custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
-.search-icon-btn{ background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
+.search-icon-btn{ position:relative; overflow:hidden; border-radius:10px; background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; }
 .search-icon-btn .material-icons-round{ font-size:26px; }
 
 #customSuggestions{
@@ -122,6 +140,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
 }
 .suggestion-item{
+  position:relative; overflow:hidden;
   display:flex; align-items:center; padding:13px 16px; font-size:18px!important;
   letter-spacing:.3px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .2s;
 }
@@ -210,6 +229,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   transition:color .25s, text-shadow .25s;
 }
 
+/* リップル専用の内側レイヤー（丸型に切り抜き、外側の回転灯ビームは覆わない） */
+.emergency-round-btn .ripple-layer{
+  position:absolute; inset:0; border-radius:50%; overflow:hidden; z-index:2; pointer-events:none;
+}
+
 /* 常時見える丸いランプ本体（内側の球体・消灯時も明るい赤ガラス） */
 .emergency-round-btn::after{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:1; pointer-events:none;
@@ -287,7 +311,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
 }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; }
-#mapTypeContainer[open-state="true"]{ width:200px; height:360px; border-radius:16px; }
+#mapTypeContainer[open-state="true"]{ width:200px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
 
 #legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
@@ -298,7 +322,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #legendAccordion details{ display:flex; flex-direction:column; }
 
 #legendAccordion summary, #mapTypeContainer summary{
-  position:relative; z-index:3; width:56px; height:56px; padding:0; box-sizing:border-box; cursor:pointer;
+  position:relative; overflow:hidden; z-index:3; width:56px; height:56px; padding:0; box-sizing:border-box; cursor:pointer;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   user-select:none; list-style:none; transition:background .2s;
 }
@@ -328,8 +352,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 
-.maptype-content{ padding:8px 0; height:calc(100% - 54px); overflow-y:auto; box-sizing:border-box; }
-.map-type-item{ padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
+.maptype-content{ padding:8px 0; box-sizing:border-box; }
+.map-type-item{ position:relative; overflow:hidden; padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
+.map-type-item:last-child{ border-bottom:none; }
 .map-type-item:hover{ background:#f8f9fa; }
 
 #locationBtn, #refreshBtn, #fullscreenBtn{ width:54px; height:54px; color:var(--ink); cursor:pointer; border-radius:50%; }
@@ -345,12 +370,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   color:#fff!important; display:flex!important; align-items:center!important; justify-content:center!important;
   box-shadow:0 4px 12px rgba(0,0,0,.4);
 }
+.custom-shelter-icon > .material-icons-round{ transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
 .custom-pin-icon{ background:transparent!important; border:none!important; }
-.custom-pin-icon svg{ display:block; filter:drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
+.custom-pin-icon svg{ display:block; filter:drop-shadow(0 3px 4px rgba(0,0,0,.35)); transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
 
 /* --- 現在地マーカー（中心の丸ドット＋方位を示すコーン） --- */
 .custom-current-location-icon{ background:transparent!important; border:none!important; }
-.current-location-marker{ position:relative; width:70px; height:70px; }
+.current-location-marker{ position:relative; width:70px; height:70px; transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
 .location-dot{
   position:absolute; top:50%; left:50%; width:18px; height:18px;
   margin:-9px 0 0 -9px; z-index:2;
@@ -397,11 +423,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; }
 .tab-btn{
+  position:relative; overflow:hidden;
   width:96px; padding:11px 12px; text-align:center; cursor:pointer;
   font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
-  color:#c3cfe8; transition:all .3s cubic-bezier(.4,0,.2,1); position:relative;
+  color:#c3cfe8; transition:all .3s cubic-bezier(.4,0,.2,1);
 }
 .tab-btn.active{
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
@@ -503,6 +530,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .emergency-alt-list{ margin-top:6px; display:flex; flex-direction:column; gap:6px; }
 .emergency-alt-title{ font-size:13px; font-weight:bold; color:#ffd54f; margin-bottom:2px; }
 .emergency-alt-item{
+  position:relative; overflow:hidden;
   display:flex; justify-content:space-between; align-items:center; gap:8px;
   padding:8px 10px; border-radius:10px; cursor:pointer;
   background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
@@ -572,6 +600,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 
 .auth-btn {
+  position:relative; overflow:hidden;
   width: 100%; padding: 14px; background: #1a73e8; color: white;
   border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
 }
@@ -613,7 +642,19 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   color:#3a2a06!important; background:rgba(255,213,79,.85);
   border-radius:8px; padding:2px 7px; white-space:nowrap; flex-shrink:0;
 }
-   
+
+/* =========================================================================
+   12. タップフィードバック（リップル・押下ハイライト）
+   ========================================================================= */
+@keyframes rippleAnim{ to{ transform:scale(2.6); opacity:0; } }
+.ripple-span{
+  position:absolute; border-radius:50%; pointer-events:none;
+  background:rgba(255,255,255,.55);
+  transform:scale(0); opacity:.65;
+  animation:rippleAnim .55s ease-out forwards;
+  z-index:5;
+}
+.tap-highlight{ filter:brightness(1.15); }
 </style>
 </head>
 <body>
@@ -661,6 +702,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </button>
     </div>
     <button id="emergencyBtn" class="emergency-round-btn" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
+      <span class="ripple-layer"></span>
       <span class="emergency-lamp-ring"></span>
       <span class="emergency-kanji-mark">危</span>
     </button>
@@ -720,6 +762,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </div>
     </details>
   </div>
+
+  <button id="headingToggleBtn" class="round-btn" type="button" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
+    <span class="ripple-layer" style="position:absolute; inset:0; border-radius:50%; overflow:hidden; z-index:0;"></span>
+    <span class="north-indicator" id="northIndicator">N</span>
+  </button>
 
   <button id="locationBtn" class="round-btn"><span class="material-icons-round">my_location</span></button>
   <button id="refreshBtn" class="round-btn"><span class="material-icons-round">refresh</span></button>
@@ -842,24 +889,10 @@ const baseLayers = {
 };
 const reliefOverlay = L.tileLayer(`${GSI}/relief/{z}/{x}/{y}.png`, { opacity:0.5, attribution:'© 国土地理院' });
 
-/* 航空写真の上に標準地図（淡色地図）を「乗算(multiply)」ブレンドで重ねる
-   ハイブリッド表示。淡色地図タイルの白～薄い背景色が写真に溶け込んで消え、
-   道路線・注記（文字）・境界線などが写真の上に浮かんで見える。
-   ただし淡色地図には緑地・水面などの塗り色も含まれるため、完全な
-   「注記のみ」ではなく、それらは写真にわずかに色味として重なる点に注意。
-   国土地理院は注記のみの独立したタイルを公式には提供していないための
-   代替アプローチ。 */
 const paleLabelOverlay = L.tileLayer(`${GSI}/pale/{z}/{x}/{y}.png`, {
   opacity:1, className:'gsi-label-overlay', attribution:'© 国土地理院'
 });
 
-/* 火山土地条件図（火山地形分類）ラスタオーバーレイ。
-   国土地理院「vlcd」データは全国一律ではなく、全国の主要な活火山
-   （富士山・浅間山・桜島など約40火山）周辺のみ整備・公開されている。
-   そのため、対象火山から離れた地域を表示している場合は、タイル自体が
-   存在せず（404）、地図上に赤系の火山地形が一切表示されないのが正しい
-   挙動となる。これが「色が出ない」と誤解されやすい点のため、対象範囲
-   外を検知した場合は明示的に通知を出す。 */
 const volcanoOverlay = L.tileLayer(`${GSI}/vlcd/{z}/{x}/{y}.png`, { opacity:0.85, minZoom:10, maxZoom:17, attribution:'© 国土地理院（火山土地条件図）' });
 let volcanoTileLoadCount = 0, volcanoTileErrorCount = 0;
 volcanoOverlay.on('loading', () => { volcanoTileLoadCount = 0; volcanoTileErrorCount = 0; });
@@ -912,9 +945,6 @@ function changeMap(type){
     if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
   }
 
-  // 地形分類（自然地形／人工地形）レイヤー以外に切り替えた場合は、
-  // 前回選択していた地点の地形分類ハイライトが凡例に残ってしまうため
-  // ここで明示的にクリアする（現在地・目的地選択時の表示不整合を防止）。
   if (type !== 'landform_overlay') highlightLandformLegendByColor(null);
 
   mapTypeDetails.open = false;
@@ -1037,10 +1067,6 @@ window.triggerRouteToShelter = (lat, lng) => {
 
 /* =========================================================================
    C-2. 地形分類（重ねるハザードマップ「地形分類」ベクトルタイル）
-   -------------------------------------------------------------------------
-   国土地理院がベクトルタイル提供実験として公開している GeoJSON タイルを
-   利用する（自然地形／人工地形の2レイヤ）。ズームレベル14〜16が実データ。
-   参考：https://www.gsi.go.jp/bousaichiri/lfc_index.html
    ========================================================================= */
 const LANDFORM_MAX_ZOOM = 16;
 const LANDFORM_URLS = {
@@ -1048,8 +1074,6 @@ const LANDFORM_URLS = {
   artificial: `${GSI}/experimental_landformclassification2/{z}/{x}/{y}.geojson`
 };
 
-/* code(地形分類コード) → 色。国土地理院の地形分類ベクトルタイルの配色
-   （公開されているスタイル定義に準拠したグループ分け）を基に設定。 */
 const LANDFORM_COLOR_GROUPS = [
   [[10101,1010101,11201,11202,11203,11204], '#d9cbae'],
   [[10202,10204,2010201], '#9466ab'],
@@ -1089,8 +1113,6 @@ function getLandformColor(code){
   return landformColorMap.get(n) || '#aaaaaa';
 }
 
-/* 地形分類 凡例データ（名称・色・自然災害リスクの要点）
-   国土地理院「ベクトルタイル『地形分類』」解説ページの内容を要約。 */
 const LANDFORM_LEGEND = {
   natural: [
     ['山地', '#d9cbae', '大雨や地震で崖崩れ・土石流・地すべりの土砂災害リスクがある。火山地形もこの分類に含まれ、噴火に伴う噴石・火砕流・溶岩流・降灰等のリスクにも注意が必要。'],
@@ -1121,13 +1143,6 @@ const LANDFORM_LEGEND = {
   ]
 };
 
-/* 火山地形（火山土地条件図）参考凡例。
-   国土地理院「火山土地条件図」は火山ごとに個別の凡例（色）が用意されており
-   全国統一の色分けではないため、ここでは代表的によく使われる分類区分と
-   一般的な災害リスクの要点を参考情報として掲載する（実際の色は火山や
-   図幅により異なる場合がある）。地図切替の「地形分類」を選択すると、
-   国土地理院の火山土地条件図ラスタ（火山周辺のみデータあり）が
-   自然地形／人工地形と一緒に重なる。 */
 const VOLCANO_LEGEND = [
   ['火口・爆裂火口', '#e74c3c', '噴火時に噴石・火山ガスが直接及ぶ最も危険性の高い区域。'],
   ['中央火口丘・溶岩ドーム', '#922b21', 'ドームの成長・崩壊に伴う火砕流発生の起点になりやすい。'],
@@ -1229,7 +1244,6 @@ const LandformLayer = L.GridLayer.extend({
     Promise.all([fetchLandformTileJson(naturalUrl), fetchLandformTileJson(artificialUrl)])
       .then(([natural, artificial]) => {
         if (scale !== 1){
-          // 元タイルより大きくズームしている場合は簡易的に拡大表示する
           const off = document.createElement('canvas');
           off.width = 256; off.height = 256;
           const offCtx = off.getContext('2d');
@@ -1257,7 +1271,6 @@ map.on('zoomend', () => {
   }
 });
 
-/* --- 指定地点の地形分類コードを判定し、タブ③の凡例項目を光らせる --- */
 function pointInRing(lon, lat, ring){
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++){
@@ -1301,7 +1314,6 @@ async function getLandformCodeAt(lat, lon){
     fetchLandformTileJson(artificialUrl)
   ]);
 
-  // 人工地形（切土・盛土等）が自然地形の上に重なる想定のため、人工地形を優先して判定する
   for (const gj of [artificial, natural]){
     if (!gj || !gj.features) continue;
     for (const feature of gj.features){
@@ -1327,9 +1339,6 @@ function highlightLandformLegendByColor(color){
 
 async function maybeHighlightLandformAt(lat, lng){
   if (!map.hasLayer(landformLayer)){
-    // 地形分類レイヤーが表示されていない場合は、前回のハイライトが
-    // 残ったままにならないようクリアしておく（現在地取得時などに
-    // 古い目的地の凡例ハイライトが表示され続けるのを防ぐ）。
     highlightLandformLegendByColor(null);
     return;
   }
@@ -1349,7 +1358,28 @@ legendDetails.addEventListener('toggle', () => legendCard.setAttribute('open-sta
 
 const mapTypeCard = document.getElementById('mapTypeContainer');
 const mapTypeDetails = document.getElementById('mapTypeDetails');
-mapTypeDetails.addEventListener('toggle', () => mapTypeCard.setAttribute('open-state', mapTypeDetails.open));
+
+/* 地図切替メニューは項目数ぶんの高さだけを確保し、下に空欄ができないよう
+   開閉のたびに実際のコンテンツ高さ（サマリー欄＋リスト分）を計測して
+   インライン style.height に反映する（フォントレンダリング差にも追従）。 */
+function updateMapTypeCardHeight(){
+  if (!mapTypeDetails.open){
+    mapTypeCard.style.height = '';
+    return;
+  }
+  requestAnimationFrame(() => {
+    const summaryEl = mapTypeCard.querySelector('summary');
+    const contentEl = mapTypeCard.querySelector('.maptype-content');
+    if (!summaryEl || !contentEl) return;
+    const total = summaryEl.offsetHeight + contentEl.scrollHeight;
+    mapTypeCard.style.height = total + 'px';
+  });
+}
+
+mapTypeDetails.addEventListener('toggle', () => {
+  mapTypeCard.setAttribute('open-state', mapTypeDetails.open);
+  updateMapTypeCardHeight();
+});
 
 function toggleStatusPanel(){
   const panel = document.getElementById('statusPanel');
@@ -1384,7 +1414,6 @@ function createPinIcon(color, letter){
   return L.divIcon({ className:'custom-pin-icon', html:svg, iconSize:[36,48], iconAnchor:[18,46] });
 }
 
-/* 現在地マーカー：中心の丸ドット＋端末の向きを示す方位コーン */
 function createCurrentLocationIcon(){
   const html = `
     <div class="current-location-marker">
@@ -1397,7 +1426,6 @@ function createCurrentLocationIcon(){
 const currentLocationIcon = createCurrentLocationIcon();
 const destinationIcon = createPinIcon('#e53935', 'G');
 
-/* 経路上の最高地点／最低地点を示す三角マーカー（赤＝最高地点、青＝最低地点） */
 function createTriangleIcon(color){
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26">
@@ -1436,20 +1464,24 @@ function applyHeadingToMarker(){
   const cone = el.querySelector('.heading-cone');
   if (cone){
     cone.classList.add('visible');
-    cone.style.transform = `rotate(${currentHeadingDeg}deg)`;
+    /* ヘディングアップ中は地図自体が進行方向に合わせて回転しているため、
+       コーンは常に画面の真上（0deg）を指すようにする。 */
+    const coneDeg = headingUpModeActive ? 0 : currentHeadingDeg;
+    cone.style.transform = `rotate(${coneDeg}deg)`;
   }
 }
 
 function handleOrientationEvent(event){
   let heading = null;
   if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)){
-    heading = event.webkitCompassHeading; // iOS Safari: 0=北、時計回りで既に方位角
+    heading = event.webkitCompassHeading;
   } else if (typeof event.alpha === 'number' && !isNaN(event.alpha)){
-    heading = normalizeHeading(360 - event.alpha); // Android等: alphaは反時計回りの回転角
+    heading = normalizeHeading(360 - event.alpha);
   }
   if (heading === null) return;
   currentHeadingDeg = heading;
   applyHeadingToMarker();
+  if (headingUpModeActive) updateMapRotation(heading);
 }
 
 function attachCompassListener(){
@@ -1470,15 +1502,105 @@ function enableCompass(){
   }
 }
 
-/* --- 端末上のみで完結する、なめらかな現在地追従（Googleマップ風）---
-   navigator.geolocation.watchPosition() でGPS更新を受け取るが、これは
-   端末のGPS/位置情報チップからのイベントであり、サーバへの通信は
-   一切発生しない。受け取った新しい座標へは瞬間移動させず、
-   requestAnimationFrame で数百ミリ秒かけて滑らかに補間しながら
-   マーカーを動かすことで、ブレのない滑らかな移動を実現する。
-   住所・標高・ハザード判定などサーバAPIを呼ぶ重い処理は、初回取得時や
-   「現在地」ボタンを押した時など、明示的なタイミングでのみ実行し、
-   GPS更新のたびには呼び出さないことでサーバ負荷を避ける。 */
+/* =========================================================================
+   E-0. ヘディングアップ（進行方向を上に）モード
+   -------------------------------------------------------------------------
+   #map 自体を CSS transform: rotate() で回転させる軽量な実装。
+   タイルはすでに読み込み済みのDOM要素をそのまま回すだけなので、通信も
+   タイル再取得も発生せず、GPUによる合成のみで滑らかに回転する
+   （＝タイルが実質的に「キャッシュ」された状態のままアニメーションする）。
+   地図全体を回転させる都合上、Leafletの標準ドラッグパン／クリック位置
+   計算は回転を考慮しないため、ヘディングアップ中はドラッグパンを無効化し、
+   タップ選択の座標のみ逆回転補正して正しい緯度経度に変換する。
+   ========================================================================= */
+let headingUpModeActive = false;
+let mapRotationDeg = 0;       // 累積回転角（360で丸めず、最短経路で滑らかに遷移させる）
+let lastRotationHeading = null;
+
+function normalizeAngleDelta(delta){
+  while (delta > 180) delta -= 360;
+  while (delta < -180) delta += 360;
+  return delta;
+}
+
+function updateMapRotation(heading){
+  if (lastRotationHeading === null){
+    mapRotationDeg = -heading;
+  } else {
+    const delta = normalizeAngleDelta(heading - lastRotationHeading);
+    mapRotationDeg -= delta;
+  }
+  lastRotationHeading = heading;
+  applyMapRotationTransform();
+}
+
+function applyMapRotationTransform(){
+  const mapEl = map.getContainer();
+  if (headingUpModeActive){
+    mapEl.style.transform = `translate(-50%,-50%) rotate(${mapRotationDeg}deg)`;
+  } else {
+    mapEl.style.transform = '';
+  }
+  document.documentElement.style.setProperty('--map-counter-rotation', headingUpModeActive ? `${-mapRotationDeg}deg` : '0deg');
+  updateNorthIndicator();
+}
+
+function updateNorthIndicator(){
+  const el = document.getElementById('northIndicator');
+  if (!el) return;
+  el.style.transform = `rotate(${headingUpModeActive ? mapRotationDeg : 0}deg)`;
+}
+
+/* 回転中の #map 上でのタップ位置を、回転前（地理座標として正しい）の
+   コンテナ座標に逆変換してから緯度経度へ変換する。 */
+function correctedClientToLatLng(clientX, clientY){
+  const rect = map.getContainer().getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const dx = clientX - cx, dy = clientY - cy;
+  const theta = -mapRotationDeg * Math.PI / 180;
+  const rx = dx * Math.cos(theta) - dy * Math.sin(theta);
+  const ry = dx * Math.sin(theta) + dy * Math.cos(theta);
+  const size = map.getSize();
+  const containerPoint = L.point(size.x / 2 + rx, size.y / 2 + ry);
+  return map.containerPointToLatLng(containerPoint);
+}
+
+const headingToggleBtn = document.getElementById('headingToggleBtn');
+headingToggleBtn.addEventListener('click', () => {
+  enableCompass();
+  headingUpModeActive = !headingUpModeActive;
+  headingToggleBtn.classList.toggle('active', headingUpModeActive);
+  const mapEl = map.getContainer();
+
+  if (headingUpModeActive){
+    lastRotationHeading = null;
+    if (currentHeadingDeg !== null){
+      mapRotationDeg = -currentHeadingDeg;
+      lastRotationHeading = currentHeadingDeg;
+    } else {
+      mapRotationDeg = 0;
+    }
+    mapEl.classList.add('heading-rotate-mode');
+    applyMapRotationTransform();
+    map.invalidateSize({ pan:false });
+    map.dragging.disable();
+    applyHeadingToMarker();
+    if (currentLocation) map.panTo(currentLocation, { animate:true });
+  } else {
+    mapRotationDeg = 0;
+    lastRotationHeading = null;
+    mapEl.style.transform = '';
+    mapEl.classList.remove('heading-rotate-mode');
+    document.documentElement.style.setProperty('--map-counter-rotation', '0deg');
+    updateNorthIndicator();
+    map.invalidateSize({ pan:false });
+    map.dragging.enable();
+    applyHeadingToMarker();
+  }
+});
+
+/* --- 端末上のみで完結する、なめらかな現在地追従（Googleマップ風）--- */
 let geoWatchId = null;
 let displayedLocation = null;
 let markerAnimFrame = null;
@@ -1490,7 +1612,6 @@ function animateMarkerTo(target){
   const start = displayedLocation || target;
   if (markerAnimFrame) cancelAnimationFrame(markerAnimFrame);
 
-  // 移動距離が極端に大きい場合（初回取得や大幅なワープ）は補間せず即座に反映
   if (start.distanceTo(target) > 300){
     currentMarker.setLatLng(target);
     displayedLocation = target;
@@ -1527,8 +1648,10 @@ function startContinuousTracking(){
     } else {
       animateMarkerTo(newLoc);
     }
-    // GPS更新のたびに住所・標高・ハザードAPIへ問い合わせるとサーバ負荷が
-    // 大きいため、ここではマーカーの滑らかな移動のみ行う。
+
+    if (headingUpModeActive){
+      map.panTo(newLoc, { animate:true, duration:0.6, easeLinearity:0.4 });
+    }
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -1573,8 +1696,6 @@ function executeGeolocation(isInitial){
     if (shelterActive) fetchAndShowShelters(currentLocation);
     if (destination) drawRoute();
 
-    // 初回の正式な現在地取得ができたら、以降は端末内蔵GPSの更新のみで
-    // マーカーを滑らかに動かし続ける（サーバには接続しない）。
     startContinuousTracking();
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
@@ -1743,14 +1864,9 @@ function computeRouteMidpoint(coords){
   return latlngs[Math.floor(latlngs.length / 2)];
 }
 
-/* 既存のルートラベルとの画面上の重なりを検知し、重なる場合はバッジを
-   縦方向にずらして表示する。優先度の高い方（isActive=true、すなわち
-   ハザード判定中＝選択中ルート）は実際の中点位置を保ち、既存のラベルが
-   その位置と近い場合は既存ラベル側（=緑ルート等）をずらす。逆に、
-   追加中のラベル自身が非アクティブ側の場合は自分自身をずらす。 */
 function resolveLabelCollision(newPos, isActive){
-  const threshold = 46;   // これ未満の画面距離(px)は重なりとみなす
-  const offsetPx = 34;    // ずらす量(px)
+  const threshold = 46;
+  const offsetPx = 34;
   const newPt = map.latLngToContainerPoint(newPos);
 
   for (const m of routeLabelMarkers){
@@ -1758,7 +1874,6 @@ function resolveLabelCollision(newPos, isActive){
     const dist = Math.hypot(newPt.x - mp.x, newPt.y - mp.y);
     if (dist < threshold){
       if (isActive){
-        // 自分(選択中ルート)は正しい位置に保ち、既存の非選択ラベルをずらす
         const el = m.getElement();
         const badge = el && el.querySelector('.route-label-badge');
         if (badge) badge.style.transform = `translate(-50%,-50%) translateY(${offsetPx}px)`;
@@ -1770,9 +1885,6 @@ function resolveLabelCollision(newPos, isActive){
   return 0;
 }
 
-/* idx: routeCandidates 内でのインデックス（番号は固定・スワップしても不変）
-   styleClass: 'route-label-hazard' | 'route-label-green'
-   isActive: 現在ハザード判定表示（赤/青）中のルートかどうか */
 function addRouteLabel(idx, coords, route, styleClass, isActive){
   const mid = computeRouteMidpoint(coords);
   const selfOffset = resolveLabelCollision(mid, isActive);
@@ -1822,8 +1934,6 @@ async function buildElevationProfileData(coordinates, pointFlags){
   return results.filter(r => r.elevation !== null);
 }
 
-/* 経路上の最高地点／最低地点の住所を取得してサブ①タブに表示し、
-   地図上にも赤（最高地点）・青（最低地点）の三角マーカーを連動して表示する */
 async function updateElevationExtremes(data){
   const highestEl = document.getElementById('highestPointAddr');
   const lowestEl = document.getElementById('lowestPointAddr');
@@ -1890,7 +2000,7 @@ function renderElevationProfile(data){
 
   const W = 300, H = 170;
   const padL = 40, padR = 16, padT = 24, padB = 30;
-  const extrude = 11; // 地形の「厚み」を表現する押し出し量(px)
+  const extrude = 11;
 
   const elevations = data.map(d => d.elevation);
   const minE = Math.min(...elevations);
@@ -1906,13 +2016,10 @@ function renderElevationProfile(data){
 
   const baseY = (H - padB).toFixed(1);
 
-  // 「押し出し（3D厚み）」用シルエット：稜線を下にずらしたシルエットで奥行きを表現
   const extrudePts = data.map(d => `${xAt(d).toFixed(1)},${(yAt(d.elevation) + extrude).toFixed(1)}`);
   const extrudePath = `M${xAt(data[0]).toFixed(1)},${(yAt(data[0].elevation) + extrude).toFixed(1)} `
     + `L${extrudePts.join(' ')} L${xAt(data[data.length - 1]).toFixed(1)},${baseY} L${padL},${baseY} Z`;
 
-  // 断面図の塗りつぶし・線ともに、危険区域を通過する区間は赤、
-  // 安全な区間は青で色分けする（ルート上の線色と対応させる）
   let segmentsHtml = '';
   let areaSegmentsHtml = '';
   for (let i = 1; i < data.length; i++){
@@ -1928,7 +2035,6 @@ function renderElevationProfile(data){
     segmentsHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${lineColor}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#elevLineGlow)"/>`;
   }
 
-  // 縦方向の目盛り（3段階）― 視認性向上のため白字表示
   let gridHtml = '';
   for (let i = 0; i <= 2; i++){
     const e = minE + (rangeE * i / 2);
@@ -1937,7 +2043,6 @@ function renderElevationProfile(data){
     gridHtml += `<text x="${padL - 6}" y="${(Number(y) + 4).toFixed(1)}" font-size="13" fill="#ffffff" text-anchor="end">${Math.round(e)}m</text>`;
   }
 
-  // 横方向（距離）の目盛り ― km表記でベースラインの下に表示
   let xGridHtml = '';
   const xTickCount = 3;
   for (let i = 0; i <= xTickCount; i++){
@@ -1980,8 +2085,6 @@ function renderElevationProfile(data){
   `;
 }
 
-/* 主ルート（危険区域判定を行い赤/青で色分け）を有効化して描画する。
-   タップでの入れ替え時にも使う共通処理。 */
 async function activateHazardRoute(idx){
   const cand = routeCandidates[idx];
   if (!cand) return;
@@ -1997,8 +2100,6 @@ async function activateHazardRoute(idx){
 
   if (routeLayer) map.removeLayer(routeLayer);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
-  // タップでの入れ替えをしやすくするため、見た目の線（太め）の下に、
-  // 透明で幅の広い「当たり判定専用」の線を重ねて配置する。
   routeLayer = L.layerGroup(segments.flatMap(seg => {
     const hit = L.polyline(seg.points, { color:'#000000', weight:26, opacity:0.01 })
       .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
@@ -2006,8 +2107,6 @@ async function activateHazardRoute(idx){
       .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
     return [hit, visible];
   })).addTo(map);
-  // リスク判定ルート（赤/青）は、緑ルートと重なる区間でも常に上に
-  // 表示されるようにする（追加順やタイミングに関係なく確実に前面へ）。
   bringHazardRouteToFront();
 
   updateRouteHazardAlert(foundTypes);
@@ -2023,16 +2122,10 @@ async function activateHazardRoute(idx){
   });
 }
 
-/* リスク判定ルート（routeLayer・赤/青）を、緑ルートより常に手前に表示する。
-   どちらが先に地図へ追加されたかに関わらず呼び出せるよう、
-   両レイヤーが揃うタイミング（activateHazardRoute末尾／drawGreenRoute末尾）
-   の両方から呼び出す。 */
 function bringHazardRouteToFront(){
   if (routeLayer) routeLayer.eachLayer(l => { if (l.bringToFront) l.bringToFront(); });
 }
 
-/* もう一方のルート（大きい通り・曲がり角少なめ想定）を緑一色で描画する。
-   リスク判定は行わない。 */
 function drawGreenRoute(idx){
   const cand = routeCandidates[idx];
   if (!cand) return;
@@ -2046,13 +2139,9 @@ function drawGreenRoute(idx){
 
   addRouteLabel(idx, cand.coords, cand.route, 'route-label-green', false);
 
-  // 緑ルートを新たに手前へ追加した直後は、重なる区間でリスク判定ルート
-  // （赤/青）が緑の下に隠れてしまうため、必ずリスク判定ルートを前面に戻す。
   bringHazardRouteToFront();
 }
 
-/* いずれかのルート線がタップされたとき、ハザード判定側と緑ルート側を
-   入れ替える（タップされた方が新たにハザード判定＝赤/青表示になる）。 */
 function onRouteTapped(tappedIdx){
   if (tappedIdx === activeRouteIdx) return;
   const newGreenIdx = activeRouteIdx;
@@ -2079,8 +2168,6 @@ async function drawRoute(){
   const to = `${destination.lng},${destination.lat}`;
 
   try {
-    /* alternatives=true / steps=true を付けて、可能であれば複数ルートを
-       まとめて取得する（OSRMのデモサーバーは代替ルートを返さない場合もある）。 */
     const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson&alternatives=true&steps=true`)
       .then(r => r.json()).catch(() => null);
 
@@ -2097,8 +2184,6 @@ async function drawRoute(){
 
     const mainIdx = 0;
 
-    // 「大きい通り・曲がり角少なめ」の緑ルートは、案内ステップ数
-    // （＝曲がり角の数）が最も少ない代替ルートを採用する近似ロジック。
     let greenIdx = -1, bestTurns = Infinity;
     routes.forEach((r, i) => {
       if (i === mainIdx) return;
@@ -2114,9 +2199,6 @@ async function drawRoute(){
       }))
       .filter(c => c.role);
 
-    // 先に緑ルート（重なりの下側）を描画し、続けてリスク判定ルート
-    // （赤/青・上側）を描画することで、重なる区間は常にリスク判定側が
-    // 手前に表示されるようにする。
     const greenCandIdx = routeCandidates.findIndex(c => c.role === 'green');
     if (greenCandIdx !== -1) drawGreenRoute(greenCandIdx);
 
@@ -2150,17 +2232,9 @@ function selectLocation(lat, lng){
 /* =========================================================================
    F. 地点情報（標高／冠水リスク／住所）
    ========================================================================= */
-/*
- * 国土地理院 標高APIは、地点ごとに最も精度の良いDEMを自動選択して返す。
- * レスポンスの "hsrc" にその出典が入っており、精度は概ね以下の順（良い順）：
- *   "5m（レーザ）"   = DEM5A（航空レーザ測量、最高精度）
- *   "5m（写真測量）" = DEM5B（写真測量、5A に次ぐ精度）
- *   "10m"            = DEM10B等（等高線由来、山間部などでよく使われる粗いデータ）
- * hsrc も一緒に取得し、判定結果の信頼度を利用者に示せるようにする。
- */
 const DEM_RESOLUTION_RANK = { '5m（レーザ）':3, '5m（写真測量）':2 };
 function getDemRank(hsrc){
-  return DEM_RESOLUTION_RANK[hsrc] ?? 1; // 10m等・不明はランク1（最も粗い）
+  return DEM_RESOLUTION_RANK[hsrc] ?? 1;
 }
 function getDemLabel(hsrc){
   if (hsrc === '5m（レーザ）') return 'DEM5A・高精度';
@@ -2189,8 +2263,6 @@ async function checkInundationRisk(lat, lng){
   const center = results[centerIndex];
   const centerElev = center.elevation;
 
-  // 周辺(中心を除く)の有効な標高値。都市部では建物や高架橋の高さがDEMに混入することがあるため、
-  // 単純平均ではなくトリム平均（上下の外れ値を除いた平均）を使い、突出した値の影響を抑える。
   const surroundingValues = results
     .filter((r, i) => i !== centerIndex && !isNaN(r.elevation))
     .map(r => r.elevation)
@@ -2207,7 +2279,6 @@ async function checkInundationRisk(lat, lng){
 
   const diff = avgElev - centerElev;
 
-  // 中心点と周辺点のDEM解像度に大きな差がある場合は、境界部の精度差による誤判定の可能性を注記する
   const surroundingRanks = results.filter((r, i) => i !== centerIndex && r.hsrc).map(r => getDemRank(r.hsrc));
   const centerRank = getDemRank(center.hsrc);
   const mixedResolution = surroundingRanks.length > 0 && surroundingRanks.some(r => r !== centerRank);
@@ -2273,10 +2344,18 @@ async function updateDetails(lat, lng){
 map.on('click', e => {
   document.getElementById('customSuggestions').style.display = 'none';
   deactivateEmergencyMode();
-  const { lat, lng } = e.latlng;
+
+  let lat, lng;
+  if (headingUpModeActive && Math.abs(mapRotationDeg) > 0.01 && e.originalEvent){
+    const corrected = correctedClientToLatLng(e.originalEvent.clientX, e.originalEvent.clientY);
+    lat = corrected.lat; lng = corrected.lng;
+  } else {
+    ({ lat, lng } = e.latlng);
+  }
+
   selectLocation(lat, lng);
   updateDetails(lat, lng);
-  if (shelterActive) fetchAndShowShelters(e.latlng);
+  if (shelterActive) fetchAndShowShelters(L.latLng(lat, lng));
 });
 
 /* =========================================================================
@@ -2444,6 +2523,7 @@ fullscreenBtn.addEventListener('click', () => {
     mapTypeDetails.open = false;
     legendCard.setAttribute('open-state', 'false');
     mapTypeCard.setAttribute('open-state', 'false');
+    updateMapTypeCardHeight();
   }
 
   uiElements.forEach(el => el?.classList.toggle('hidden', !isUIVisible));
@@ -2455,15 +2535,6 @@ fullscreenBtn.addEventListener('click', () => {
 
 /* =========================================================================
    I. 緊急避難ルート案内
-   -------------------------------------------------------------------------
-   現在地から半径圏内の避難所候補を複数取得し、それぞれの徒歩ルートに
-   ついてハザードタイル判定を行う。さらに避難所そのものの所在地が
-   ハザード区域に該当していないかも判定する。
-   避難所自体がハザードに該当せず、かつ経路もハザード区域を一切
-   通過しない候補の中から最も近いものを最優先で選定する。該当が無い
-   場合は避難所自体がハザード非該当のものに絞って経路の危険度が
-   最も低いものを選び、それも無い場合のみハザード該当の避難所も
-   含めて最もリスクの低いものを次点として選ぶ。
    ========================================================================= */
 const emergencyBtn = document.getElementById('emergencyBtn');
 let emergencyModeActive = false;
@@ -2518,8 +2589,6 @@ async function evaluateShelterCandidate(originLatLng, candidate){
     const hazardCount = pointFlags.filter(Boolean).length;
     const hazardRatio = hazardCount / pointFlags.length;
 
-    // 避難所の所在地そのものがハザード区域に該当していないかも確認する
-    // （経路上のハザードとは別に、避難所自体が危険区域内に立地しているケースを除外するため）
     const destinationHazardTypes = await checkPointHazard(candidate.latlng.lat, candidate.latlng.lng);
     const destinationHazardous = destinationHazardTypes.length > 0;
 
@@ -2595,8 +2664,6 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   renderEmergencyAlternatives(originLatLng, opts.noSafeShelterFound);
 }
 
-/* 現在選択中以外の避難所候補を「別の避難所を選ぶ」リストとして表示し、
-   タップで選択先を切り替えられるようにする。 */
 function renderEmergencyAlternatives(originLatLng, noSafeShelterFound){
   const container = document.getElementById('emergencyAltContainer');
   if (!container) return;
@@ -2612,7 +2679,7 @@ function renderEmergencyAlternatives(originLatLng, noSafeShelterFound){
 
   let html = `<div class="emergency-alt-list"><div class="emergency-alt-title">${title}</div>`;
   emergencyOptions.forEach((opt, idx) => {
-    if (idx === emergencyOptionIndex) return; // 現在選択中の候補は一覧に出さない
+    if (idx === emergencyOptionIndex) return;
     const props = opt.candidate.feature.properties || {};
     const name = props['施設・場所名'] || '名称不明の避難所';
     const mins = Math.round(opt.route.duration / 60);
@@ -2665,7 +2732,7 @@ async function startEmergencySearch(){
     }
   }
 
-  if (!emergencyModeActive) return; // 途中でキャンセルされた場合
+  if (!emergencyModeActive) return;
 
   hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:最寄りの安全な避難所を検索中...</span>';
 
@@ -2697,9 +2764,6 @@ async function startEmergencySearch(){
   if (!emergencyModeActive) return;
   hazardStatusEl.innerHTML = '<span style="color:#ffd54f;">緊急:避難所の安全性を確認中...</span>';
 
-  // まず避難所そのものがハザード区域に該当するかどうかだけを軽量に判定し、
-  // 「ハザードに該当しない避難所」を優先的な候補プールとして絞り込む。
-  // （経路の詳細計算は候補を絞り込んだ後にのみ行い、通信量を抑える）
   const destinationChecks = await Promise.all(nearbyPool.map(async c => {
     const types = await checkPointHazard(c.latlng.lat, c.latlng.lng);
     return { ...c, destinationHazardTypesPrecheck: types };
@@ -2731,8 +2795,6 @@ async function startEmergencySearch(){
     return;
   }
 
-  // 経路の危険区域通過割合が低いもの（同程度なら近いもの）を優先して並べる。
-  // このリストが「タップで選択できる避難所候補」の一覧になる。
   valid.sort((a, b) => {
     if (Math.abs(a.hazardRatio - b.hazardRatio) > 0.02) return a.hazardRatio - b.hazardRatio;
     return a.route.distance - b.route.distance;
@@ -2754,7 +2816,49 @@ emergencyBtn.addEventListener('click', () => {
 });
 
 /* =========================================================================
-   J. 起動
+   J. タップフィードバック（リップル・押下ハイライト・ハプティクス）
+   ========================================================================= */
+function hapticTap(ms = 8){
+  if (navigator.vibrate) { try { navigator.vibrate(ms); } catch {} }
+}
+
+function spawnRipple(target, clientX, clientY){
+  const rect = target.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 1.4;
+  const span = document.createElement('span');
+  span.className = 'ripple-span';
+  span.style.width = span.style.height = size + 'px';
+  span.style.left = (clientX - rect.left - size / 2) + 'px';
+  span.style.top = (clientY - rect.top - size / 2) + 'px';
+  const host = target.querySelector(':scope > .ripple-layer') || target;
+  host.appendChild(span);
+  span.addEventListener('animationend', () => span.remove());
+}
+
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary';
+
+document.addEventListener('pointerdown', e => {
+  const target = e.target.closest(RIPPLE_SELECTOR);
+  if (!target) return;
+  spawnRipple(target, e.clientX, e.clientY);
+  target.classList.add('tap-highlight');
+  hapticTap(6);
+}, { passive:true });
+
+document.addEventListener('pointerup', e => {
+  const target = e.target.closest(RIPPLE_SELECTOR);
+  if (target) target.classList.remove('tap-highlight');
+});
+document.addEventListener('pointercancel', e => {
+  const target = e.target.closest(RIPPLE_SELECTOR);
+  if (target) target.classList.remove('tap-highlight');
+});
+
+/* iOS Safari で :active を確実に発火させるための定型トリック */
+document.addEventListener('touchstart', () => {}, true);
+
+/* =========================================================================
+   K. 起動
    ========================================================================= */
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 renderElevationProfile(null);
