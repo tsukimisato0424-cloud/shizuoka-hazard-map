@@ -20,11 +20,8 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
 <style>
-/* =========================================================================
-   0. ルート変数（共通の色・シャドウ・グラス効果をここに集約）
-   ========================================================================= */
 :root{
-  --brand: #1e3c72; /* ブラウザUI（上下セーフエリア）と統一する基準色 */
+  --brand: #1e3c72;
   --glass-bg: linear-gradient(135deg, rgba(30,60,114,.55), rgba(40,50,80,.72));
   --glass-border: 1px solid rgba(255,255,255,.22);
   --glass-shadow: 0 15px 40px rgba(0,20,50,.4), 0 0 0 1px rgba(255,255,255,.1) inset;
@@ -36,53 +33,35 @@
                           0 4px 8px rgba(90,150,190,.35) inset;
   --ink: #2c6690;
 }
-
 html, body{
-  height:100%;
-  margin:0; padding:0;
-  background:var(--brand);
+  height:100%; margin:0; padding:0; background:var(--brand);
   font-family:'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-  color:var(--brand);
-  -webkit-font-smoothing:antialiased;
+  color:var(--brand); -webkit-font-smoothing:antialiased;
   touch-action:pan-x pan-y; overscroll-behavior:none;
   position:fixed; width:100%; overflow:hidden;
 }
-
-/* 上下のセーフエリア（ノッチ／ホームインジケーター・アドレスバー周辺）を
-   ブラウザ全体で統一色にするための帯。before=上端、after=下端。 */
 body::before, body::after{
-  content:""; position:fixed; left:0; right:0;
-  background:var(--brand); z-index:100000; pointer-events:none;
+  content:""; position:fixed; left:0; right:0; background:var(--brand); z-index:100000; pointer-events:none;
 }
 body::before{ top:0; height:env(safe-area-inset-top,0px); }
 body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
-
 #map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
 #map.heading-rotate-mode{ height:150vh; width:150vw; top:50%; left:50%; }
-
-/* =========================================================================
-   1. 共通パーツ：ガラスパネル / 丸ボタン（検索バー・ハザードメニュー・
-      ステータスパネル・右側フローティングコントロールで使い回す）
-   ========================================================================= */
 .glass-panel {
   position:relative; overflow:hidden;
   background: linear-gradient(135deg, rgba(30,60,114,.85), rgba(40,50,80,.9)) !important;
   backdrop-filter:blur(24px) saturate(180%);
   -webkit-backdrop-filter:blur(24px) saturate(180%);
-  border:var(--glass-border);
-  box-shadow:var(--glass-shadow);
+  border:var(--glass-border); box-shadow:var(--glass-shadow);
   text-shadow: 0 1px 2px rgba(0,0,0,0.4) !important;
 }
 .glass-panel::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
   background:radial-gradient(circle at 15% 8%, rgba(255,255,255,.4), rgba(255,255,255,0) 55%);
 }
-
 .round-btn{
-  position:relative; z-index:1500; overflow:hidden;
-  width:56px; height:56px; border-radius:50%;
-  background:var(--bubble-bg); border:var(--bubble-border);
-  box-shadow:var(--bubble-shadow);
+  position:relative; z-index:1500; overflow:hidden; width:56px; height:56px; border-radius:50%;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
   display:flex; align-items:center; justify-content:center;
   transition:width .28s cubic-bezier(.4,0,.2,1), height .28s cubic-bezier(.4,0,.2,1),
              border-radius .28s ease, transform .2s, box-shadow .2s;
@@ -93,14 +72,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
 }
 .round-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
-.round-btn .material-icons-round{
-  position:relative; z-index:1; font-size:26px;
-  filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
-}
-
-/* =========================================================================
-   1b. ヘディングアップ切替ボタン
-   ========================================================================= */
+.round-btn .material-icons-round{ position:relative; z-index:1; font-size:26px; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #headingToggleBtn{ position:relative; }
 #headingToggleBtn .north-indicator{
   position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
@@ -109,23 +81,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   transform:rotate(0deg); transition:transform .25s linear;
 }
 #headingToggleBtn.active{
-  background:linear-gradient(135deg,#2f80ed,#0d47a1);
-  border-color:#fff;
+  background:linear-gradient(135deg,#2f80ed,#0d47a1); border-color:#fff;
   box-shadow:0 0 18px 4px rgba(47,128,237,.75), 0 4px 10px rgba(0,0,0,.25);
 }
 #headingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
-
-/* =========================================================================
-   2. 検索バー
-   ========================================================================= */
 #searchContainer{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   padding:0; z-index:99999; touch-action:none;
 }
-.search-row{
-  display:flex; align-items:center; gap:10px;
-}
+.search-row{ display:flex; align-items:center; gap:10px; }
 .custom-search-bar{ flex:1; min-width:0; border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
 .custom-search-bar input, .search-icon-btn{ position:relative; z-index:1; }
 .custom-search-bar input{
@@ -135,23 +100,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
 .search-icon-btn{ position:relative; overflow:hidden; border-radius:10px; background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; flex-shrink:0; }
 .search-icon-btn .material-icons-round{ font-size:26px; }
-
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
 }
 .suggestion-item{
-  position:relative; overflow:hidden;
-  display:flex; align-items:center; padding:13px 16px; font-size:18px!important;
+  position:relative; overflow:hidden; display:flex; align-items:center; padding:13px 16px; font-size:18px!important;
   letter-spacing:.3px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; transition:background .2s;
 }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
 .suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
-
-/* =========================================================================
-   3. ハザード選択メニュー
-   ========================================================================= */
 #hazardMenuCard{
   position:absolute; top:calc(78px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
@@ -159,10 +118,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   display:grid; grid-template-columns:repeat(4,1fr); gap:6px; touch-action:none;
 }
 #hazardMenuCard::before{ background-position:12% 6%; }
-
 .hazard-btn{
-  position:relative; z-index:1; overflow:hidden;
-  width:100%; height:70px; border:1px solid rgba(255,255,255,.65); border-radius:16px;
+  position:relative; z-index:1; overflow:hidden; width:100%; height:70px; border:1px solid rgba(255,255,255,.65); border-radius:16px;
   background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
   backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
@@ -176,10 +133,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
   background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
 }
-.hazard-btn .material-icons-round{
-  position:relative; z-index:1; font-size:32px; margin-bottom:4px; color:#3f83ab;
-  filter:drop-shadow(0 1px 0 rgba(255,255,255,.6));
-}
+.hazard-btn .material-icons-round{ position:relative; z-index:1; font-size:32px; margin-bottom:4px; color:#3f83ab; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 .hazard-btn span:not(.material-icons-round){ position:relative; z-index:1; }
 .hazard-btn:active{
   transform:translateY(2px);
@@ -187,7 +141,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   border-color:#1a73e8;
 }
 .hazard-btn.active{ border-color:#fff!important; border-width:2px; transform:translateY(-1px); }
-
 @keyframes hazardGlow{
   0%,100%{ box-shadow:0 0 16px 2px var(--glow-color), 0 0 32px 8px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
   50%{ box-shadow:0 0 34px 10px var(--glow-color), 0 0 60px 22px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
@@ -197,21 +150,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .hazard-btn.active[data-type="tsunami"]   { background:linear-gradient(135deg,#00c6ff,#0072ff); color:#fff; --glow-color:rgba(0,198,255,.9); animation:hazardGlow 1.6s ease-in-out infinite; }
 .hazard-btn.active[data-type="shelter"]   { background:linear-gradient(135deg,#27ae60,#1e8449); color:#fff; --glow-color:rgba(39,174,96,.9); animation:hazardGlow 1.6s ease-in-out infinite; }
 .hazard-btn.active .material-icons-round{ color:#fff; filter:none; }
-
 @keyframes routeHazardBlink{
   0%,100%{ box-shadow:0 0 0 0 rgba(229,57,53,.9), 0 4px 10px rgba(0,0,0,.15); border-color:#e53935; }
   50%{ box-shadow:0 0 16px 6px rgba(229,57,53,.85), 0 4px 10px rgba(0,0,0,.15); border-color:#ff8a80; }
 }
 .hazard-btn.route-alert{ animation:routeHazardBlink .9s ease-in-out infinite; border-width:2px; z-index:1; color:#e53935!important; }
 .hazard-btn.route-alert .material-icons-round{ color:#e53935!important; filter:none!important; }
-
-/* =========================================================================
-   3b. 緊急避難ボタン（検索バー横の丸型・消防用回転灯風ランプ）
-   ========================================================================= */
 .emergency-round-btn{
-  position:relative; z-index:1500; overflow:visible; flex-shrink:0;
-  width:56px; height:56px; border-radius:50%;
-  /* 平時は少し暗めの赤色ガラス、点灯時に明るく輝くコントラストをつける */
+  position:relative; z-index:1500; overflow:visible; flex-shrink:0; width:56px; height:56px; border-radius:50%;
   background:radial-gradient(circle at 32% 26%, #a83b30 0%, #7a1c14 45%, #3d0906 90%);
   border:2px solid rgba(255,255,255,.32);
   display:flex; align-items:center; justify-content:center;
@@ -219,34 +165,21 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   transition:transform .2s, border-color .25s, background .25s, box-shadow .25s;
 }
 .emergency-round-btn::before{
-  content:""; position:absolute; top:4px; left:9px; width:40%; height:26%;
-  border-radius:50%; pointer-events:none; z-index:2;
+  content:""; position:absolute; top:4px; left:9px; width:40%; height:26%; border-radius:50%; pointer-events:none; z-index:2;
   background:radial-gradient(circle, rgba(255,255,255,.6), rgba(255,255,255,0) 70%);
 }
 .emergency-round-btn:active{ transform:translateY(2px); }
 .emergency-round-btn .emergency-kanji-mark{
-  position:relative; z-index:3; font-size:22px; font-weight:900; color:#ffcdc5;
-  line-height:1; letter-spacing:0;
+  position:relative; z-index:3; font-size:22px; font-weight:900; color:#ffcdc5; line-height:1; letter-spacing:0;
   text-shadow:0 0 4px rgba(255,150,130,.5), 0 1px 1px rgba(0,0,0,.5);
   transition:color .25s, text-shadow .25s;
 }
-
-/* リップル専用の内側レイヤー（丸型に切り抜き、外側の回転灯ビームは覆わない） */
-.emergency-round-btn .ripple-layer{
-  position:absolute; inset:0; border-radius:50%; overflow:hidden; z-index:2; pointer-events:none;
-}
-
-/* 常時見える丸いランプ本体（内側の球体・消灯時も明るい赤ガラス） */
+.emergency-round-btn .ripple-layer{ position:absolute; inset:0; border-radius:50%; overflow:hidden; z-index:2; pointer-events:none; }
 .emergency-round-btn::after{
   content:""; position:absolute; inset:0; border-radius:50%; z-index:1; pointer-events:none;
   box-shadow:0 0 0 0 rgba(255,45,40,0); transition:box-shadow .25s;
 }
-
-/* 回転灯風の光の帯（点灯中のみ表示・回転） */
-.emergency-lamp-ring{
-  position:absolute; inset:-3px; border-radius:50%; z-index:0; pointer-events:none; opacity:0;
-}
-
+.emergency-lamp-ring{ position:absolute; inset:-3px; border-radius:50%; z-index:0; pointer-events:none; opacity:0; }
 .emergency-round-btn.searching,
 .emergency-round-btn.active{
   border-color:#fff;
@@ -255,10 +188,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .emergency-round-btn.searching .emergency-kanji-mark,
 .emergency-round-btn.active .emergency-kanji-mark{
-  color:#fff;
-  text-shadow:0 0 6px rgba(255,255,255,.9), 0 0 16px rgba(255,90,70,.95), 0 1px 1px rgba(0,0,0,.45);
+  color:#fff; text-shadow:0 0 6px rgba(255,255,255,.9), 0 0 16px rgba(255,90,70,.95), 0 1px 1px rgba(0,0,0,.45);
 }
-
 .emergency-round-btn.searching .emergency-lamp-ring,
 .emergency-round-btn.active .emergency-lamp-ring{
   opacity:1;
@@ -269,61 +200,39 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   animation: emergencyBeaconSpin 1.1s linear infinite;
 }
 .emergency-round-btn.searching::after,
-.emergency-round-btn.active::after{
-  animation: emergencyBeaconFlash .8s steps(1,end) infinite;
-}
+.emergency-round-btn.active::after{ animation: emergencyBeaconFlash .8s steps(1,end) infinite; }
 @keyframes emergencyBeaconSpin{ to{ transform:rotate(360deg); } }
 @keyframes emergencyBeaconFlash{
   0%, 45%{ box-shadow:0 0 14px 5px rgba(255,45,40,.85), 0 0 28px 10px rgba(255,45,40,.35); }
   50%, 100%{ box-shadow:0 0 0 0 rgba(255,45,40,0); }
 }
-
-/* 目的地方向へ動的に流れる緊急避難ルート線 */
-.emergency-route-line{
-  stroke-dasharray:16 12;
-  animation:emergencyRouteFlow 0.9s linear infinite;
-}
+.emergency-route-line{ stroke-dasharray:16 12; animation:emergencyRouteFlow 0.9s linear infinite; }
 @keyframes emergencyRouteFlow{ to{ stroke-dashoffset:-28; } }
-
-/* 選択された安全な避難所を示す脈動マーカー */
 .emergency-target-pulse{ animation:emergencyTargetPulse 1.4s ease-out infinite; }
 @keyframes emergencyTargetPulse{
   0%{ box-shadow:0 0 0 0 rgba(39,174,96,.85); }
   70%{ box-shadow:0 0 0 16px rgba(39,174,96,0); }
   100%{ box-shadow:0 0 0 0 rgba(39,174,96,0); }
 }
-
 #volcanoCoverageNotice{
   position:absolute; top:calc(158px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1900; border-radius:14px; padding:10px 14px;
   align-items:center; font-size:14px!important; line-height:1.4!important;
 }
-
-/* =========================================================================
-   4. 右側フローティングコントロール（凡例・地図切替・現在地・更新・全画面）
-   ========================================================================= */
 #rightControlContainer{
   position:absolute; top:calc(176px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
-
 #legendAccordion, #mapTypeContainer{ border-radius:50%; }
-#legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"]{
-  background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3);
-}
+#legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"]{ background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3); }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; max-height:calc(100vh - 260px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
 #mapTypeContainer[open-state="true"]{ width:200px; border-radius:16px; }
 #legendAccordion[open-state="true"]::before, #mapTypeContainer[open-state="true"]::before{ opacity:0; }
-
-#legendAccordion.hidden-right, #mapTypeContainer.hidden-right{
-  transform:translateX(120px); opacity:0; pointer-events:none;
-}
-
+#legendAccordion.hidden-right, #mapTypeContainer.hidden-right{ transform:translateX(120px); opacity:0; pointer-events:none; }
 #legendAccordion details, #mapTypeContainer details{ border:none; height:100%; }
 #legendAccordion details{ display:flex; flex-direction:column; }
-
 #legendAccordion summary, #mapTypeContainer summary{
   position:relative; overflow:hidden; z-index:3; width:56px; height:56px; padding:0; box-sizing:border-box; cursor:pointer;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -331,15 +240,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #legendAccordion summary::-webkit-details-marker, #mapTypeContainer summary::-webkit-details-marker{ display:none; }
 #legendAccordion summary:hover{ background-color:rgba(255,255,255,.25); }
-
 #legendAccordion summary .legend-icon{ font-size:24px; color:var(--ink); margin:0; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #legendAccordion summary .legend-text{ font-size:13px; font-weight:bold; color:var(--ink); line-height:1; margin-top:2px; }
 #legendAccordion summary .legend-arrow{ display:none; font-size:22px; color:#70757a; transition:transform .2s ease; }
-
 #mapTypeContainer summary .maptype-icon{ font-size:24px; color:var(--ink); filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #mapTypeContainer summary .maptype-text{ font-size:12px; font-weight:bold; color:var(--ink); line-height:1.1; text-align:center; }
 #mapTypeContainer summary .maptype-arrow{ display:none; }
-
 #legendAccordion[open-state="true"] summary, #mapTypeContainer[open-state="true"] summary{
   width:100%; height:54px; padding:0 14px; flex-direction:row; justify-content:flex-start;
   border-bottom:1px solid #f1f3f4; background:#fff; flex-shrink:0;
@@ -349,36 +255,26 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #legendAccordion details[open] summary .legend-arrow{ transform:rotate(180deg); }
 #mapTypeContainer[open-state="true"] summary .maptype-text{ font-size:18px; margin-left:8px; flex:1; }
 #mapTypeContainer[open-state="true"] summary .maptype-arrow{ display:block; }
-
 .legend-content{ padding:10px 12px; height:calc(100% - 54px); overflow-y:auto; font-size:17px!important; line-height:1.8!important; color:#3c4043; }
 .legend-section-title{ font-weight:800!important; color:#1a73e8!important; margin:6px 0 3px!important; display:block; }
 .legend-item{ display:flex; align-items:center; margin-bottom:4px!important; gap:6px; color:#3c4043; padding:3px 4px; border-radius:8px; transition:background .3s, box-shadow .3s; }
 .legend-color{ width:14px; height:14px; border-radius:2px; flex-shrink:0; }
 .legend-item.legend-item-highlight{
-  background:rgba(255,213,79,.18);
-  box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
+  background:rgba(255,213,79,.18); box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
   animation:landformHighlightPulse 1.4s ease-in-out infinite;
 }
-
-/* 凡例ボタン(丸)が格納された状態で、該当ハザードがある時に点滅させて開封を促す */
 @keyframes legendAttentionGlow{
   0%,100%{ box-shadow:0 0 14px 3px rgba(255,193,7,.85), var(--bubble-shadow); border-color:#ffd54f; }
   50%{ box-shadow:0 0 30px 11px rgba(255,193,7,.95), var(--bubble-shadow); border-color:#fff; }
 }
 #legendAccordion.legend-attention{ animation:legendAttentionGlow 1s ease-in-out infinite; }
-
 .maptype-content{ padding:8px 0; box-sizing:border-box; }
 .map-type-item{ position:relative; overflow:hidden; padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
 .map-type-item:last-child{ border-bottom:none; }
 .map-type-item:hover{ background:#f8f9fa; }
-
 #locationBtn, #refreshBtn, #fullscreenBtn{ width:54px; height:54px; color:var(--ink); cursor:pointer; border-radius:50%; }
 @keyframes spinRefresh{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
 #refreshBtn.loading .material-icons-round{ animation:spinRefresh .8s linear infinite; }
-
-/* =========================================================================
-   5. 避難所アイコン／現在地・目的地ピン
-   ========================================================================= */
 .custom-shelter-icon{
   width:18px!important; height:18px!important; font-size:10px!important;
   background:#27ae60!important; border:2px solid #fff!important; border-radius:50%!important;
@@ -388,45 +284,30 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .custom-shelter-icon > .material-icons-round{ transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
 .custom-pin-icon{ background:transparent!important; border:none!important; }
 .custom-pin-icon svg{ display:block; filter:drop-shadow(0 3px 4px rgba(0,0,0,.35)); transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
-
-/* --- 現在地マーカー（中心の丸ドット＋方位を示すコーン） --- */
 .custom-current-location-icon{ background:transparent!important; border:none!important; }
 .current-location-marker{ position:relative; width:70px; height:70px; transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear; }
 .location-dot{
-  position:absolute; top:50%; left:50%; width:18px; height:18px;
-  margin:-9px 0 0 -9px; z-index:2;
+  position:absolute; top:50%; left:50%; width:18px; height:18px; margin:-9px 0 0 -9px; z-index:2;
   background:#1a73e8; border:3px solid #fff; border-radius:50%;
   box-shadow:0 2px 6px rgba(0,0,0,.45), 0 0 0 7px rgba(26,115,232,.22);
 }
-/* Googleマップ風の方位ビーム：中心から扇状に淡く光が広がる表現。
-   conic-gradientをマスクとして使い扇形を作り、radial-gradientで
-   中心が明るく外側にいくほど淡くなるライト（懐中電灯）風のグラデーションを重ねる。 */
 .heading-cone{
-  position:absolute; top:-53px; left:-53px; width:175px; height:175px; z-index:1;
-  border-radius:50%;
+  position:absolute; top:-53px; left:-53px; width:175px; height:175px; z-index:1; border-radius:50%;
   background: radial-gradient(circle at 50% 50%, rgba(26,115,232,.60) 0%, rgba(26,115,232,.32) 42%, rgba(26,115,232,0) 74%);
   -webkit-mask-image: conic-gradient(from -36deg at 50% 50%,
     rgba(0,0,0,0) 0deg, rgba(0,0,0,1) 10deg, rgba(0,0,0,1) 62deg, rgba(0,0,0,0) 72deg, rgba(0,0,0,0) 360deg);
   mask-image: conic-gradient(from -36deg at 50% 50%,
     rgba(0,0,0,0) 0deg, rgba(0,0,0,1) 10deg, rgba(0,0,0,1) 62deg, rgba(0,0,0,0) 72deg, rgba(0,0,0,0) 360deg);
-  transform-origin:50% 50%;
-  opacity:0; pointer-events:none;
-  transition:opacity .3s ease;
+  transform-origin:50% 50%; opacity:0; pointer-events:none; transition:opacity .3s ease;
 }
 .heading-cone.visible{ opacity:1; }
-
-/* =========================================================================
-   6. 下部ステータスパネル
-   ========================================================================= */
 #statusPanel{
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
-  z-index:1500; overflow:visible; border-radius:24px!important;
-  height:200px;
+  z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important;
-  font-weight: 500 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
@@ -436,11 +317,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   content:""; position:absolute; inset:-1px; border-radius:25px; z-index:-1; pointer-events:none;
   background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,0));
 }
-
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .tab-btn{
-  position:relative; overflow:hidden;
-  width:clamp(78px, 24vw, 96px); padding:11px 12px; text-align:center; cursor:pointer;
+  position:relative; overflow:hidden; width:clamp(78px, 24vw, 96px); padding:11px 12px; text-align:center; cursor:pointer;
   font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
@@ -450,15 +329,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
   color:#fff; z-index:3; box-shadow:0 -5px 15px rgba(0,100,255,.3); transform:translateY(-2px);
 }
-
 #elevationDisplay, .route-time{
   color:#fff!important; font-weight:800!important;
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
-
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
-
 #toggleStatusBtn{
   position:absolute!important; top:8px!important; right:10px!important;
   background:transparent!important; border:none!important; color:#202124!important;
@@ -467,18 +343,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #toggleStatusBtn .material-icons-round{ font-size:28px; }
 #toggleStatusBtn:hover, #toggleStatusBtn:active, #toggleStatusBtn:focus{ background:transparent!important; }
-
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
 #statusPanel[data-state="minimized"] .tab-container{ display:flex!important; }
-
 .status-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:17px; padding-right:35px; }
 #elevationDisplay{ font-weight:bold; color:#d35400; }
-
 .panel-row{ display:flex; height:100%; }
 .panel-column{ flex:1; overflow-y:auto; min-width:0; }
 .profile-column{ display:flex; flex-direction:column; flex:1 !important; min-width:0; }
-
 .route-modes{ display:flex; gap:8px; flex:1; }
 .route-mode-box{
   flex:1; border-radius:10px; padding:9px 12px; display:flex; align-items:center; gap:10px;
@@ -496,27 +368,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-time-dist{ display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
 .route-time{ font-size:17px; font-weight:800!important; }
 .route-dist{ font-size:14px; color:#c3cfe8; }
-
-/* ステータスパネル内の各セクション見出し：四角く縁取った「盛り上がった」ラベル風 */
 .panel-heading-label{
-  display:inline-block;
-  font-size:13.5px!important;
-  font-weight:800!important;
-  letter-spacing:.3px;
-  line-height:1.3;
-  padding:5px 12px;
-  margin:0 0 8px 0;
-  border-radius:9px;
-  color:#eaf2ff!important;
+  display:inline-block; font-size:13.5px!important; font-weight:800!important; letter-spacing:.3px; line-height:1.3;
+  padding:5px 12px; margin:0 0 8px 0; border-radius:9px; color:#eaf2ff!important;
   background:linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.04));
   border:1px solid rgba(255,255,255,.4);
   box-shadow:0 3px 7px rgba(0,10,30,.4), 0 1px 0 rgba(255,255,255,.35) inset, 0 -3px 5px rgba(0,0,0,.3) inset;
   text-shadow:0 1px 1px rgba(0,0,0,.55)!important;
 }
-
-/* =========================================================================
-   6b. 高低差断面図
-   ========================================================================= */
 #elevationProfileContainer{
   width:100%; flex:1; min-height:130px; position:relative;
   background:
@@ -534,10 +393,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   font-size:15px; color:#c3cfe8; text-align:center;
 }
-
-/* =========================================================================
-   6c. 地形分類 凡例（サブ②タブ）
-   ========================================================================= */
 #landformLegendContent{
   height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
   color:#e7edf7; padding-right:4px;
@@ -545,8 +400,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #landformLegendContent .legend-section-title{ color:#8ec2ff!important; font-size:15px!important; }
 .landform-legend-item{ display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; padding:4px 6px; border-radius:8px; transition:background .3s, box-shadow .3s; }
 .landform-legend-item.landform-legend-highlight{
-  background:rgba(255,255,255,.10);
-  box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
+  background:rgba(255,255,255,.10); box-shadow:0 0 0 2px #ffd54f, 0 0 12px 3px rgba(255,213,79,.55);
   animation:landformHighlightPulse 1.4s ease-in-out infinite;
 }
 @keyframes landformHighlightPulse{
@@ -556,15 +410,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .landform-legend-swatch{ width:15px; height:15px; border-radius:3px; flex-shrink:0; margin-top:2px; border:1px solid rgba(255,255,255,.4); }
 .landform-legend-text b{ color:#fff; }
 .landform-legend-text span{ display:block; color:#c3cfe8; font-size:13px; }
-
-/* =========================================================================
-   6d. 緊急避難：代替避難所リスト
-   ========================================================================= */
 .emergency-alt-list{ margin-top:6px; display:flex; flex-direction:column; gap:6px; }
 .emergency-alt-title{ font-size:13px; font-weight:bold; color:#ffd54f; margin-bottom:2px; }
 .emergency-alt-item{
-  position:relative; overflow:hidden;
-  display:flex; justify-content:space-between; align-items:center; gap:8px;
+  position:relative; overflow:hidden; display:flex; justify-content:space-between; align-items:center; gap:8px;
   padding:8px 10px; border-radius:10px; cursor:pointer;
   background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15);
   transition:background .2s, border-color .2s;
@@ -573,95 +422,51 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .emergency-alt-item .alt-name{ font-size:14px; font-weight:bold; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .emergency-alt-item .alt-meta{ font-size:12px; color:#6fe0a0; flex-shrink:0; white-space:nowrap; }
 .emergency-alt-item.hazardous .alt-meta{ color:#ff8a80; }
-
-/* =========================================================================
-   7. Leaflet ポップアップ調整
-   ========================================================================= */
+.terrain-mesh-trigger{
+  margin-top:6px; display:inline-flex; align-items:center; gap:4px;
+  font-size:13px; color:#8ec2ff; cursor:pointer; text-decoration:underline dotted;
+}
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
 .leaflet-popup-content{ font-size:18px!important; line-height:1.6!important; color:#3c4043; }
-.leaflet-popup-content-wrapper{
-  background:rgba(255,255,255,.98)!important; border-radius:16px!important;
-  box-shadow:0 10px 20px rgba(0,0,0,.2)!important;
-}
-
-/* =========================================================================
-   8. 表示/非表示アニメーション（全画面トグル用）
-   ========================================================================= */
+.leaflet-popup-content-wrapper{ background:rgba(255,255,255,.98)!important; border-radius:16px!important; box-shadow:0 10px 20px rgba(0,0,0,.2)!important; }
 #searchContainer, #hazardMenuCard, #statusPanel{
   transition:transform .4s cubic-bezier(.4,0,.2,1), opacity .4s; opacity:1; transform:translateY(0);
 }
 #searchContainer.hidden{ transform:translateY(-100px); opacity:0; }
 #hazardMenuCard.hidden{ transform:translateX(-100%); opacity:0; }
 #statusPanel.hidden{ transform:translateY(150px); opacity:0; }
-
-/* =========================================================================
-   9. パスワード認証画面 / 位置情報ヘルプ
-   ========================================================================= */
 #authOverlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  /* 白に近い半透明背景 ＋ 強いぼかし */
-  background: rgba(255, 255, 255, 0.4); 
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 999999; display: flex; justify-content: center; align-items: center;
-  flex-direction: column;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  z-index: 999999; display: flex; justify-content: center; align-items: center; flex-direction: column;
 }
-
 .auth-card {
-  /* カード自体も明るい白の半透明に */
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  padding: 40px; border-radius: 24px;
-  text-align: center; width: 80%; max-width: 320px;
-  /* 影を薄くして浮いているような軽やかさを出す */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px);
+  padding: 40px; border-radius: 24px; text-align: center; width: 80%; max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); border: 1px solid rgba(255, 255, 255, 0.5);
 }
-
-.auth-title { 
-  color: #333; /* 文字色はダークグレーで見やすく */
-  font-size: 20px; font-weight: bold; margin-bottom: 20px; 
-}
-
+.auth-title { color: #333; font-size: 20px; font-weight: bold; margin-bottom: 20px; }
 .auth-card input {
-  width: 100%; padding: 14px; margin-bottom: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #ccc; border-radius: 12px;
-  box-sizing: border-box; font-size: 16px;
-  text-align: center;
+  width: 100%; padding: 14px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc; border-radius: 12px; box-sizing: border-box; font-size: 16px; text-align: center;
 }
-
 .auth-btn {
-  position:relative; overflow:hidden;
-  width: 100%; padding: 14px; background: #1a73e8; color: white;
+  position:relative; overflow:hidden; width: 100%; padding: 14px; background: #1a73e8; color: white;
   border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
 }
-
-.footer-credit {
-  margin-top: 25px; color: #666; font-size: 11px;
-  line-height: 1.6; text-align: center;
-}
-
-/* =========================================================================
-   10. 航空写真ハイブリッド（写真＋標準地図注記の重ね合わせ）
-   ========================================================================= */
+.footer-credit { margin-top: 25px; color: #666; font-size: 11px; line-height: 1.6; text-align: center; }
 .gsi-label-overlay{ mix-blend-mode: multiply; }
-
-/* =========================================================================
-   11. ルート選択バッジ（タップしやすいラベル）
-   ========================================================================= */
 .route-label-icon-wrap{ background:transparent!important; border:none!important; }
 .route-label-badge{
   position:absolute; left:0; top:0; transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; gap:0;
   padding:6px 12px; border-radius:14px; cursor:pointer; white-space:nowrap;
   font-weight:800; font-size:13px; line-height:1.25;
-  background:rgba(255,255,255,.97); color:#1a3c6e;
-  border:2px solid #1a73e8;
+  background:rgba(255,255,255,.97); color:#1a3c6e; border:2px solid #1a73e8;
   box-shadow:0 4px 12px rgba(0,20,50,.4), 0 0 0 1px rgba(255,255,255,.5) inset;
-  transition:transform .15s ease, box-shadow .15s ease;
-  touch-action:manipulation;
+  transition:transform .15s ease, box-shadow .15s ease; touch-action:manipulation;
 }
 .route-label-badge:active{ transform:translate(-50%,-50%) scale(0.94); }
 .route-label-badge .route-label-title{ font-size:11px; opacity:.8; letter-spacing:.3px; }
@@ -669,35 +474,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-label-badge.route-label-green{ border-color:#27ae60; color:#1e6b3c; }
 .route-label-badge.is-active{ box-shadow:0 0 0 3px rgba(26,115,232,.35), 0 4px 14px rgba(0,20,50,.45); }
 .route-label-badge.route-label-green.is-active{ box-shadow:0 0 0 3px rgba(39,174,96,.35), 0 4px 14px rgba(0,20,50,.45); }
-
 .elev-gain-badge{
   display:inline-block; font-size:12px!important; font-weight:800!important;
   color:#3a2a06!important; background:rgba(255,213,79,.85);
   border-radius:8px; padding:2px 7px; white-space:nowrap; flex-shrink:0;
 }
-
-/* =========================================================================
-   12. タップフィードバック（リップル・押下ハイライト）
-   ========================================================================= */
 @keyframes rippleAnim{ to{ transform:scale(3.4); opacity:0; } }
 .ripple-span{
   position:absolute; border-radius:50%; pointer-events:none;
   background:radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,.6) 50%, rgba(255,255,255,.2) 78%, rgba(255,255,255,0) 100%);
   transform:scale(0); opacity:.9;
-  animation:rippleAnim .65s cubic-bezier(.22,.8,.32,1) forwards;
-  z-index:5;
+  animation:rippleAnim .65s cubic-bezier(.22,.8,.32,1) forwards; z-index:5;
 }
 .tap-highlight{ filter:brightness(1.15); }
-
-/* タップ可能だが独自のリップル用背景を持たない要素向けの共通足場
-   （位置・クリッピングだけを補い、見た目のスタイルには影響しない） */
-#toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn{
-  position:relative; overflow:hidden;
-}
-
-/* =========================================================================
-   13. 狭幅端末向けの微調整（レイアウト自体は変えず、詰まりだけを緩和）
-   ========================================================================= */
+#toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn{ position:relative; overflow:hidden; }
 @media (max-width: 380px){
   .hazard-btn{ font-size:13.5px!important; padding:6px 2px; }
   .hazard-btn .material-icons-round{ font-size:28px; }
@@ -718,12 +508,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <div id="authOverlay">
   <div class="auth-card">
     <img src="icon.png" alt="Icon" style="width: 80px; height: 80px; margin-bottom: 16px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-    
     <div class="auth-title">防災支援マップ</div>
     <input type="password" id="passInput" placeholder="PASSWORD" inputmode="numeric" pattern="\d*">
     <button class="auth-btn" onclick="checkPassword()">認証</button>
     <p id="errorMsg" style="color:#e02020; font-size:16px; font-weight:bold; margin-top:10px;"></p>
-    
     <div class="footer-credit">
       © 2026 H.Tsukimisato All Rights Reserved.<br>
       Data Sources : 国土地理院
@@ -748,7 +536,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="map"></div>
 
-<!-- 検索バー + 緊急避難ボタン -->
 <div id="searchContainer">
   <div class="search-row">
     <div class="custom-search-bar glass-panel">
@@ -766,7 +553,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="customSuggestions"></div>
 </div>
 
-<!-- ハザード選択メニュー -->
 <div id="hazardMenuCard" class="glass-panel">
   <button class="hazard-btn" data-type="flood"><span class="material-icons-round">water</span>洪水想定</button>
   <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
@@ -774,15 +560,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
 </div>
 
-<!-- 火山土地条件図：整備範囲外の通知 -->
 <div id="volcanoCoverageNotice" class="glass-panel" style="display:none;">
   <span class="material-icons-round" style="font-size:20px; margin-right:8px; flex-shrink:0;">info</span>
   <span>この付近には火山土地条件図データが整備されていません（主要な活火山周辺のみ提供）</span>
 </div>
 
-<!-- 右側フローティングコントロール -->
 <div id="rightControlContainer">
-
   <div id="legendAccordion" class="round-btn" open-state="false">
     <details id="legendDetails">
       <summary>
@@ -829,7 +612,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <button id="fullscreenBtn" class="round-btn"><span class="material-icons-round" id="fullscreenIcon">fullscreen</span></button>
 </div>
 
-<!-- 下部ステータスパネル -->
 <div id="statusPanel" class="glass-panel" data-state="full">
   <div class="tab-container">
     <div class="tab-btn active" onclick="switchTab(1)">タブ①</div>
@@ -894,7 +676,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       </div>
     </div>
   </div>
-   
+
   <div id="tab3" class="tab-content">
     <div class="panel-heading-label">地形分類 凡例（国土地理院）</div>
     <div id="landformLegendContent"></div>
@@ -907,9 +689,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <script>
 'use strict';
 
-/* =========================================================================
-   A. 認証
-   ========================================================================= */
 function checkPassword(){
   const input = document.getElementById('passInput').value;
   if (input === AUTH_CONFIG.password){
@@ -932,9 +711,6 @@ function checkPassword(){
   }
 })();
 
-/* =========================================================================
-   B. 地図の初期化・ベースレイヤー
-   ========================================================================= */
 const map = L.map('map', { zoomControl:false, minZoom:5, tap:true, tapTolerance:30 })
   .setView([34.9756, 138.3828], 13);
 
@@ -1007,9 +783,6 @@ function changeMap(type){
   mapTypeCard.setAttribute('open-state', 'false');
 }
 
-/* =========================================================================
-   C. ハザードレイヤー（洪水／土砂災害／津波）
-   ========================================================================= */
 const DISAPORTAL = 'https://disaportaldata.gsi.go.jp/raster';
 const layers = {
   flood: [L.tileLayer(`${DISAPORTAL}/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png`, { opacity:0.6, maxZoom:17 })],
@@ -1121,9 +894,6 @@ window.triggerRouteToShelter = (lat, lng) => {
   selectLocation(lat, lng);
 };
 
-/* =========================================================================
-   C-2. 地形分類（重ねるハザードマップ「地形分類」ベクトルタイル）
-   ========================================================================= */
 const LANDFORM_MAX_ZOOM = 16;
 const LANDFORM_URLS = {
   natural:    `${GSI}/experimental_landformclassification1/{z}/{x}/{y}.geojson`,
@@ -1405,9 +1175,6 @@ async function maybeHighlightLandformAt(lat, lng){
   } catch { /* ignore */ }
 }
 
-/* =========================================================================
-   D. アコーディオン（凡例／地図切替）・ステータスパネルの開閉
-   ========================================================================= */
 const legendCard = document.getElementById('legendAccordion');
 const legendDetails = document.getElementById('legendDetails');
 legendDetails.addEventListener('toggle', () => {
@@ -1415,7 +1182,6 @@ legendDetails.addEventListener('toggle', () => {
   if (legendDetails.open) clearLegendAttention();
 });
 
-/* 凡例ボタン（丸）の点滅で開封を促す。ユーザーがすでに開いている場合は不要。 */
 function pulseLegendAttention(){
   if (legendDetails.open) return;
   legendCard.classList.add('legend-attention');
@@ -1424,9 +1190,6 @@ function clearLegendAttention(){
   legendCard.classList.remove('legend-attention');
 }
 
-/* 凡例パネルが開いている間は、専用トグル(summary)以外の場所（中身のどこでも）
-   タップしただけで閉じられるようにする。見出しの三角トグルが小さくて押しづらい
-   という声への対応。summary自体はネイティブのdetails開閉動作に任せる。 */
 const legendContentEl = document.querySelector('#legendAccordion .legend-content');
 if (legendContentEl){
   legendContentEl.addEventListener('click', () => {
@@ -1437,9 +1200,6 @@ if (legendContentEl){
 const mapTypeCard = document.getElementById('mapTypeContainer');
 const mapTypeDetails = document.getElementById('mapTypeDetails');
 
-/* 地図切替メニューは項目数ぶんの高さだけを確保し、下に空欄ができないよう
-   開閉のたびに実際のコンテンツ高さ（サマリー欄＋リスト分）を計測して
-   インライン style.height に反映する（フォントレンダリング差にも追従）。 */
 function updateMapTypeCardHeight(){
   if (!mapTypeDetails.open){
     mapTypeCard.style.height = '';
@@ -1479,9 +1239,6 @@ function switchTab(tabNumber){
   document.getElementById('tab' + tabNumber).classList.add('active');
 }
 
-/* =========================================================================
-   E. 現在地・目的地ピン、ルート表示
-   ========================================================================= */
 function createPinIcon(color, letter){
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
@@ -1520,10 +1277,8 @@ let greenRouteLayer = null;
 let routeCandidates = [];
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
+let lastRiskGrid = null; // 直近の地点リスク判定で使った精密グリッド（メッシュ可視化用）
 
-/* --- 通常ルート（ハザードルート／グリーンルート）関連の共通クリア処理 ---
-   複数箇所（現在地ボタン・緊急避難開始・ルート再検索）で同じ後始末が
-   必要なため、ここに集約する。 */
 function clearRouteLayers(){
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
@@ -1537,9 +1292,6 @@ function clearNormalRouteState(){
   destination = null;
 }
 
-/* ステータスパネルのルート関連表示（所要時間・経路リスク判定・代替避難所
-   候補・高低差断面図）をまとめてリセットする。hazardHtml は「経路リスク
-   判定」欄に表示するメッセージ（空文字なら非表示）。 */
 function resetRouteStatusUI(hazardHtml){
   document.getElementById('walkTime').innerText = '-- 分';
   document.getElementById('walkDist').innerText = '(-- km)';
@@ -1552,7 +1304,6 @@ function resetRouteStatusUI(hazardHtml){
   updateElevationExtremes(null);
 }
 
-/* --- 方位（コンパス）表示 --- */
 let currentHeadingDeg = null;
 let compassListenerAttached = false;
 
@@ -1573,8 +1324,6 @@ function applyHeadingToMarker(){
   const cone = el.querySelector('.heading-cone');
   if (cone){
     cone.classList.add('visible');
-    /* ヘディングアップ中は地図自体が進行方向に合わせて回転しているため、
-       コーンは常に画面の真上（0deg）を指すようにする。 */
     const coneDeg = headingUpModeActive ? 0 : currentHeadingDeg;
     cone.style.transform = `rotate(${coneDeg}deg)`;
   }
@@ -1611,19 +1360,8 @@ function enableCompass(){
   }
 }
 
-/* =========================================================================
-   E-0. ヘディングアップ（進行方向を上に）モード
-   -------------------------------------------------------------------------
-   #map 自体を CSS transform: rotate() で回転させる軽量な実装。
-   タイルはすでに読み込み済みのDOM要素をそのまま回すだけなので、通信も
-   タイル再取得も発生せず、GPUによる合成のみで滑らかに回転する
-   （＝タイルが実質的に「キャッシュ」された状態のままアニメーションする）。
-   地図全体を回転させる都合上、Leafletの標準ドラッグパン／クリック位置
-   計算は回転を考慮しないため、ヘディングアップ中はドラッグパンを無効化し、
-   タップ選択の座標のみ逆回転補正して正しい緯度経度に変換する。
-   ========================================================================= */
 let headingUpModeActive = false;
-let mapRotationDeg = 0;       // 累積回転角（360で丸めず、最短経路で滑らかに遷移させる）
+let mapRotationDeg = 0;
 let lastRotationHeading = null;
 
 function normalizeAngleDelta(delta){
@@ -1660,8 +1398,6 @@ function updateNorthIndicator(){
   el.style.transform = `rotate(${headingUpModeActive ? mapRotationDeg : 0}deg)`;
 }
 
-/* 回転中の #map 上でのタップ位置を、回転前（地理座標として正しい）の
-   コンテナ座標に逆変換してから緯度経度へ変換する。 */
 function correctedClientToLatLng(clientX, clientY){
   const rect = map.getContainer().getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
@@ -1710,7 +1446,6 @@ headingToggleBtn.addEventListener('click', () => {
   }
 });
 
-/* --- 端末上のみで完結する、なめらかな現在地追従（Googleマップ風）--- */
 let geoWatchId = null;
 let displayedLocation = null;
 let markerAnimFrame = null;
@@ -1777,8 +1512,6 @@ function stopContinuousTracking(){
 }
 
 function updateCurrentLocation(isInitial = false){
-  /* 継続追跡（watchPosition）がすでに動いている＝位置情報の許可は取得済みなので、
-     許可確認の非同期往復を省略していきなり位置取得へ進む（体感速度の向上）。 */
   if (geoWatchId !== null){
     executeGeolocation(isInitial);
     return;
@@ -1829,9 +1562,6 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   clearNormalRouteState();
   resetRouteStatusUI('');
 
-  /* 継続追跡ですでに現在地を把握している場合は、新しいGPS測位を待たずに
-     キャッシュ済みの位置へ即座に地図を移動する（反応速度を優先）。
-     住所・海抜などの詳細情報や精緻な位置の再取得はバックグラウンドで行う。 */
   if (currentLocation && geoWatchId !== null){
     map.setView(currentLocation, 14, { animate:true });
     updateDetails(currentLocation.lat, currentLocation.lng);
@@ -1842,7 +1572,6 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   }
 });
 
-/* --- ハザード判定（タイル画素サンプリング、結果はキャッシュ）--- */
 const hazardTileCache = new Map();
 
 function lonLatToTileFloat(lon, lat, zoom){
@@ -1898,9 +1627,8 @@ async function checkPointHazard(lat, lon){
   return hits;
 }
 
-/* --- 目的地のハザード色を凡例(#legendAccordion)の項目に対応付ける --- */
-const FLOOD_LEGEND_PALETTE = ['#ff5c5c', '#ff9e9e', '#f3db52', '#56ccf2']; // 10m+ / 5-10m / 3-5m / 0.5-3m
-const LANDSLIDE_LEGEND_PALETTE = ['#ff3b30', '#ffcc00']; // 特別警戒区域(レッド) / 警戒区域(イエロー)
+const FLOOD_LEGEND_PALETTE = ['#ff5c5c', '#ff9e9e', '#f3db52', '#56ccf2'];
+const LANDSLIDE_LEGEND_PALETTE = ['#ff3b30', '#ffcc00'];
 
 function hexToRgbArr(hex){
   const n = parseInt(hex.slice(1), 16);
@@ -1916,9 +1644,6 @@ function nearestLegendColor(r, g, b, palette){
   return best;
 }
 
-/* 地点(destination等)における洪水/津波/土砂災害の色を判定し、
-   凡例の該当スウォッチ色（#legendAccordion内のdata-color値）を返す。
-   優先順位: 洪水 > 津波 > 土砂災害。該当なしは null。 */
 async function getPointHazardLegendColor(lat, lon){
   const zoom = 15;
   const { x, y } = lonLatToTileFloat(lon, lat, zoom);
@@ -1943,8 +1668,6 @@ async function getPointHazardLegendColor(lat, lon){
   return null;
 }
 
-/* 右側フローティングの丸型凡例ボタン内、該当スウォッチをタブ③の地形分類凡例と
-   同じ光り方でハイライトする。パネルが格納中（未展開）なら丸ボタン自体も点滅させる。 */
 function highlightHazardLegendByColor(color){
   document.querySelectorAll('#legendAccordion .legend-item').forEach(el => el.classList.remove('legend-item-highlight'));
   if (!color){ clearLegendAttention(); return; }
@@ -2009,9 +1732,6 @@ function clearRouteHazardAlert(){
   document.querySelectorAll('.hazard-btn[data-type]').forEach(btn => btn.classList.remove('route-alert'));
 }
 
-/* =========================================================================
-   E-1b. ルート選択バッジ（距離・時間を表示するタップ可能なラベル）
-   ========================================================================= */
 function clearRouteLabels(){
   routeLabelMarkers.forEach(m => map.removeLayer(m));
   routeLabelMarkers = [];
@@ -2077,9 +1797,6 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
   return marker;
 }
 
-/* =========================================================================
-   E-2. 高低差断面図（ルートの標高プロファイル）
-   ========================================================================= */
 async function buildElevationProfileData(coordinates, pointFlags){
   const maxPoints = 24;
   const step = Math.max(1, Math.floor(coordinates.length / maxPoints));
@@ -2394,9 +2111,6 @@ function selectLocation(lat, lng){
   getPointHazardLegendColor(lat, lng).then(color => highlightHazardLegendByColor(color));
 }
 
-/* =========================================================================
-   F. 地点情報（標高／冠水リスク／住所）
-   ========================================================================= */
 const DEM_RESOLUTION_RANK = { '5m（レーザ）':3, '5m（写真測量）':2 };
 function getDemRank(hsrc){
   return DEM_RESOLUTION_RANK[hsrc] ?? 1;
@@ -2417,46 +2131,125 @@ async function getElevationValue(lat, lng){
   } catch { return { elevation: NaN, hsrc: null }; }
 }
 
-async function checkInundationRisk(lat, lng){
-  const step = 0.00045;
-  const offsets = [-2, -1, 0, 1, 2];
-  const points = [];
-  for (const i of offsets) for (const j of offsets) points.push([lat + i * step, lng + j * step]);
-  const centerIndex = points.findIndex(p => p[0] === lat && p[1] === lng);
+function metersToDegOffsets(lat, meters){
+  const dLat = meters / 111320;
+  const dLng = meters / (111320 * Math.cos(lat * Math.PI / 180));
+  return { dLat, dLng };
+}
 
-  const results = await Promise.all(points.map(p => getElevationValue(p[0], p[1])));
-  const center = results[centerIndex];
+/* 地点リスク判定（窪地・冠水）
+   ステージA: 精密5x5グリッド・間隔12m（約48m四方、DEM5相当の解像度）
+   ステージB: 広域8方向リング・120m先（局所の凹みが本当に閉じた盆地か検証）
+   「中心の周囲で最も低い抜け口の標高 − 中心標高」＝推定たまり水深として
+   算出する（水文学のポアポイント/ため池モデル）。単純な周囲平均差より、
+   実際に水が抜けずに溜まるかどうかを直接的に判定できる。 */
+async function checkInundationRisk(lat, lng){
+  const { dLat: fLat, dLng: fLng } = metersToDegOffsets(lat, 12);
+  const offsets = [-2, -1, 0, 1, 2];
+  const finePoints = [];
+  offsets.forEach(i => offsets.forEach(j =>
+    finePoints.push({ i, j, lat: lat + i * fLat, lng: lng + j * fLng })));
+  const centerIdx = finePoints.findIndex(p => p.i === 0 && p.j === 0);
+
+  const { dLat: cLat, dLng: cLng } = metersToDegOffsets(lat, 120);
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+  const coarsePoints = dirs.map(([i, j]) => ({ lat: lat + i * cLat, lng: lng + j * cLng }));
+
+  const [fineResults, coarseResults] = await Promise.all([
+    Promise.all(finePoints.map(p => getElevationValue(p.lat, p.lng))),
+    Promise.all(coarsePoints.map(p => getElevationValue(p.lat, p.lng)))
+  ]);
+
+  const grid = finePoints.map((p, idx) => ({ ...p, elevation: fineResults[idx].elevation, hsrc: fineResults[idx].hsrc }));
+  const center = grid[centerIdx];
   const centerElev = center.elevation;
 
-  const surroundingValues = results
-    .filter((r, i) => i !== centerIndex && !isNaN(r.elevation))
-    .map(r => r.elevation)
-    .sort((a, b) => a - b);
+  const fineRing = grid.filter(p => Math.abs(p.i) === 2 || Math.abs(p.j) === 2);
+  const fineRingElevs = fineRing.map(p => p.elevation).filter(e => !isNaN(e));
+  const fineRingMin = fineRingElevs.length ? Math.min(...fineRingElevs) : NaN;
 
-  let avgElev = NaN;
-  if (surroundingValues.length >= 5){
-    const trimCount = Math.max(1, Math.floor(surroundingValues.length * 0.2));
-    const trimmed = surroundingValues.slice(trimCount, surroundingValues.length - trimCount);
-    avgElev = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
-  } else if (surroundingValues.length > 0){
-    avgElev = surroundingValues.reduce((a, b) => a + b, 0) / surroundingValues.length;
-  }
+  const coarseElevs = coarseResults.map(r => r.elevation).filter(e => !isNaN(e));
+  const coarseRingMin = coarseElevs.length ? Math.min(...coarseElevs) : NaN;
+  const higherDirCount = coarseResults.filter(r => !isNaN(r.elevation) && r.elevation > centerElev).length;
 
-  const diff = avgElev - centerElev;
+  const spillCandidates = [fineRingMin, coarseRingMin].filter(v => !isNaN(v));
+  const spillElev = spillCandidates.length ? Math.min(...spillCandidates) : NaN;
+  const pondDepth = (!isNaN(spillElev) && !isNaN(centerElev)) ? Math.max(0, spillElev - centerElev) : 0;
 
-  const surroundingRanks = results.filter((r, i) => i !== centerIndex && r.hsrc).map(r => getDemRank(r.hsrc));
+  let riskLevel = 'none';
+  if (pondDepth > 0.3 && higherDirCount >= 6) riskLevel = 'severe';
+  else if (pondDepth > 0 || higherDirCount >= 5) riskLevel = 'moderate';
+
+  const surroundingRanks = grid.filter(p => p.i !== 0 || p.j !== 0).filter(p => p.hsrc).map(p => getDemRank(p.hsrc));
   const centerRank = getDemRank(center.hsrc);
   const mixedResolution = surroundingRanks.length > 0 && surroundingRanks.some(r => r !== centerRank);
 
   return {
-    isRisk: diff > 0.5,
-    diff: isNaN(diff) ? '--' : diff.toFixed(1),
+    isRisk: riskLevel !== 'none',
+    riskLevel,
+    diff: isNaN(pondDepth) ? '--' : pondDepth.toFixed(1),
+    higherDirCount,
     centerElev,
     demSource: center.hsrc,
     demLabel: getDemLabel(center.hsrc),
     lowConfidence: centerRank === 1,
-    mixedResolution
+    mixedResolution,
+    grid
   };
+}
+
+/* 周辺地形メッシュの3D風可視化（精密グリッドをポップアップ表示） */
+function elevationToColor(t){
+  const stops = [[0,[42,98,173]],[0.35,[86,176,148]],[0.6,[214,200,90]],[0.8,[200,140,70]],[1,[150,90,60]]];
+  for (let i = 1; i < stops.length; i++){
+    if (t <= stops[i][0]){
+      const [t0, c0] = stops[i - 1], [t1, c1] = stops[i];
+      const f = (t - t0) / (t1 - t0 || 1);
+      const c = c0.map((v, k) => Math.round(v + (c1[k] - v) * f));
+      return `rgb(${c[0]},${c[1]},${c[2]})`;
+    }
+  }
+  return 'rgb(150,90,60)';
+}
+
+function buildTerrainMeshSVG(grid){
+  const cell = {};
+  grid.forEach(p => { cell[`${p.i}_${p.j}`] = p; });
+  const elevs = grid.map(p => p.elevation).filter(e => !isNaN(e));
+  const minE = Math.min(...elevs), maxE = Math.max(...elevs);
+  const rangeE = Math.max(0.2, maxE - minE);
+  const tileW = 34, tileH = 17, heightScale = 55;
+  const originX = 150, originY = 46;
+
+  const order = [];
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) order.push([i, j]);
+  order.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+
+  let polys = '';
+  order.forEach(([i, j]) => {
+    const p = cell[`${i}_${j}`];
+    if (!p || isNaN(p.elevation)) return;
+    const t = (p.elevation - minE) / rangeE;
+    const h = t * heightScale;
+    const cx = originX + (j - i) * (tileW / 2);
+    const cy = originY + (j + i) * (tileH / 2) - h;
+    const isCenter = (i === 0 && j === 0);
+    const color = elevationToColor(t);
+    polys += `<polygon points="${cx-tileW/2},${cy} ${cx},${cy+tileH/2} ${cx},${cy+tileH/2+8} ${cx-tileW/2},${cy+8}" fill="rgba(0,0,0,${0.28+(1-t)*0.1})"/>`;
+    polys += `<polygon points="${cx},${cy+tileH/2} ${cx+tileW/2},${cy} ${cx+tileW/2},${cy+8} ${cx},${cy+tileH/2+8}" fill="rgba(0,0,0,${0.18+(1-t)*0.08})"/>`;
+    polys += `<polygon points="${cx},${cy} ${cx+tileW/2},${cy+tileH/2} ${cx},${cy+tileH} ${cx-tileW/2},${cy+tileH/2}" fill="${color}" stroke="${isCenter?'#ff3b30':'rgba(255,255,255,.35)'}" stroke-width="${isCenter?2.4:0.6}"/>`;
+  });
+  return `<svg viewBox="0 0 300 230" width="260" height="200" style="display:block; margin:0 auto;">${polys}</svg>`;
+}
+
+function showTerrainMeshPopup(lat, lng){
+  if (!lastRiskGrid) return;
+  const html = `<div style="font-family:sans-serif; text-align:center;">
+      <strong style="font-size:16px; display:block; margin-bottom:4px;">周辺地形メッシュ（約48m四方）</strong>
+      ${buildTerrainMeshSVG(lastRiskGrid)}
+      <div style="font-size:12px; color:#666; margin-top:4px;">赤枠=選択地点 ／ 色は標高（青=低い・茶=高い）</div>
+    </div>`;
+  L.popup({ maxWidth: 300 }).setLatLng([lat, lng]).setContent(html).openOn(map);
 }
 
 async function getAddress(lat, lng){
@@ -2492,15 +2285,22 @@ async function updateDetails(lat, lng){
     ? `${risk.centerElev} m (${risk.demLabel})`
     : '-- m';
 
-  let riskHtml = risk.isRisk
-    ? `<div style="color:#ff8a80; font-weight:bold;">冠水危険あり<br>周囲より ${risk.diff}m 低地</div>`
-    : `<div style="color:#6fe0a0;">地形的な窪地リスクは低い</div>`;
+  let riskHtml;
+  if (risk.riskLevel === 'severe'){
+    riskHtml = `<div style="color:#ff8a80; font-weight:bold;">⚠ 冠水・水たまりの危険性が高い<br>推定最大水深 約${risk.diff}m（周囲${risk.higherDirCount}/8方向が高い）</div>`;
+  } else if (risk.riskLevel === 'moderate'){
+    riskHtml = `<div style="color:#f3db52; font-weight:bold;">冠水・水たまりの可能性あり<br>推定水深 約${risk.diff}m</div>`;
+  } else {
+    riskHtml = `<div style="color:#6fe0a0;">地形的な窪地リスクは低い</div>`;
+  }
   if (risk.lowConfidence){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ この地点は低精度の可能性</div>`;
   } else if (risk.mixedResolution){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ 周辺データの解像度差（建物等の影響の可能性）にご注意ください</div>`;
   }
+  riskHtml += `<div class="terrain-mesh-trigger" onclick="showTerrainMeshPopup(${lat}, ${lng})"><span class="material-icons-round" style="font-size:15px; vertical-align:-2px;">view_in_ar</span>周辺地形メッシュを見る</div>`;
   riskStatus.innerHTML = riskHtml;
+  lastRiskGrid = risk.grid;
 
   updateWeatherWarnings(address);
   maybeHighlightLandformAt(lat, lng);
@@ -2523,9 +2323,6 @@ map.on('click', e => {
   if (shelterActive) fetchAndShowShelters(L.latLng(lat, lng));
 });
 
-/* =========================================================================
-   G. 施設・住所検索（国土地理院 + OSM のハイブリッド検索）
-   ========================================================================= */
 let searchMarkers = [];
 let isSearching = false;
 
@@ -2671,9 +2468,6 @@ const searchInput = document.getElementById('customSearchInput');
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHybridSearch(searchInput.value); });
 document.getElementById('customSearchBtn').addEventListener('click', () => executeHybridSearch(searchInput.value));
 
-/* =========================================================================
-   H. 全画面表示トグル（UI要素の一括表示/非表示）
-   ========================================================================= */
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
 const uiElements = ['searchContainer', 'hazardMenuCard', 'statusPanel'].map(id => document.getElementById(id));
@@ -2698,9 +2492,6 @@ fullscreenBtn.addEventListener('click', () => {
   setTimeout(() => map.invalidateSize(), 400);
 });
 
-/* =========================================================================
-   I. 緊急避難ルート案内
-   ========================================================================= */
 const emergencyBtn = document.getElementById('emergencyBtn');
 let emergencyModeActive = false;
 let emergencyRouteLayer = null;
@@ -2734,8 +2525,6 @@ function deactivateEmergencyMode(silent){
   clearEmergencyLayers();
   emergencyOptions = [];
   emergencyOptionIndex = -1;
-  /* silent=true は緊急検索の途中失敗時に使われ、その時点のエラーメッセージを
-     ステータスパネルに残したいので、UIリセットは通常キャンセル時のみ行う。 */
   if (!silent){
     destination = null;
     resetRouteStatusUI('');
@@ -2977,8 +2766,6 @@ emergencyBtn.addEventListener('click', () => {
   if (emergencyModeActive){
     deactivateEmergencyMode();
   } else {
-    /* 通常のルート検索結果が残っていれば、緊急避難ルートと重ならないよう
-       先に消してから緊急検索を開始する。 */
     clearNormalRouteState();
     resetRouteStatusUI('');
     emergencyModeActive = true;
@@ -2986,9 +2773,6 @@ emergencyBtn.addEventListener('click', () => {
   }
 });
 
-/* =========================================================================
-   J. タップフィードバック（リップル・押下ハイライト・ハプティクス）
-   ========================================================================= */
 function hapticTap(ms = 8){
   if (navigator.vibrate) { try { navigator.vibrate(ms); } catch {} }
 }
@@ -3025,12 +2809,8 @@ document.addEventListener('pointercancel', e => {
   if (target) target.classList.remove('tap-highlight');
 });
 
-/* iOS Safari で :active を確実に発火させるための定型トリック */
 document.addEventListener('touchstart', () => {}, true);
 
-/* =========================================================================
-   K. 起動
-   ========================================================================= */
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 renderElevationProfile(null);
 attachCompassListener();
