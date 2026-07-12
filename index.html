@@ -2198,58 +2198,137 @@ async function checkInundationRisk(lat, lng){
   };
 }
 
-/* 周辺地形メッシュの3D風可視化（精密グリッドをポップアップ表示） */
-function elevationToColor(t){
-  const stops = [[0,[42,98,173]],[0.35,[86,176,148]],[0.6,[214,200,90]],[0.8,[200,140,70]],[1,[150,90,60]]];
-  for (let i = 1; i < stops.length; i++){
-    if (t <= stops[i][0]){
-      const [t0, c0] = stops[i - 1], [t1, c1] = stops[i];
-      const f = (t - t0) / (t1 - t0 || 1);
-      const c = c0.map((v, k) => Math.round(v + (c1[k] - v) * f));
-      return `rgb(${c[0]},${c[1]},${c[2]})`;
+/* =========================================================================
+   F-3. 周辺地形メッシュの3D可視化（広域グリッド・等高線バンドで滑らかに表示）
+   ========================================================================= */
+const TERRAIN_MESH_N = 9;       // 取得グリッド 9x9 = 81点
+const TERRAIN_MESH_STEP_M = 30; // 間隔30m → 約240m四方をカバー
+const TERRAIN_MESH_UPSCALE = 3; // バイリニア補間で滑らかにする倍率
+
+// 等高線状のバンドで塗り分けるための循環カラーパレット（標高帯ごとに色が変わる）
+const CONTOUR_PALETTE = ['#4e79a7','#59a14f','#edc949','#f28e2b','#e15759','#af7aa1','#76b7b2','#9c755f','#bab0ab','#86bcb6'];
+
+async function fetchTerrainMeshGrid(lat, lng){
+  const N = TERRAIN_MESH_N;
+  const half = Math.floor(N / 2);
+  const { dLat, dLng } = metersToDegOffsets(lat, TERRAIN_MESH_STEP_M);
+  const points = [];
+  for (let i = -half; i <= half; i++){
+    for (let j = -half; j <= half; j++){
+      points.push({ i: i + half, j: j + half, lat: lat + i * dLat, lng: lng + j * dLng });
     }
   }
-  return 'rgb(150,90,60)';
+  const results = await Promise.all(points.map(p => getElevationValue(p.lat, p.lng)));
+  const elevGrid = Array.from({ length: N }, () => new Array(N).fill(NaN));
+  points.forEach((p, idx) => { elevGrid[p.i][p.j] = results[idx].elevation; });
+
+  // 海上や取得範囲外などで欠損した値は近傍9マスの平均で補完（形状の破綻を防ぐ）
+  for (let i = 0; i < N; i++){
+    for (let j = 0; j < N; j++){
+      if (isNaN(elevGrid[i][j])){
+        let sum = 0, cnt = 0;
+        for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++){
+          const ni = i + di, nj = j + dj;
+          if (ni >= 0 && ni < N && nj >= 0 && nj < N && !isNaN(elevGrid[ni][nj])){ sum += elevGrid[ni][nj]; cnt++; }
+        }
+        elevGrid[i][j] = cnt ? sum / cnt : 0;
+      }
+    }
+  }
+  return { elevGrid, N, centerIdx: half };
 }
 
-function buildTerrainMeshSVG(grid){
-  const cell = {};
-  grid.forEach(p => { cell[`${p.i}_${p.j}`] = p; });
-  const elevs = grid.map(p => p.elevation).filter(e => !isNaN(e));
-  const minE = Math.min(...elevs), maxE = Math.max(...elevs);
-  const rangeE = Math.max(0.2, maxE - minE);
-  const tileW = 34, tileH = 17, heightScale = 55;
-  const originX = 150, originY = 46;
+// バイリニア補間で粗いグリッドを滑らかな連続サーフェスへアップサンプリング
+function bilinearUpsampleGrid(elevGrid, n, factor){
+  const outN = (n - 1) * factor + 1;
+  const out = [];
+  for (let oi = 0; oi < outN; oi++){
+    const row = [];
+    const fi = oi / factor;
+    const i0 = Math.min(n - 2, Math.floor(fi));
+    const ti = fi - i0;
+    for (let oj = 0; oj < outN; oj++){
+      const fj = oj / factor;
+      const j0 = Math.min(n - 2, Math.floor(fj));
+      const tj = fj - j0;
+      const e00 = elevGrid[i0][j0], e01 = elevGrid[i0][j0 + 1];
+      const e10 = elevGrid[i0 + 1][j0], e11 = elevGrid[i0 + 1][j0 + 1];
+      const top = e00 + (e01 - e00) * tj;
+      const bottom = e10 + (e11 - e10) * tj;
+      row.push(top + (bottom - top) * ti);
+    }
+    out.push(row);
+  }
+  return out;
+}
 
-  const order = [];
-  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) order.push([i, j]);
-  order.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]));
+// 補間済みグリッドを、頂点を共有する連続した四角形の集合として等角投影で描画。
+// 隣接セルが頂点をぴったり共有するため継ぎ目のない滑らかな面になり、
+// 標高帯ごとに色を変えることで等高線のような立体感を出す。
+function buildTerrainMeshSVG(elevGrid, N, centerIdx){
+  const fine = bilinearUpsampleGrid(elevGrid, N, TERRAIN_MESH_UPSCALE);
+  const fineN = fine.length;
+
+  let minE = Infinity, maxE = -Infinity;
+  fine.forEach(row => row.forEach(e => { if (e < minE) minE = e; if (e > maxE) maxE = e; }));
+  const range = Math.max(0.3, maxE - minE);
+  const bandCount = 10;
+  const bandHeight = range / bandCount;
+
+  const tileW = 14, tileH = 7, heightScale = 70;
+  const originX = 210, originY = 130;
+
+  const project = (i, j, e) => ({
+    x: originX + (j - i) * (tileW / 2),
+    y: originY + (j + i) * (tileH / 2) - ((e - minE) / range) * heightScale
+  });
+
+  const cells = [];
+  for (let i = 0; i < fineN - 1; i++){
+    for (let j = 0; j < fineN - 1; j++) cells.push([i, j]);
+  }
+  cells.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1])); // 奥から手前へ塗る（画家アルゴリズム）
 
   let polys = '';
-  order.forEach(([i, j]) => {
-    const p = cell[`${i}_${j}`];
-    if (!p || isNaN(p.elevation)) return;
-    const t = (p.elevation - minE) / rangeE;
-    const h = t * heightScale;
-    const cx = originX + (j - i) * (tileW / 2);
-    const cy = originY + (j + i) * (tileH / 2) - h;
-    const isCenter = (i === 0 && j === 0);
-    const color = elevationToColor(t);
-    polys += `<polygon points="${cx-tileW/2},${cy} ${cx},${cy+tileH/2} ${cx},${cy+tileH/2+8} ${cx-tileW/2},${cy+8}" fill="rgba(0,0,0,${0.28+(1-t)*0.1})"/>`;
-    polys += `<polygon points="${cx},${cy+tileH/2} ${cx+tileW/2},${cy} ${cx+tileW/2},${cy+8} ${cx},${cy+tileH/2+8}" fill="rgba(0,0,0,${0.18+(1-t)*0.08})"/>`;
-    polys += `<polygon points="${cx},${cy} ${cx+tileW/2},${cy+tileH/2} ${cx},${cy+tileH} ${cx-tileW/2},${cy+tileH/2}" fill="${color}" stroke="${isCenter?'#ff3b30':'rgba(255,255,255,.35)'}" stroke-width="${isCenter?2.4:0.6}"/>`;
+  cells.forEach(([i, j]) => {
+    const e00 = fine[i][j], e01 = fine[i][j + 1], e10 = fine[i + 1][j], e11 = fine[i + 1][j + 1];
+    const p00 = project(i, j, e00), p01 = project(i, j + 1, e01);
+    const p10 = project(i + 1, j, e10), p11 = project(i + 1, j + 1, e11);
+    const avgE = (e00 + e01 + e10 + e11) / 4;
+    const band = Math.min(bandCount - 1, Math.max(0, Math.floor((avgE - minE) / bandHeight)));
+    const color = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
+    polys += `<polygon points="${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}" fill="${color}" stroke="${color}" stroke-width="0.7"/>`;
   });
-  return `<svg viewBox="0 0 300 230" width="260" height="200" style="display:block; margin:0 auto;">${polys}</svg>`;
+
+  // 選択地点（グリッド中央）に目印
+  const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
+  const centerP = project(centerFineIdx, centerFineIdx, fine[centerFineIdx][centerFineIdx]);
+  polys += `<circle cx="${centerP.x.toFixed(1)}" cy="${centerP.y.toFixed(1)}" r="5.5" fill="#ffffff" stroke="#ff3b30" stroke-width="3"/>`;
+
+  const svg = `<svg viewBox="0 0 420 300" width="340" height="243" style="display:block; margin:8px auto 0;">${polys}</svg>`;
+  return { svg, bandHeight };
 }
 
-function showTerrainMeshPopup(lat, lng){
-  if (!lastRiskGrid) return;
-  const html = `<div style="font-family:sans-serif; text-align:center;">
-      <strong style="font-size:16px; display:block; margin-bottom:4px;">周辺地形メッシュ（約48m四方）</strong>
-      ${buildTerrainMeshSVG(lastRiskGrid)}
-      <div style="font-size:12px; color:#666; margin-top:4px;">赤枠=選択地点 ／ 色は標高（青=低い・茶=高い）</div>
+async function showTerrainMeshPopup(lat, lng){
+  const loadingHtml = `<div style="font-family:sans-serif; text-align:center; min-width:320px;">
+      <strong style="font-size:15px; display:block;">周辺地形メッシュ（約240m四方）</strong>
+      <div style="font-size:13px; color:#888; padding:60px 0;">生成中...</div>
     </div>`;
-  L.popup({ maxWidth: 300 }).setLatLng([lat, lng]).setContent(html).openOn(map);
+  const popup = L.popup({ maxWidth: 380, minWidth: 340 }).setLatLng([lat, lng]).setContent(loadingHtml).openOn(map);
+
+  try {
+    const { elevGrid, N, centerIdx } = await fetchTerrainMeshGrid(lat, lng);
+    if (!map.hasLayer(popup)) return; // ポップアップが閉じられていたら描画不要
+    const { svg, bandHeight } = buildTerrainMeshSVG(elevGrid, N, centerIdx);
+    const finalHtml = `<div style="font-family:sans-serif; text-align:center;">
+        <strong style="font-size:15px; display:block;">周辺地形メッシュ（約240m四方）</strong>
+        ${svg}
+        <div style="font-size:11px; color:#666; margin-top:2px;">〇=選択地点／色の輪は標高帯（1帯 約${bandHeight.toFixed(2)}m）</div>
+      </div>`;
+    popup.setContent(finalHtml);
+  } catch {
+    popup.setContent(`<div style="font-family:sans-serif; text-align:center; color:#e02020; padding:20px 0;">地形メッシュの取得に失敗しました</div>`);
+  }
 }
 
 async function getAddress(lat, lng){
@@ -2818,4 +2897,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
