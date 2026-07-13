@@ -394,7 +394,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:15px; color:#c3cfe8; text-align:center;
 }
 #terrainMeshFullContainer{
-  width:100%; height:480px; position:relative;
+  width:100%; height:480px; position:relative; touch-action:none;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -410,11 +410,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
 #tab4 .panel-heading-label{ position:sticky; top:-16px; z-index:5; }
-@keyframes currentLocationCellBlink{
-  0%,100%{ fill-opacity:.12; stroke-opacity:1; }
-  50%{ fill-opacity:.6; stroke-opacity:.35; }
+@keyframes currentLocationDropBounce{
+  0%,100%{ transform:translateY(0); }
+  50%{ transform:translateY(-9px); }
 }
-.current-location-cell{ fill:#ffffff; animation: currentLocationCellBlink 1.1s ease-in-out infinite; }
+.current-location-drop{
+  animation: currentLocationDropBounce 1.1s ease-in-out infinite;
+  transform-box: fill-box; transform-origin: 50% 100%;
+}
 #landformLegendContent{
   height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
   color:#e7edf7; padding-right:4px;
@@ -1307,6 +1310,9 @@ let highestPointMarker = null, lowestPointMarker = null;
 
 let terrainMeshLatLng = null;
 let terrainMeshRenderedFor = null;
+let terrainMeshCachedData = null; // { elevGrid, N, centerIdx } 再取得なしで回転・ズームの再描画に使う
+let terrainMeshAzimuth = 0;       // 水平回転角（度）
+let terrainMeshZoom = 1;          // ズーム倍率
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
@@ -2316,7 +2322,7 @@ function bilinearUpsampleGrid(elevGrid, n, factor){
 // 奥行き方向(緯度方向)の縦方向への影響とheightScaleを強めに取ることで、
 // 従来のほぼ真上からの表示より起伏（高低差）が視覚的に分かりやすくなる。
 // 標高帯ごとに色を変えることで等高線のような立体感も出す。
-function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
+function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   const fine = bilinearUpsampleGrid(elevGrid, N, TERRAIN_MESH_UPSCALE);
   const fineN = fine.length;
 
@@ -2326,16 +2332,26 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
   const bandCount = 10;
   const bandHeight = range / bandCount;
 
-  // 北を必ず上にするため、縦方向(y)は「北方向の距離」と「標高」だけで決め、
-  // 東西方向(j)はyに影響させない（=真上が常に北になる）。
-  // 奥行き感を出すため、東西方向のx位置だけ緯度(i)でわずかに水平スキューさせる。
-  const colStep = 11, rowStep = 10, skewX = 4, heightScale = 160;
-  const originX = 106, originY = 430;
+  // ドラッグで水平方向に360度回転、ピンチでズームできるようにする。
+  // 選択地点（グリッド中央）を回転・ズームの中心（原点）に固定し、
+  // 中心からの相対位置(di,dj)を方位角(theta)で回転させてから画面座標へ投影する。
+  const theta = (azimuthDeg || 0) * Math.PI / 180;
+  const cosT = Math.cos(theta), sinT = Math.sin(theta);
+  const planeStep = 11, tiltFactor = 0.7, heightScale = 160;
+  const z = zoom || 1;
+  const originX = 170, originY = 270;
+  const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
 
-  const project = (i, j, e) => ({
-    x: originX + j * colStep - i * skewX,
-    y: originY - i * rowStep - ((e - minE) / range) * heightScale
-  });
+  const project = (i, j, e) => {
+    const di = i - centerFineIdx, dj = j - centerFineIdx;
+    const rotX = dj * cosT - di * sinT;
+    const rotY = dj * sinT + di * cosT;
+    const h = (e - minE) / range;
+    return {
+      x: originX + rotX * planeStep * z,
+      y: originY - (rotY * planeStep * tiltFactor + h * heightScale) * z
+    };
+  };
 
   // 各格子点の投影座標を先に計算しておく
   const pts = [];
@@ -2349,15 +2365,15 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
   for (let i = 0; i < fineN - 1; i++){
     for (let j = 0; j < fineN - 1; j++) cells.push([i, j]);
   }
-  cells.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1])); // 奥（北）から手前（南）へ塗る（画家アルゴリズム）
+  // 回転中もカメラから遠い側から手前へ塗るよう、中心からの距離（画面奥行き方向）でソートする
+  cells.sort((a, b) => {
+    const da = (a[0] - centerFineIdx) * cosT + (a[1] - centerFineIdx) * sinT;
+    const db = (b[0] - centerFineIdx) * cosT + (b[1] - centerFineIdx) * sinT;
+    return da - db;
+  });
 
   const WIREFRAME_STROKE = 'rgba(6,20,42,.6)';
 
-  // 選択地点はグリッド中央の「格子点」にあたるため、その点を含む1マス（南東側のセル）を
-  // 「自分がいるパネル」として点滅表示する（頂点そのものに印を付けると不自然なため）。
-  const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
-  const currentCellI = Math.min(centerFineIdx, fineN - 2);
-  const currentCellJ = Math.min(centerFineIdx, fineN - 2);
   const centerE = fine[centerFineIdx][centerFineIdx];
   const centerPercentile = range > 0 ? (centerE - minE) / range : 0.5;
   let heightLabel;
@@ -2373,7 +2389,8 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
     const band = Math.min(bandCount - 1, Math.max(0, Math.floor((avgE - minE) / bandHeight)));
     const baseColor = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
 
-    // 疑似陰影：北西方向からの採光を想定し、斜面の向きに応じて明暗を付けて起伏を強調
+    // 疑似陰影：地形（緯度・経度）に固定した光源を想定し、斜面の向きに応じて明暗を付ける
+    // （視点を回転させても、太陽の向きが動かないのと同じように陰影は地形側に固定される）
     const slopeJ = ((e01 + e11) - (e00 + e10)) / 2; // 東方向の高さ変化
     const slopeI = ((e10 + e11) - (e00 + e01)) / 2; // 北方向の高さ変化
     const shadeAmount = Math.max(-0.45, Math.min(0.45, -(slopeI + slopeJ) / (range * 0.4 || 1)));
@@ -2382,23 +2399,45 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
     // 四角形（1マス）のまま、稜線が見えるワイヤーフレームとして描画
     const quadPoints = `${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}`;
     polys += `<polygon points="${quadPoints}" fill="${color}" stroke="${WIREFRAME_STROKE}" stroke-width="1.1" stroke-linejoin="round"/>`;
-
-    if (i === currentCellI && j === currentCellJ){
-      // 自分がいるパネルを点滅させて「いまここ」を視覚的に強調
-      polys += `<polygon class="current-location-cell" points="${quadPoints}" stroke="#ff3b30" stroke-width="3"/>`;
-    }
   });
 
-  // 方位（北）インジケーター：投影が常に北=真上になるため、単純な上向き矢印でよい
-  const compassCx = 40, compassCy = 32;
+  // 選択地点：どの角度から見ても地形に隠れて見えなくならないよう、
+  // 半透明のドロップ（ピン）を常に最前面に描画し、上下にバウンスさせる
+  const centerP = pts[centerFineIdx][centerFineIdx];
+  const tipX = centerP.x, tipY = centerP.y;
+  const headCY = tipY - 30, headR = 11;
+  const dropHtml = `
+    <g class="current-location-drop">
+      <ellipse cx="${tipX.toFixed(1)}" cy="${(tipY + 2).toFixed(1)}" rx="9" ry="3.4" fill="rgba(6,20,42,.35)"/>
+      <path d="M ${tipX.toFixed(1)} ${tipY.toFixed(1)}
+               L ${(tipX - 9).toFixed(1)} ${(headCY + 6).toFixed(1)}
+               A ${headR} ${headR} 0 1 1 ${(tipX + 9).toFixed(1)} ${(headCY + 6).toFixed(1)} Z"
+            fill="rgba(255,59,48,.6)" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="${tipX.toFixed(1)}" cy="${headCY.toFixed(1)}" r="4" fill="#ffffff" fill-opacity=".9"/>
+    </g>`;
+
+  // 方位（北）インジケーター：位置は画面上で固定し、矢印の向きだけ回転角(azimuth)に連動させる
+  const compassCx = 40, compassCy = 32, armLen = 15, headLen = 7, headWidth = 5;
+  const northDx = -sinT, northDy = -cosT * tiltFactor;
+  const cAngle = Math.atan2(northDy, northDx);
+  const nx = compassCx + Math.cos(cAngle) * armLen;
+  const ny = compassCy + Math.sin(cAngle) * armLen;
+  const sxp = compassCx - Math.cos(cAngle) * armLen * 0.5;
+  const syp = compassCy - Math.sin(cAngle) * armLen * 0.5;
+  const bx = nx - Math.cos(cAngle) * headLen;
+  const by = ny - Math.sin(cAngle) * headLen;
+  const perp = cAngle + Math.PI / 2;
+  const leftX = bx + Math.cos(perp) * headWidth, leftY = by + Math.sin(perp) * headWidth;
+  const rightX = bx - Math.cos(perp) * headWidth, rightY = by - Math.sin(perp) * headWidth;
+
   const compassHtml = `
     <g>
       <circle cx="${compassCx}" cy="${compassCy}" r="20" fill="rgba(10,24,48,0.55)" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
-      <line x1="${compassCx}" y1="${compassCy + 11}" x2="${compassCx}" y2="${compassCy - 9}" stroke="#ff5252" stroke-width="3" stroke-linecap="round"/>
-      <polygon points="${compassCx},${compassCy - 15} ${compassCx - 5},${compassCy - 6} ${compassCx + 5},${compassCy - 6}" fill="#ff5252"/>
+      <line x1="${sxp.toFixed(1)}" y1="${syp.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#ff5252" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="${nx.toFixed(1)},${ny.toFixed(1)} ${leftX.toFixed(1)},${leftY.toFixed(1)} ${rightX.toFixed(1)},${rightY.toFixed(1)}" fill="#ff5252"/>
     </g>`;
 
-  const svgMarkup = `<svg viewBox="0 0 380 460" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}${compassHtml}</svg>`;
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
 }
 
@@ -2421,9 +2460,23 @@ function showTerrainMeshPlaceholder(text){
   if (infoEl) infoEl.innerText = '';
 }
 
+function renderTerrainMeshFromCache(){
+  if (!terrainMeshCachedData) return;
+  const { elevGrid, N, centerIdx } = terrainMeshCachedData;
+  const { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel } =
+    buildTerrainMeshSVGFull(elevGrid, N, centerIdx, terrainMeshAzimuth, terrainMeshZoom);
+  const container = document.getElementById('terrainMeshFullContainer');
+  if (container) container.innerHTML = svgMarkup;
+  const infoEl = document.getElementById('terrainMeshFullInfo');
+  if (infoEl){
+    infoEl.innerHTML = `半透明ドロップ=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）<br>ドラッグで回転・ピンチで拡大縮小できます`;
+  }
+}
+
 async function generateFullTerrainMesh(){
   if (!terrainMeshLatLng){
     terrainMeshRenderedFor = null;
+    terrainMeshCachedData = null;
     showTerrainMeshPlaceholder('地点を選択すると、ここに周辺の地形メッシュが表示されます');
     return;
   }
@@ -2435,18 +2488,86 @@ async function generateFullTerrainMesh(){
     const { elevGrid, N, centerIdx } = await fetchTerrainMeshGrid(target.lat, target.lng);
     if (terrainMeshLatLng !== target) return; // 途中で選択地点が変わっていたら破棄
 
-    const { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel } = buildTerrainMeshSVGFull(elevGrid, N, centerIdx);
-    const container = document.getElementById('terrainMeshFullContainer');
-    if (container) container.innerHTML = svgMarkup;
-    const infoEl = document.getElementById('terrainMeshFullInfo');
-    if (infoEl){
-      infoEl.innerHTML = `点滅パネル=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）／上が北`;
-    }
+    terrainMeshCachedData = { elevGrid, N, centerIdx };
+    terrainMeshAzimuth = 0; // 新しい地点を表示するときは向き・ズームをリセット
+    terrainMeshZoom = 1;
+    renderTerrainMeshFromCache();
     terrainMeshRenderedFor = target;
   } catch {
     if (terrainMeshLatLng === target) showTerrainMeshPlaceholder('地形メッシュの取得に失敗しました');
   }
 }
+
+// ドラッグで水平回転、ピンチでズームできるようにするジェスチャー処理
+(function setupTerrainMeshGestures(){
+  const container = document.getElementById('terrainMeshFullContainer');
+  if (!container) return;
+
+  let mode = null; // 'rotate' | 'pinch'
+  let lastX = 0;
+  let lastDist = 0;
+
+  function touchDistance(t1, t2){
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  }
+
+  container.addEventListener('touchstart', e => {
+    if (!terrainMeshCachedData) return;
+    if (e.touches.length >= 2){
+      mode = 'pinch';
+      lastDist = touchDistance(e.touches[0], e.touches[1]);
+    } else if (e.touches.length === 1){
+      mode = 'rotate';
+      lastX = e.touches[0].clientX;
+    }
+  }, { passive: true });
+
+  container.addEventListener('touchmove', e => {
+    if (!terrainMeshCachedData || !mode) return;
+    e.preventDefault();
+    if (mode === 'pinch' && e.touches.length >= 2){
+      const dist = touchDistance(e.touches[0], e.touches[1]);
+      const ratio = dist / (lastDist || dist);
+      terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * ratio));
+      lastDist = dist;
+      renderTerrainMeshFromCache();
+    } else if (mode === 'rotate' && e.touches.length === 1){
+      const x = e.touches[0].clientX;
+      const dx = x - lastX;
+      lastX = x;
+      terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
+      renderTerrainMeshFromCache();
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', e => {
+    if (e.touches.length >= 2){
+      mode = 'pinch';
+      lastDist = touchDistance(e.touches[0], e.touches[1]);
+    } else if (e.touches.length === 1){
+      mode = 'rotate';
+      lastX = e.touches[0].clientX;
+    } else {
+      mode = null;
+    }
+  }, { passive: true });
+
+  // マウスでも回転できるようにする（デスクトップ確認用）
+  let mouseDragging = false;
+  container.addEventListener('mousedown', e => {
+    if (!terrainMeshCachedData) return;
+    mouseDragging = true;
+    lastX = e.clientX;
+  });
+  window.addEventListener('mousemove', e => {
+    if (!mouseDragging || !terrainMeshCachedData) return;
+    const dx = e.clientX - lastX;
+    lastX = e.clientX;
+    terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
+    renderTerrainMeshFromCache();
+  });
+  window.addEventListener('mouseup', () => { mouseDragging = false; });
+})();
 
 function setTerrainMeshTarget(lat, lng){
   terrainMeshLatLng = L.latLng(lat, lng);
@@ -2456,6 +2577,7 @@ function setTerrainMeshTarget(lat, lng){
 function clearTerrainMeshTarget(){
   terrainMeshLatLng = null;
   terrainMeshRenderedFor = null;
+  terrainMeshCachedData = null;
 }
 
 function resetTerrainMeshFeature(){
