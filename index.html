@@ -305,13 +305,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .35s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
-}
-#statusPanel.mesh-tab-active{ height:300px; }
-@media (max-height: 700px){
-  #statusPanel.mesh-tab-active{ height:230px; }
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
@@ -339,7 +335,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
-#tab4.active{ display:flex; flex-direction:column; }
 #toggleStatusBtn{
   position:absolute!important; top:8px!important; right:10px!important;
   background:transparent!important; border:none!important; color:#202124!important;
@@ -399,7 +394,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:15px; color:#c3cfe8; text-align:center;
 }
 #terrainMeshFullContainer{
-  width:100%; flex:1; min-height:170px; position:relative;
+  width:100%; height:480px; position:relative;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -414,9 +409,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullContainer svg{ width:100%; height:100%; display:block; }
 #terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
-.terrain-mesh-fab-wrap{ background:transparent!important; border:none!important; }
+.terrain-mesh-fab-wrap{ background:transparent!important; border:none!important; pointer-events:none; }
 .terrain-mesh-fab{
-  position:relative; overflow:hidden; width:46px; height:46px; border-radius:50%; cursor:pointer;
+  position:absolute; overflow:hidden; width:46px; height:46px; border-radius:50%; cursor:pointer;
+  pointer-events:auto;
   background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
   display:flex; align-items:center; justify-content:center;
   animation: terrainFabPop .35s cubic-bezier(.34,1.56,.64,1);
@@ -1283,8 +1279,6 @@ function switchTab(tabNumber){
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
   document.getElementById('tab' + tabNumber).classList.add('active');
 
-  const panel = document.getElementById('statusPanel');
-  panel.classList.toggle('mesh-tab-active', tabNumber === 4);
   if (tabNumber === 4) generateFullTerrainMesh();
 }
 
@@ -1322,10 +1316,19 @@ const lowestPointIcon = createTriangleIcon('#1a73e8');
 let highestPointMarker = null, lowestPointMarker = null;
 
 function createTerrainMeshButtonIcon(){
-  const html = `<div class="terrain-mesh-fab" title="周辺地形メッシュを見る">
-      <span class="material-icons-round">view_in_ar</span>
+  // 地点そのものを隠さないよう、引き出し線でボタンを少し離れた位置に表示する。
+  // アンカー(10,90)が実際の地点に一致し、ボタン(中心 96,26)は画面上で常に一定距離離れる。
+  const html = `
+    <div style="position:relative; width:130px; height:100px;">
+      <svg width="130" height="100" style="position:absolute; top:0; left:0; overflow:visible; pointer-events:none;">
+        <line x1="10" y1="90" x2="96" y2="26" stroke="rgba(255,255,255,.9)" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="10" cy="90" r="4.5" fill="#ff3b30" stroke="#fff" stroke-width="2"/>
+      </svg>
+      <div class="terrain-mesh-fab" style="left:73px; top:3px;" title="周辺地形メッシュを見る" onclick="openTerrainMeshTab()">
+        <span class="material-icons-round">view_in_ar</span>
+      </div>
     </div>`;
-  return L.divIcon({ className:'terrain-mesh-fab-wrap', html, iconSize:[46,46], iconAnchor:[23,23] });
+  return L.divIcon({ className:'terrain-mesh-fab-wrap', html, iconSize:[130,100], iconAnchor:[10,90] });
 }
 let terrainMeshBtnMarker = null;
 let terrainMeshLatLng = null;
@@ -2265,8 +2268,21 @@ const TERRAIN_MESH_N = 9;       // 取得グリッド 9x9 = 81点
 const TERRAIN_MESH_STEP_M = 30; // 間隔30m → 約240m四方をカバー
 const TERRAIN_MESH_UPSCALE = 3; // バイリニア補間で滑らかにする倍率
 
-// 等高線状のバンドで塗り分けるための循環カラーパレット（標高帯ごとに色が変わる）
-const CONTOUR_PALETTE = ['#4e79a7','#59a14f','#edc949','#f28e2b','#e15759','#af7aa1','#76b7b2','#9c755f','#bab0ab','#86bcb6'];
+// 標高帯ごとの塗り分けカラー（低→高で 緑→黄→橙→赤褐色 に変化する直感的な色相ランプ）
+const CONTOUR_PALETTE = ['#1f6f43','#3d8b52','#6ba644','#a3c93b','#d9df4c','#f0c33e','#e89a3c','#d9703c','#b84a3a','#8a2f35'];
+
+// 疑似陰影用：16進カラーを明るく/暗くする（amountは-1〜1、正で明るく・負で暗く）
+function shadeHexColor(hex, amount){
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  if (amount >= 0){
+    r += (255 - r) * amount; g += (255 - g) * amount; b += (255 - b) * amount;
+  } else {
+    r *= (1 + amount); g *= (1 + amount); b *= (1 + amount);
+  }
+  const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+  return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`;
+}
 
 async function fetchTerrainMeshGrid(lat, lng){
   const N = TERRAIN_MESH_N;
@@ -2336,8 +2352,8 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
   const bandCount = 10;
   const bandHeight = range / bandCount;
 
-  const tileW = 12, tileH = 10, heightScale = 120;
-  const originX = 190, originY = 150;
+  const tileW = 12, tileH = 11, heightScale = 150;
+  const originX = 180, originY = 173;
 
   const project = (i, j, e) => ({
     x: originX + (j - i) * (tileW / 2),
@@ -2357,7 +2373,14 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
     const p10 = project(i + 1, j, e10), p11 = project(i + 1, j + 1, e11);
     const avgE = (e00 + e01 + e10 + e11) / 4;
     const band = Math.min(bandCount - 1, Math.max(0, Math.floor((avgE - minE) / bandHeight)));
-    const color = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
+    const baseColor = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
+
+    // 疑似陰影：左上方向からの採光を想定し、斜面の向きに応じて明暗を付けて起伏を強調
+    const slopeJ = ((e01 + e11) - (e00 + e10)) / 2; // 東方向の高さ変化
+    const slopeI = ((e10 + e11) - (e00 + e01)) / 2; // 南（手前）方向の高さ変化
+    const shadeAmount = Math.max(-0.4, Math.min(0.4, -(slopeI + slopeJ) / (range * 0.45 || 1)));
+    const color = shadeHexColor(baseColor, shadeAmount);
+
     polys += `<polygon points="${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}" fill="${color}" stroke="${color}" stroke-width="0.6"/>`;
   });
 
@@ -2389,7 +2412,7 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
       <text x="${labelX.toFixed(1)}" y="${(labelY + 4).toFixed(1)}" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle">N</text>
     </g>`;
 
-  const svgMarkup = `<svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 360 460" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
   return { svgMarkup, bandHeight };
 }
 
@@ -2439,17 +2462,12 @@ async function generateFullTerrainMesh(){
 
 function placeTerrainMeshButton(lat, lng){
   if (terrainMeshBtnMarker){ map.removeLayer(terrainMeshBtnMarker); terrainMeshBtnMarker = null; }
-  const { dLat, dLng } = metersToDegOffsets(lat, 24);
-  const btnLatLng = L.latLng(lat + dLat, lng + dLng);
   terrainMeshLatLng = L.latLng(lat, lng);
 
-  terrainMeshBtnMarker = L.marker(btnLatLng, {
-    icon: createTerrainMeshButtonIcon(), zIndexOffset: 850, interactive: true, keyboard: false
+  // interactive:false にして、ボタン部分(.terrain-mesh-fab)以外は地図のクリックを妨げないようにする
+  terrainMeshBtnMarker = L.marker(terrainMeshLatLng, {
+    icon: createTerrainMeshButtonIcon(), zIndexOffset: 850, interactive: false, keyboard: false
   }).addTo(map);
-  terrainMeshBtnMarker.on('click', e => {
-    L.DomEvent.stopPropagation(e);
-    openTerrainMeshTab();
-  });
 
   if (isTab4Active()) generateFullTerrainMesh();
 }
@@ -3044,4 +3062,3 @@ updateCurrentLocation(true);
 </script>
 </body>
 </html>
-
