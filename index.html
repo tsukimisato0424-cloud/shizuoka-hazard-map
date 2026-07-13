@@ -305,9 +305,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .35s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
+}
+#statusPanel.mesh-tab-active{ height:300px; }
+@media (max-height: 700px){
+  #statusPanel.mesh-tab-active{ height:230px; }
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
@@ -319,8 +323,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .tab-btn{
-  position:relative; overflow:hidden; width:clamp(78px, 24vw, 96px); padding:11px 12px; text-align:center; cursor:pointer;
-  font-size:17px; font-weight:700; border-radius:16px 16px 0 0; border:none;
+  position:relative; overflow:hidden; width:clamp(66px, 20vw, 88px); padding:11px 8px; text-align:center; cursor:pointer;
+  font-size:16px; font-weight:700; border-radius:16px 16px 0 0; border:none;
   background:rgba(20,30,50,.5);
   backdrop-filter:blur(18px) saturate(180%); -webkit-backdrop-filter:blur(18px) saturate(180%);
   color:#c3cfe8; transition:all .3s cubic-bezier(.4,0,.2,1);
@@ -335,6 +339,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
+#tab4.active{ display:flex; flex-direction:column; }
 #toggleStatusBtn{
   position:absolute!important; top:8px!important; right:10px!important;
   background:transparent!important; border:none!important; color:#202124!important;
@@ -393,6 +398,37 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   font-size:15px; color:#c3cfe8; text-align:center;
 }
+#terrainMeshFullContainer{
+  width:100%; flex:1; min-height:170px; position:relative;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
+    linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
+  border-radius:14px; overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,.35),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 4px 10px rgba(0,10,30,.25);
+  display:flex; align-items:center; justify-content:center;
+}
+#terrainMeshFullContainer svg{ width:100%; height:100%; display:block; }
+#terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
+#terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
+.terrain-mesh-fab-wrap{ background:transparent!important; border:none!important; }
+.terrain-mesh-fab{
+  position:relative; overflow:hidden; width:46px; height:46px; border-radius:50%; cursor:pointer;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
+  display:flex; align-items:center; justify-content:center;
+  animation: terrainFabPop .35s cubic-bezier(.34,1.56,.64,1);
+}
+.terrain-mesh-fab::before{
+  content:""; position:absolute; top:3px; left:6px; width:46%; height:32%;
+  border-radius:50%; pointer-events:none; z-index:2;
+  background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
+}
+.terrain-mesh-fab .material-icons-round{ position:relative; z-index:1; font-size:24px; color:#3f83ab; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+.terrain-mesh-fab:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
+@keyframes terrainFabPop{ 0%{ transform:scale(0); opacity:0; } 70%{ transform:scale(1.15); opacity:1; } 100%{ transform:scale(1); opacity:1; } }
 #landformLegendContent{
   height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
   color:#e7edf7; padding-right:4px;
@@ -617,6 +653,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <div class="tab-btn active" onclick="switchTab(1)">タブ①</div>
     <div class="tab-btn" onclick="switchTab(2)">タブ②</div>
     <div class="tab-btn" onclick="switchTab(3)">タブ③</div>
+    <div class="tab-btn" onclick="switchTab(4)">タブ④</div>
   </div>
 
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
@@ -680,6 +717,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab3" class="tab-content">
     <div class="panel-heading-label">地形分類 凡例（国土地理院）</div>
     <div id="landformLegendContent"></div>
+  </div>
+
+  <div id="tab4" class="tab-content">
+    <div class="panel-heading-label">周辺地形メッシュ（立体）</div>
+    <div id="terrainMeshFullContainer">
+      <div id="terrainMeshFullPlaceholder">地点を選択すると、地図上に表示されるボタンからメッシュ地形を確認できます</div>
+    </div>
+    <div id="terrainMeshFullInfo"></div>
   </div>
 </div>
 
@@ -1237,6 +1282,10 @@ function switchTab(tabNumber){
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
   document.getElementById('tab' + tabNumber).classList.add('active');
+
+  const panel = document.getElementById('statusPanel');
+  panel.classList.toggle('mesh-tab-active', tabNumber === 4);
+  if (tabNumber === 4) generateFullTerrainMesh();
 }
 
 function createPinIcon(color, letter){
@@ -1272,6 +1321,16 @@ const highestPointIcon = createTriangleIcon('#e53935');
 const lowestPointIcon = createTriangleIcon('#1a73e8');
 let highestPointMarker = null, lowestPointMarker = null;
 
+function createTerrainMeshButtonIcon(){
+  const html = `<div class="terrain-mesh-fab" title="周辺地形メッシュを見る">
+      <span class="material-icons-round">view_in_ar</span>
+    </div>`;
+  return L.divIcon({ className:'terrain-mesh-fab-wrap', html, iconSize:[46,46], iconAnchor:[23,23] });
+}
+let terrainMeshBtnMarker = null;
+let terrainMeshLatLng = null;
+let terrainMeshRenderedFor = null;
+
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
 let routeCandidates = [];
@@ -1290,6 +1349,7 @@ function clearNormalRouteState(){
   clearRouteLayers();
   if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
   destination = null;
+  resetTerrainMeshFeature();
 }
 
 function resetRouteStatusUI(hazardHtml){
@@ -2262,10 +2322,11 @@ function bilinearUpsampleGrid(elevGrid, n, factor){
   return out;
 }
 
-// 補間済みグリッドを、頂点を共有する連続した四角形の集合として等角投影で描画。
-// 隣接セルが頂点をぴったり共有するため継ぎ目のない滑らかな面になり、
-// 標高帯ごとに色を変えることで等高線のような立体感を出す。
-function buildTerrainMeshSVG(elevGrid, N, centerIdx){
+// 補間済みグリッドを、より横から見下ろすアングルの等角投影で描画。
+// 奥行き方向(緯度方向)の縦方向への影響とheightScaleを強めに取ることで、
+// 従来のほぼ真上からの表示より起伏（高低差）が視覚的に分かりやすくなる。
+// 標高帯ごとに色を変えることで等高線のような立体感も出す。
+function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
   const fine = bilinearUpsampleGrid(elevGrid, N, TERRAIN_MESH_UPSCALE);
   const fineN = fine.length;
 
@@ -2275,8 +2336,8 @@ function buildTerrainMeshSVG(elevGrid, N, centerIdx){
   const bandCount = 10;
   const bandHeight = range / bandCount;
 
-  const tileW = 14, tileH = 7, heightScale = 70;
-  const originX = 210, originY = 130;
+  const tileW = 12, tileH = 10, heightScale = 120;
+  const originX = 190, originY = 150;
 
   const project = (i, j, e) => ({
     x: originX + (j - i) * (tileW / 2),
@@ -2297,38 +2358,119 @@ function buildTerrainMeshSVG(elevGrid, N, centerIdx){
     const avgE = (e00 + e01 + e10 + e11) / 4;
     const band = Math.min(bandCount - 1, Math.max(0, Math.floor((avgE - minE) / bandHeight)));
     const color = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
-    polys += `<polygon points="${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}" fill="${color}" stroke="${color}" stroke-width="0.7"/>`;
+    polys += `<polygon points="${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}" fill="${color}" stroke="${color}" stroke-width="0.6"/>`;
   });
 
   // 選択地点（グリッド中央）に目印
   const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
   const centerP = project(centerFineIdx, centerFineIdx, fine[centerFineIdx][centerFineIdx]);
-  polys += `<circle cx="${centerP.x.toFixed(1)}" cy="${centerP.y.toFixed(1)}" r="5.5" fill="#ffffff" stroke="#ff3b30" stroke-width="3"/>`;
+  polys += `<circle cx="${centerP.x.toFixed(1)}" cy="${centerP.y.toFixed(1)}" r="6.5" fill="#ffffff" stroke="#ff3b30" stroke-width="3.2"/>`;
 
-  const svg = `<svg viewBox="0 0 420 300" width="340" height="243" style="display:block; margin:8px auto 0;">${polys}</svg>`;
-  return { svg, bandHeight };
+  // 方位（北）インジケーター：緯度が増える方向（i軸）をそのまま矢印として描画
+  const angle = Math.atan2(tileH / 2, -(tileW / 2));
+  const compassCx = 46, compassCy = 46, armLen = 24, headLen = 8, headWidth = 6;
+  const nx = compassCx + Math.cos(angle) * armLen;
+  const ny = compassCy + Math.sin(angle) * armLen;
+  const sxp = compassCx - Math.cos(angle) * armLen * 0.5;
+  const syp = compassCy - Math.sin(angle) * armLen * 0.5;
+  const bx = nx - Math.cos(angle) * headLen;
+  const by = ny - Math.sin(angle) * headLen;
+  const perp = angle + Math.PI / 2;
+  const leftX = bx + Math.cos(perp) * headWidth, leftY = by + Math.sin(perp) * headWidth;
+  const rightX = bx - Math.cos(perp) * headWidth, rightY = by - Math.sin(perp) * headWidth;
+  const labelX = compassCx + Math.cos(angle) * (armLen + 15);
+  const labelY = compassCy + Math.sin(angle) * (armLen + 15);
+
+  const compassHtml = `
+    <g>
+      <circle cx="${compassCx}" cy="${compassCy}" r="30" fill="rgba(10,24,48,0.55)" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
+      <line x1="${sxp.toFixed(1)}" y1="${syp.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#ff5252" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="${nx.toFixed(1)},${ny.toFixed(1)} ${leftX.toFixed(1)},${leftY.toFixed(1)} ${rightX.toFixed(1)},${rightY.toFixed(1)}" fill="#ff5252"/>
+      <text x="${labelX.toFixed(1)}" y="${(labelY + 4).toFixed(1)}" font-size="14" font-weight="900" fill="#ffffff" text-anchor="middle">N</text>
+    </g>`;
+
+  const svgMarkup = `<svg viewBox="0 0 400 440" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
+  return { svgMarkup, bandHeight };
 }
 
-async function showTerrainMeshPopup(lat, lng){
-  const loadingHtml = `<div style="font-family:sans-serif; text-align:center; min-width:320px;">
-      <strong style="font-size:15px; display:block;">周辺地形メッシュ（約240m四方）</strong>
-      <div style="font-size:13px; color:#888; padding:60px 0;">生成中...</div>
-    </div>`;
-  const popup = L.popup({ maxWidth: 380, minWidth: 340 }).setLatLng([lat, lng]).setContent(loadingHtml).openOn(map);
+function isTab4Active(){
+  const t4 = document.getElementById('tab4');
+  return !!(t4 && t4.classList.contains('active'));
+}
 
-  try {
-    const { elevGrid, N, centerIdx } = await fetchTerrainMeshGrid(lat, lng);
-    if (!map.hasLayer(popup)) return; // ポップアップが閉じられていたら描画不要
-    const { svg, bandHeight } = buildTerrainMeshSVG(elevGrid, N, centerIdx);
-    const finalHtml = `<div style="font-family:sans-serif; text-align:center;">
-        <strong style="font-size:15px; display:block;">周辺地形メッシュ（約240m四方）</strong>
-        ${svg}
-        <div style="font-size:11px; color:#666; margin-top:2px;">〇=選択地点／色の輪は標高帯（1帯 約${bandHeight.toFixed(2)}m）</div>
-      </div>`;
-    popup.setContent(finalHtml);
-  } catch {
-    popup.setContent(`<div style="font-family:sans-serif; text-align:center; color:#e02020; padding:20px 0;">地形メッシュの取得に失敗しました</div>`);
+function showTerrainMeshLoading(){
+  const container = document.getElementById('terrainMeshFullContainer');
+  if (container) container.innerHTML = `<div id="terrainMeshFullPlaceholder">生成中...</div>`;
+  const infoEl = document.getElementById('terrainMeshFullInfo');
+  if (infoEl) infoEl.innerText = '';
+}
+
+function showTerrainMeshPlaceholder(text){
+  const container = document.getElementById('terrainMeshFullContainer');
+  if (container) container.innerHTML = `<div id="terrainMeshFullPlaceholder">${text}</div>`;
+  const infoEl = document.getElementById('terrainMeshFullInfo');
+  if (infoEl) infoEl.innerText = '';
+}
+
+async function generateFullTerrainMesh(){
+  if (!terrainMeshLatLng){
+    terrainMeshRenderedFor = null;
+    showTerrainMeshPlaceholder('地点を選択すると、地図上に表示されるボタンからメッシュ地形を確認できます');
+    return;
   }
+  const target = terrainMeshLatLng;
+  if (terrainMeshRenderedFor === target) return; // 既に同じ地点を表示済み
+
+  showTerrainMeshLoading();
+  try {
+    const { elevGrid, N, centerIdx } = await fetchTerrainMeshGrid(target.lat, target.lng);
+    if (terrainMeshLatLng !== target) return; // 途中で選択地点が変わっていたら破棄
+
+    const { svgMarkup, bandHeight } = buildTerrainMeshSVGFull(elevGrid, N, centerIdx);
+    const container = document.getElementById('terrainMeshFullContainer');
+    if (container) container.innerHTML = svgMarkup;
+    const infoEl = document.getElementById('terrainMeshFullInfo');
+    if (infoEl) infoEl.innerText = `〇=選択地点／色の輪は標高帯（1帯 約${bandHeight.toFixed(2)}m）／矢印は北の方角`;
+    terrainMeshRenderedFor = target;
+  } catch {
+    if (terrainMeshLatLng === target) showTerrainMeshPlaceholder('地形メッシュの取得に失敗しました');
+  }
+}
+
+function placeTerrainMeshButton(lat, lng){
+  if (terrainMeshBtnMarker){ map.removeLayer(terrainMeshBtnMarker); terrainMeshBtnMarker = null; }
+  const { dLat, dLng } = metersToDegOffsets(lat, 24);
+  const btnLatLng = L.latLng(lat + dLat, lng + dLng);
+  terrainMeshLatLng = L.latLng(lat, lng);
+
+  terrainMeshBtnMarker = L.marker(btnLatLng, {
+    icon: createTerrainMeshButtonIcon(), zIndexOffset: 850, interactive: true, keyboard: false
+  }).addTo(map);
+  terrainMeshBtnMarker.on('click', e => {
+    L.DomEvent.stopPropagation(e);
+    openTerrainMeshTab();
+  });
+
+  if (isTab4Active()) generateFullTerrainMesh();
+}
+
+function clearTerrainMeshButton(){
+  if (terrainMeshBtnMarker){ map.removeLayer(terrainMeshBtnMarker); terrainMeshBtnMarker = null; }
+  terrainMeshLatLng = null;
+  terrainMeshRenderedFor = null;
+}
+
+function resetTerrainMeshFeature(){
+  clearTerrainMeshButton();
+  if (isTab4Active()) generateFullTerrainMesh();
+  else showTerrainMeshPlaceholder('地点を選択すると、地図上に表示されるボタンからメッシュ地形を確認できます');
+}
+
+function openTerrainMeshTab(){
+  if (!terrainMeshLatLng) return;
+  const panel = document.getElementById('statusPanel');
+  if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
+  switchTab(4);
 }
 
 async function getAddress(lat, lng){
@@ -2357,6 +2499,9 @@ async function updateDetails(lat, lng){
   const riskStatus = document.getElementById('sub1-content');
   riskStatus.innerHTML = '解析中...';
 
+  clearTerrainMeshButton();
+  if (isTab4Active()) showTerrainMeshLoading();
+
   const [address, risk] = await Promise.all([getAddress(lat, lng), checkInundationRisk(lat, lng)]);
 
   document.getElementById('addressDisplay').innerText = `住所: ${address}`;
@@ -2377,9 +2522,10 @@ async function updateDetails(lat, lng){
   } else if (risk.mixedResolution){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ 周辺データの解像度差（建物等の影響の可能性）にご注意ください</div>`;
   }
-  riskHtml += `<div class="terrain-mesh-trigger" onclick="showTerrainMeshPopup(${lat}, ${lng})"><span class="material-icons-round" style="font-size:15px; vertical-align:-2px;">view_in_ar</span>周辺地形メッシュを見る</div>`;
   riskStatus.innerHTML = riskHtml;
   lastRiskGrid = risk.grid;
+
+  placeTerrainMeshButton(lat, lng);
 
   updateWeatherWarnings(address);
   maybeHighlightLandformAt(lat, lng);
@@ -2604,6 +2750,7 @@ function deactivateEmergencyMode(silent){
   clearEmergencyLayers();
   emergencyOptions = [];
   emergencyOptionIndex = -1;
+  resetTerrainMeshFeature();
   if (!silent){
     destination = null;
     resetRouteStatusUI('');
@@ -2869,7 +3016,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .terrain-mesh-fab';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
