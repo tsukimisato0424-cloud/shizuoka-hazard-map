@@ -2329,8 +2329,8 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
   // 北を必ず上にするため、縦方向(y)は「北方向の距離」と「標高」だけで決め、
   // 東西方向(j)はyに影響させない（=真上が常に北になる）。
   // 奥行き感を出すため、東西方向のx位置だけ緯度(i)でわずかに水平スキューさせる。
-  const colStep = 34, rowStep = 30, skewX = 10, heightScale = 160;
-  const originX = 90, originY = 460;
+  const colStep = 11, rowStep = 10, skewX = 4, heightScale = 160;
+  const originX = 106, originY = 430;
 
   const project = (i, j, e) => ({
     x: originX + j * colStep - i * skewX,
@@ -2398,7 +2398,7 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx){
       <polygon points="${compassCx},${compassCy - 15} ${compassCx - 5},${compassCy - 6} ${compassCx + 5},${compassCy - 6}" fill="#ff5252"/>
     </g>`;
 
-  const svgMarkup = `<svg viewBox="0 0 380 480" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 380 460" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${compassHtml}</svg>`;
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
 }
 
