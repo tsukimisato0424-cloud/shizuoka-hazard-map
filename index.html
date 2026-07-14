@@ -305,9 +305,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .3s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
+}
+#statusPanel.mesh-tab-active{ height:340px; }
+@media (max-height: 700px){
+  #statusPanel.mesh-tab-active{ height:260px; }
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
@@ -335,6 +339,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
+#tab4{ position:relative; }
+#tab4.active{ display:flex; flex-direction:column; overflow:hidden; }
+#tab4 .panel-heading-label{ flex-shrink:0; }
 #toggleStatusBtn{
   position:absolute!important; top:8px!important; right:10px!important;
   background:transparent!important; border:none!important; color:#202124!important;
@@ -394,7 +401,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:15px; color:#c3cfe8; text-align:center;
 }
 #terrainMeshFullContainer{
-  width:100%; height:480px; position:relative; touch-action:none;
+  width:100%; flex:1; min-height:0; position:relative; touch-action:none;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -409,7 +416,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullContainer svg{ width:100%; height:100%; display:block; }
 #terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
-#tab4 .panel-heading-label{ position:sticky; top:-16px; z-index:5; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -417,6 +423,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .current-location-drop{
   animation: currentLocationDropBounce 1.1s ease-in-out infinite;
   transform-box: fill-box; transform-origin: 50% 100%;
+}
+@keyframes currentLocationCellBlink{
+  0%,100%{ fill-opacity:.12; stroke-opacity:1; }
+  50%{ fill-opacity:.55; stroke-opacity:.35; }
+}
+.current-location-cell{ fill:#ffffff; animation: currentLocationCellBlink 1.1s ease-in-out infinite; }
+.terrain-mesh-compass{
+  position:absolute; top:38px; left:16px; z-index:6;
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(10,24,48,.55); border:1.2px solid rgba(255,255,255,.35);
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+.terrain-mesh-compass-arrow{
+  width:0; height:0; margin-top:-3px;
+  border-left:5px solid transparent; border-right:5px solid transparent;
+  border-bottom:15px solid #ff5252;
+  transform:rotate(0deg); transform-origin:50% 80%;
 }
 #landformLegendContent{
   height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
@@ -710,6 +734,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
   <div id="tab4" class="tab-content">
     <div class="panel-heading-label">周辺地形メッシュ（立体）</div>
+    <div id="terrainMeshCompass" class="terrain-mesh-compass">
+      <div id="terrainMeshCompassArrow" class="terrain-mesh-compass-arrow"></div>
+    </div>
     <div id="terrainMeshFullContainer">
       <div id="terrainMeshFullPlaceholder">地点を選択すると、ここに周辺の地形メッシュが表示されます</div>
     </div>
@@ -1272,6 +1299,8 @@ function switchTab(tabNumber){
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
   document.getElementById('tab' + tabNumber).classList.add('active');
 
+  const panel = document.getElementById('statusPanel');
+  panel.classList.toggle('mesh-tab-active', tabNumber === 4);
   if (tabNumber === 4) generateFullTerrainMesh();
 }
 
@@ -2333,24 +2362,30 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   const bandHeight = range / bandCount;
 
   // ドラッグで水平方向に360度回転、ピンチでズームできるようにする。
-  // 選択地点（グリッド中央）を回転・ズームの中心（原点）に固定し、
+  // 選択地点（グリッド中央）を回転・ズームの中心に固定し、
   // 中心からの相対位置(di,dj)を方位角(theta)で回転させてから画面座標へ投影する。
   const theta = (azimuthDeg || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
   const planeStep = 11, tiltFactor = 0.7, heightScale = 160;
   const z = zoom || 1;
-  const originX = 170, originY = 270;
   const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
+  const viewCX = 170, viewCY = 200; // viewBox(340x400)の中心
 
-  const project = (i, j, e) => {
+  // 標高を含めない「素の」投影座標。選択地点自身の標高でズーム時にずれないよう、
+  // 選択地点の素の投影座標を求めてから、それがちょうどviewBox中心に来るように
+  // 原点(originX, originY)を毎回逆算する。
+  const rawProject = (i, j, e) => {
     const di = i - centerFineIdx, dj = j - centerFineIdx;
     const rotX = dj * cosT - di * sinT;
     const rotY = dj * sinT + di * cosT;
     const h = (e - minE) / range;
-    return {
-      x: originX + rotX * planeStep * z,
-      y: originY - (rotY * planeStep * tiltFactor + h * heightScale) * z
-    };
+    return { x: rotX * planeStep * z, y: -(rotY * planeStep * tiltFactor + h * heightScale) * z };
+  };
+  const centerRaw = rawProject(centerFineIdx, centerFineIdx, fine[centerFineIdx][centerFineIdx]);
+  const originX = viewCX - centerRaw.x, originY = viewCY - centerRaw.y;
+  const project = (i, j, e) => {
+    const r = rawProject(i, j, e);
+    return { x: r.x + originX, y: r.y + originY };
   };
 
   // 各格子点の投影座標を先に計算しておく
@@ -2373,6 +2408,11 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   });
 
   const WIREFRAME_STROKE = 'rgba(6,20,42,.6)';
+
+  // 選択地点はグリッド中央の「格子点」にあたるため、その点を含む1マス（南東側）を
+  // 「自分がいるパネル」として点滅表示する
+  const currentCellI = Math.min(centerFineIdx, fineN - 2);
+  const currentCellJ = Math.min(centerFineIdx, fineN - 2);
 
   const centerE = fine[centerFineIdx][centerFineIdx];
   const centerPercentile = range > 0 ? (centerE - minE) / range : 0.5;
@@ -2399,6 +2439,11 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
     // 四角形（1マス）のまま、稜線が見えるワイヤーフレームとして描画
     const quadPoints = `${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}`;
     polys += `<polygon points="${quadPoints}" fill="${color}" stroke="${WIREFRAME_STROKE}" stroke-width="1.1" stroke-linejoin="round"/>`;
+
+    if (i === currentCellI && j === currentCellJ){
+      // 自分がいるパネルを点滅させて「いまここ」を強調（角度によってドロップが見づらい時の保険）
+      polys += `<polygon class="current-location-cell" points="${quadPoints}" stroke="#ff3b30" stroke-width="3"/>`;
+    }
   });
 
   // 選択地点：どの角度から見ても地形に隠れて見えなくならないよう、
@@ -2416,29 +2461,21 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
       <circle cx="${tipX.toFixed(1)}" cy="${headCY.toFixed(1)}" r="4" fill="#ffffff" fill-opacity=".9"/>
     </g>`;
 
-  // 方位（北）インジケーター：位置は画面上で固定し、矢印の向きだけ回転角(azimuth)に連動させる
-  const compassCx = 40, compassCy = 32, armLen = 15, headLen = 7, headWidth = 5;
-  const northDx = -sinT, northDy = -cosT * tiltFactor;
-  const cAngle = Math.atan2(northDy, northDx);
-  const nx = compassCx + Math.cos(cAngle) * armLen;
-  const ny = compassCy + Math.sin(cAngle) * armLen;
-  const sxp = compassCx - Math.cos(cAngle) * armLen * 0.5;
-  const syp = compassCy - Math.sin(cAngle) * armLen * 0.5;
-  const bx = nx - Math.cos(cAngle) * headLen;
-  const by = ny - Math.sin(cAngle) * headLen;
-  const perp = cAngle + Math.PI / 2;
-  const leftX = bx + Math.cos(perp) * headWidth, leftY = by + Math.sin(perp) * headWidth;
-  const rightX = bx - Math.cos(perp) * headWidth, rightY = by - Math.sin(perp) * headWidth;
-
-  const compassHtml = `
-    <g>
-      <circle cx="${compassCx}" cy="${compassCy}" r="20" fill="rgba(10,24,48,0.55)" stroke="rgba(255,255,255,.35)" stroke-width="1.2"/>
-      <line x1="${sxp.toFixed(1)}" y1="${syp.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="#ff5252" stroke-width="3" stroke-linecap="round"/>
-      <polygon points="${nx.toFixed(1)},${ny.toFixed(1)} ${leftX.toFixed(1)},${leftY.toFixed(1)} ${rightX.toFixed(1)},${rightY.toFixed(1)}" fill="#ff5252"/>
-    </g>`;
-
-  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}${compassHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}</svg>`;
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
+}
+
+// 方位ウィジェット（見出し左下に固定表示）の矢印を回転角(azimuth)に合わせて回す。
+// SVGの中に埋め込まず独立したDOM要素にすることで、メッシュの再描画や
+// ズーム・回転の状態に関わらず常に画面に表示され続けるようにする。
+function updateTerrainMeshCompass(){
+  const arrow = document.getElementById('terrainMeshCompassArrow');
+  if (!arrow) return;
+  const theta = (terrainMeshAzimuth || 0) * Math.PI / 180;
+  const tiltFactor = 0.7;
+  const dx = -Math.sin(theta), dy = -Math.cos(theta) * tiltFactor;
+  const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+  arrow.style.transform = `rotate(${angleDeg}deg)`;
 }
 
 function isTab4Active(){
@@ -2467,10 +2504,22 @@ function renderTerrainMeshFromCache(){
     buildTerrainMeshSVGFull(elevGrid, N, centerIdx, terrainMeshAzimuth, terrainMeshZoom);
   const container = document.getElementById('terrainMeshFullContainer');
   if (container) container.innerHTML = svgMarkup;
+  updateTerrainMeshCompass();
   const infoEl = document.getElementById('terrainMeshFullInfo');
   if (infoEl){
-    infoEl.innerHTML = `半透明ドロップ=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）<br>ドラッグで回転・ピンチで拡大縮小できます`;
+    infoEl.innerHTML = `半透明ドロップ・点滅パネル=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）<br>ドラッグで回転・ピンチで拡大縮小できます`;
   }
+}
+
+// ジェスチャー中は毎フレーム1回だけ再描画してカクつきを防ぐ
+let terrainMeshRenderScheduled = false;
+function scheduleTerrainMeshRender(){
+  if (terrainMeshRenderScheduled) return;
+  terrainMeshRenderScheduled = true;
+  requestAnimationFrame(() => {
+    terrainMeshRenderScheduled = false;
+    renderTerrainMeshFromCache();
+  });
 }
 
 async function generateFullTerrainMesh(){
@@ -2498,7 +2547,9 @@ async function generateFullTerrainMesh(){
   }
 }
 
-// ドラッグで水平回転、ピンチでズームできるようにするジェスチャー処理
+// ドラッグで水平回転、ピンチでズームできるようにするジェスチャー処理。
+// メッシュ自体を自由に動かせるようになったため、このエリアではタブのスクロールと
+// 競合しないよう常にpreventDefaultしてブラウザ標準のスクロール/ズームを無効化する。
 (function setupTerrainMeshGestures(){
   const container = document.getElementById('terrainMeshFullContainer');
   if (!container) return;
@@ -2513,6 +2564,7 @@ async function generateFullTerrainMesh(){
 
   container.addEventListener('touchstart', e => {
     if (!terrainMeshCachedData) return;
+    e.preventDefault();
     if (e.touches.length >= 2){
       mode = 'pinch';
       lastDist = touchDistance(e.touches[0], e.touches[1]);
@@ -2520,7 +2572,7 @@ async function generateFullTerrainMesh(){
       mode = 'rotate';
       lastX = e.touches[0].clientX;
     }
-  }, { passive: true });
+  }, { passive: false });
 
   container.addEventListener('touchmove', e => {
     if (!terrainMeshCachedData || !mode) return;
@@ -2530,13 +2582,13 @@ async function generateFullTerrainMesh(){
       const ratio = dist / (lastDist || dist);
       terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * ratio));
       lastDist = dist;
-      renderTerrainMeshFromCache();
+      scheduleTerrainMeshRender();
     } else if (mode === 'rotate' && e.touches.length === 1){
       const x = e.touches[0].clientX;
       const dx = x - lastX;
       lastX = x;
       terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
-      renderTerrainMeshFromCache();
+      scheduleTerrainMeshRender();
     }
   }, { passive: false });
 
@@ -2564,9 +2616,16 @@ async function generateFullTerrainMesh(){
     const dx = e.clientX - lastX;
     lastX = e.clientX;
     terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
-    renderTerrainMeshFromCache();
+    scheduleTerrainMeshRender();
   });
   window.addEventListener('mouseup', () => { mouseDragging = false; });
+  container.addEventListener('wheel', e => {
+    if (!terrainMeshCachedData) return;
+    e.preventDefault();
+    const ratio = e.deltaY < 0 ? 1.08 : 0.93;
+    terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * ratio));
+    scheduleTerrainMeshRender();
+  }, { passive: false });
 })();
 
 function setTerrainMeshTarget(lat, lng){
@@ -2578,6 +2637,9 @@ function clearTerrainMeshTarget(){
   terrainMeshLatLng = null;
   terrainMeshRenderedFor = null;
   terrainMeshCachedData = null;
+  terrainMeshAzimuth = 0;
+  terrainMeshZoom = 1;
+  updateTerrainMeshCompass();
 }
 
 function resetTerrainMeshFeature(){
@@ -3152,6 +3214,7 @@ document.addEventListener('touchstart', () => {}, true);
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 renderElevationProfile(null);
+updateTerrainMeshCompass();
 attachCompassListener();
 updateCurrentLocation(true);
 </script>
