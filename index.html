@@ -305,13 +305,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .3s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
-}
-#statusPanel.mesh-tab-active{ height:340px; }
-@media (max-height: 700px){
-  #statusPanel.mesh-tab-active{ height:260px; }
 }
 #statusPanel::after{
   content:""; position:absolute; inset:0; border-radius:24px; z-index:-1; pointer-events:none;
@@ -401,7 +397,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:15px; color:#c3cfe8; text-align:center;
 }
 #terrainMeshFullContainer{
-  width:100%; flex:1; min-height:0; position:relative; touch-action:none;
+  width:100%; height:260px; flex-shrink:0; position:relative;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -416,6 +412,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullContainer svg{ width:100%; height:100%; display:block; }
 #terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
+.terrain-mesh-controls{
+  position:absolute; right:8px; bottom:8px; z-index:6;
+  display:grid; grid-template-columns:repeat(2, 1fr); gap:5px;
+}
+.terrain-mesh-ctrl-btn{
+  position:relative; overflow:hidden; width:32px; height:32px; border-radius:50%; padding:0; cursor:pointer;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
+  display:flex; align-items:center; justify-content:center;
+}
+.terrain-mesh-ctrl-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
+.terrain-mesh-ctrl-btn .material-icons-round{ font-size:18px; color:#3f83ab; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -739,6 +746,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     </div>
     <div id="terrainMeshFullContainer">
       <div id="terrainMeshFullPlaceholder">地点を選択すると、ここに周辺の地形メッシュが表示されます</div>
+      <div id="terrainMeshFullSvgWrap" style="display:none; width:100%; height:100%;"></div>
+      <div class="terrain-mesh-controls">
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(-15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(1.2)" title="拡大"><span class="material-icons-round">add</span></button>
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(0.83)" title="縮小"><span class="material-icons-round">remove</span></button>
+      </div>
     </div>
     <div id="terrainMeshFullInfo"></div>
   </div>
@@ -1299,8 +1313,6 @@ function switchTab(tabNumber){
   document.querySelectorAll('.tab-btn')[tabNumber - 1].classList.add('active');
   document.getElementById('tab' + tabNumber).classList.add('active');
 
-  const panel = document.getElementById('statusPanel');
-  panel.classList.toggle('mesh-tab-active', tabNumber === 4);
   if (tabNumber === 4) generateFullTerrainMesh();
 }
 
@@ -2484,15 +2496,19 @@ function isTab4Active(){
 }
 
 function showTerrainMeshLoading(){
-  const container = document.getElementById('terrainMeshFullContainer');
-  if (container) container.innerHTML = `<div id="terrainMeshFullPlaceholder">生成中...</div>`;
+  const placeholder = document.getElementById('terrainMeshFullPlaceholder');
+  const svgWrap = document.getElementById('terrainMeshFullSvgWrap');
+  if (placeholder){ placeholder.textContent = '生成中...'; placeholder.style.display = 'block'; }
+  if (svgWrap){ svgWrap.style.display = 'none'; svgWrap.innerHTML = ''; }
   const infoEl = document.getElementById('terrainMeshFullInfo');
   if (infoEl) infoEl.innerText = '';
 }
 
 function showTerrainMeshPlaceholder(text){
-  const container = document.getElementById('terrainMeshFullContainer');
-  if (container) container.innerHTML = `<div id="terrainMeshFullPlaceholder">${text}</div>`;
+  const placeholder = document.getElementById('terrainMeshFullPlaceholder');
+  const svgWrap = document.getElementById('terrainMeshFullSvgWrap');
+  if (placeholder){ placeholder.textContent = text; placeholder.style.display = 'block'; }
+  if (svgWrap){ svgWrap.style.display = 'none'; svgWrap.innerHTML = ''; }
   const infoEl = document.getElementById('terrainMeshFullInfo');
   if (infoEl) infoEl.innerText = '';
 }
@@ -2502,24 +2518,15 @@ function renderTerrainMeshFromCache(){
   const { elevGrid, N, centerIdx } = terrainMeshCachedData;
   const { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel } =
     buildTerrainMeshSVGFull(elevGrid, N, centerIdx, terrainMeshAzimuth, terrainMeshZoom);
-  const container = document.getElementById('terrainMeshFullContainer');
-  if (container) container.innerHTML = svgMarkup;
+  const placeholder = document.getElementById('terrainMeshFullPlaceholder');
+  const svgWrap = document.getElementById('terrainMeshFullSvgWrap');
+  if (placeholder) placeholder.style.display = 'none';
+  if (svgWrap){ svgWrap.innerHTML = svgMarkup; svgWrap.style.display = 'block'; }
   updateTerrainMeshCompass();
   const infoEl = document.getElementById('terrainMeshFullInfo');
   if (infoEl){
-    infoEl.innerHTML = `半透明ドロップ・点滅パネル=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）<br>ドラッグで回転・ピンチで拡大縮小できます`;
+    infoEl.innerHTML = `半透明ドロップ・点滅パネル=選択地点（標高 約${Math.round(centerE)}m）／${heightLabel}<br>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）<br>右下のボタンで回転・拡大縮小できます`;
   }
-}
-
-// ジェスチャー中は毎フレーム1回だけ再描画してカクつきを防ぐ
-let terrainMeshRenderScheduled = false;
-function scheduleTerrainMeshRender(){
-  if (terrainMeshRenderScheduled) return;
-  terrainMeshRenderScheduled = true;
-  requestAnimationFrame(() => {
-    terrainMeshRenderScheduled = false;
-    renderTerrainMeshFromCache();
-  });
 }
 
 async function generateFullTerrainMesh(){
@@ -2547,86 +2554,18 @@ async function generateFullTerrainMesh(){
   }
 }
 
-// ドラッグで水平回転、ピンチでズームできるようにするジェスチャー処理。
-// メッシュ自体を自由に動かせるようになったため、このエリアではタブのスクロールと
-// 競合しないよう常にpreventDefaultしてブラウザ標準のスクロール/ズームを無効化する。
-(function setupTerrainMeshGestures(){
-  const container = document.getElementById('terrainMeshFullContainer');
-  if (!container) return;
+// ドラッグ・ピンチは動きが重くなりがちなため廃止し、ボタンで回転・拡大縮小する
+function terrainMeshRotateBy(deg){
+  if (!terrainMeshCachedData) return;
+  terrainMeshAzimuth = (terrainMeshAzimuth + deg + 360) % 360;
+  renderTerrainMeshFromCache();
+}
 
-  let mode = null; // 'rotate' | 'pinch'
-  let lastX = 0;
-  let lastDist = 0;
-
-  function touchDistance(t1, t2){
-    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-  }
-
-  container.addEventListener('touchstart', e => {
-    if (!terrainMeshCachedData) return;
-    e.preventDefault();
-    if (e.touches.length >= 2){
-      mode = 'pinch';
-      lastDist = touchDistance(e.touches[0], e.touches[1]);
-    } else if (e.touches.length === 1){
-      mode = 'rotate';
-      lastX = e.touches[0].clientX;
-    }
-  }, { passive: false });
-
-  container.addEventListener('touchmove', e => {
-    if (!terrainMeshCachedData || !mode) return;
-    e.preventDefault();
-    if (mode === 'pinch' && e.touches.length >= 2){
-      const dist = touchDistance(e.touches[0], e.touches[1]);
-      const ratio = dist / (lastDist || dist);
-      terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * ratio));
-      lastDist = dist;
-      scheduleTerrainMeshRender();
-    } else if (mode === 'rotate' && e.touches.length === 1){
-      const x = e.touches[0].clientX;
-      const dx = x - lastX;
-      lastX = x;
-      terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
-      scheduleTerrainMeshRender();
-    }
-  }, { passive: false });
-
-  container.addEventListener('touchend', e => {
-    if (e.touches.length >= 2){
-      mode = 'pinch';
-      lastDist = touchDistance(e.touches[0], e.touches[1]);
-    } else if (e.touches.length === 1){
-      mode = 'rotate';
-      lastX = e.touches[0].clientX;
-    } else {
-      mode = null;
-    }
-  }, { passive: true });
-
-  // マウスでも回転できるようにする（デスクトップ確認用）
-  let mouseDragging = false;
-  container.addEventListener('mousedown', e => {
-    if (!terrainMeshCachedData) return;
-    mouseDragging = true;
-    lastX = e.clientX;
-  });
-  window.addEventListener('mousemove', e => {
-    if (!mouseDragging || !terrainMeshCachedData) return;
-    const dx = e.clientX - lastX;
-    lastX = e.clientX;
-    terrainMeshAzimuth = (terrainMeshAzimuth + dx * 0.5 + 360) % 360;
-    scheduleTerrainMeshRender();
-  });
-  window.addEventListener('mouseup', () => { mouseDragging = false; });
-  container.addEventListener('wheel', e => {
-    if (!terrainMeshCachedData) return;
-    e.preventDefault();
-    const ratio = e.deltaY < 0 ? 1.08 : 0.93;
-    terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * ratio));
-    scheduleTerrainMeshRender();
-  }, { passive: false });
-})();
+function terrainMeshZoomBy(factor){
+  if (!terrainMeshCachedData) return;
+  terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * factor));
+  renderTerrainMeshFromCache();
+}
 
 function setTerrainMeshTarget(lat, lng){
   terrainMeshLatLng = L.latLng(lat, lng);
