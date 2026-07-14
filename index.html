@@ -339,7 +339,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #tab4.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab4 .panel-heading-label{ flex-shrink:0; }
 #toggleStatusBtn{
-  position:absolute!important; top:8px!important; right:10px!important;
+  position:absolute!important; top:8px!important; right:10px!important; z-index:2000!important;
   background:transparent!important; border:none!important; color:#202124!important;
   cursor:pointer; display:flex!important; align-items:center!important; justify-content:center!important;
   padding:4px!important; box-shadow:none!important; outline:none!important;
@@ -397,7 +397,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:15px; color:#c3cfe8; text-align:center;
 }
 #terrainMeshFullContainer{
-  width:100%; height:260px; flex-shrink:0; position:relative;
+  width:100%; flex:1; min-height:0; position:relative;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
@@ -413,8 +413,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullPlaceholder{ font-size:14px; color:#c3cfe8; text-align:center; padding:16px; }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
 .terrain-mesh-controls{
-  position:absolute; right:8px; bottom:8px; z-index:6;
-  display:grid; grid-template-columns:repeat(2, 1fr); gap:5px;
+  position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:6;
+  display:flex; flex-direction:column; gap:6px;
+  background:rgba(10,24,48,.5); padding:6px; border-radius:20px;
+  border:1px solid rgba(255,255,255,.2);
 }
 .terrain-mesh-ctrl-btn{
   position:relative; overflow:hidden; width:32px; height:32px; border-radius:50%; padding:0; cursor:pointer;
@@ -2473,7 +2475,7 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
       <circle cx="${tipX.toFixed(1)}" cy="${headCY.toFixed(1)}" r="4" fill="#ffffff" fill-opacity=".9"/>
     </g>`;
 
-  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">${polys}${dropHtml}</svg>`;
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
 }
 
