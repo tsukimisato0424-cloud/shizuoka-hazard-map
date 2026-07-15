@@ -328,6 +328,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .tab-btn.active{
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
   color:#fff; z-index:3; box-shadow:0 -5px 15px rgba(0,100,255,.3); transform:translateY(-2px);
+  animation: activeTabGlowBlink 1.4s ease-in-out infinite;
+}
+@keyframes activeTabGlowBlink{
+  0%,100%{ color:#fff; text-shadow:0 0 8px #00d4ff, 0 0 16px #00d4ff, 1px 1px 0 #000; }
+  50%{ color:#00d4ff; text-shadow:0 0 16px #00d4ff, 0 0 30px #00d4ff, 1px 1px 0 #000; }
 }
 #elevationDisplay, .route-time{
   color:#fff!important; font-weight:800!important;
@@ -421,8 +426,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
 .terrain-mesh-controls{
   position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:6;
-  display:flex; flex-direction:column; gap:6px;
-  background:rgba(10,24,48,.5); padding:6px; border-radius:20px;
+  display:flex; flex-direction:column; gap:12px;
+  background:rgba(10,24,48,.5); padding:8px 6px; border-radius:22px;
   border:1px solid rgba(255,255,255,.2);
 }
 .terrain-mesh-ctrl-btn{
@@ -446,7 +451,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .current-location-cell{ fill:#ffffff; animation: currentLocationCellBlink 1.1s ease-in-out infinite; }
 .terrain-mesh-compass{
-  position:absolute; top:38px; left:16px; z-index:6;
+  position:absolute; top:52px; left:28px; z-index:6;
   width:38px; height:38px; border-radius:50%;
   background:rgba(10,24,48,.55); border:1.2px solid rgba(255,255,255,.35);
   display:flex; align-items:center; justify-content:center;
@@ -457,6 +462,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   border-left:5px solid transparent; border-right:5px solid transparent;
   border-bottom:15px solid #ff5252;
   transform:rotate(0deg); transform-origin:50% 80%;
+}
+.terrain-mesh-compass-label{
+  position:absolute; top:1px; left:0; width:100%; text-align:center;
+  font-size:9px; font-weight:900; color:#ffffff; letter-spacing:.3px;
+  text-shadow:0 1px 1px rgba(0,0,0,.6);
 }
 #landformLegendContent{
   height:100%; overflow-y:auto; font-size:14px!important; line-height:1.5!important;
@@ -675,10 +685,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="statusPanel" class="glass-panel" data-state="full">
   <div class="tab-container">
-    <div class="tab-btn active" onclick="switchTab(1)">タブ①</div>
-    <div class="tab-btn" onclick="switchTab(2)">タブ②</div>
-    <div class="tab-btn" onclick="switchTab(3)">タブ③</div>
-    <div class="tab-btn" onclick="switchTab(4)">タブ④</div>
+    <div class="tab-btn active" onclick="switchTab(1)">リスク判定</div>
+    <div class="tab-btn" onclick="switchTab(2)">高低差</div>
+    <div class="tab-btn" onclick="switchTab(3)">地形分類</div>
+    <div class="tab-btn" onclick="switchTab(4)">メッシュ</div>
   </div>
 
   <button id="maximizeStatusBtn" onclick="togglePanelMaximize()" title="パネルを拡大/元に戻す">
@@ -751,6 +761,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab4" class="tab-content">
     <div class="panel-heading-label">周辺地形メッシュ（立体）</div>
     <div id="terrainMeshCompass" class="terrain-mesh-compass">
+      <span class="terrain-mesh-compass-label">N</span>
       <div id="terrainMeshCompassArrow" class="terrain-mesh-compass-arrow"></div>
     </div>
     <div id="terrainMeshFullContainer">
