@@ -457,11 +457,15 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   display:flex; align-items:center; justify-content:center;
   pointer-events:none;
 }
+.terrain-mesh-compass-rotor{
+  position:relative; width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center;
+  transform:rotate(0deg);
+}
 .terrain-mesh-compass-arrow{
   width:0; height:0; margin-top:-3px;
   border-left:5px solid transparent; border-right:5px solid transparent;
   border-bottom:15px solid #ff5252;
-  transform:rotate(0deg); transform-origin:50% 80%;
 }
 .terrain-mesh-compass-label{
   position:absolute; top:1px; left:0; width:100%; text-align:center;
@@ -761,8 +765,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="tab4" class="tab-content">
     <div class="panel-heading-label">周辺地形メッシュ（立体）</div>
     <div id="terrainMeshCompass" class="terrain-mesh-compass">
-      <span class="terrain-mesh-compass-label">N</span>
-      <div id="terrainMeshCompassArrow" class="terrain-mesh-compass-arrow"></div>
+      <div id="terrainMeshCompassRotor" class="terrain-mesh-compass-rotor">
+        <span class="terrain-mesh-compass-label">N</span>
+        <div class="terrain-mesh-compass-arrow"></div>
+      </div>
     </div>
     <div id="terrainMeshFullContainer">
       <div id="terrainMeshFullPlaceholder">地点を選択すると、ここに周辺の地形メッシュが表示されます</div>
@@ -2494,13 +2500,15 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   });
 
   // 選択地点：どの角度から見ても地形に隠れて見えなくならないよう、
-  // 半透明のドロップ（ピン）を常に最前面に描画し、上下にバウンスさせる
+  // 半透明のドロップ（ピン）を常に最前面に描画し、上下にバウンスさせる。
+  // 影は地点に固定したままにし、ピン本体だけを動かすことで、
+  // バウンスの最下点でピンの先端がちょうど地点（点滅パネル）に触れるようにする。
   const centerP = pts[centerFineIdx][centerFineIdx];
   const tipX = centerP.x, tipY = centerP.y;
   const headCY = tipY - 30, headR = 11;
   const dropHtml = `
+    <ellipse cx="${tipX.toFixed(1)}" cy="${(tipY + 2).toFixed(1)}" rx="9" ry="3.4" fill="rgba(6,20,42,.35)"/>
     <g class="current-location-drop">
-      <ellipse cx="${tipX.toFixed(1)}" cy="${(tipY + 2).toFixed(1)}" rx="9" ry="3.4" fill="rgba(6,20,42,.35)"/>
       <path d="M ${tipX.toFixed(1)} ${tipY.toFixed(1)}
                L ${(tipX - 9).toFixed(1)} ${(headCY + 6).toFixed(1)}
                A ${headR} ${headR} 0 1 1 ${(tipX + 9).toFixed(1)} ${(headCY + 6).toFixed(1)} Z"
@@ -2516,13 +2524,13 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
 // SVGの中に埋め込まず独立したDOM要素にすることで、メッシュの再描画や
 // ズーム・回転の状態に関わらず常に画面に表示され続けるようにする。
 function updateTerrainMeshCompass(){
-  const arrow = document.getElementById('terrainMeshCompassArrow');
-  if (!arrow) return;
+  const rotor = document.getElementById('terrainMeshCompassRotor');
+  if (!rotor) return;
   const theta = (terrainMeshAzimuth || 0) * Math.PI / 180;
   const tiltFactor = 0.7;
   const dx = -Math.sin(theta), dy = -Math.cos(theta) * tiltFactor;
   const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
-  arrow.style.transform = `rotate(${angleDeg}deg)`;
+  rotor.style.transform = `rotate(${angleDeg}deg)`;
 }
 
 function isTab4Active(){
