@@ -550,16 +550,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-label-badge.is-active{ box-shadow:0 0 0 3px rgba(26,115,232,.35), 0 4px 14px rgba(0,20,50,.45); }
 .route-label-badge.route-label-green.is-active{ box-shadow:0 0 0 3px rgba(39,174,96,.35), 0 4px 14px rgba(0,20,50,.45); }
 .elev-gain-badge{
-  position:absolute; top:8px; right:8px; z-index:4;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
-  font-size:11px!important; font-weight:800!important; line-height:1.15;
-  color:#3a2a06!important; background:rgba(255,213,79,.92);
-  border-radius:11px; padding:6px 4px; min-width:24px;
-  box-shadow:0 3px 8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.3) inset;
+  display:inline-block; font-size:12px!important; font-weight:800!important;
+  color:#3a2a06!important; background:rgba(255,213,79,.85);
+  border-radius:8px; padding:2px 7px; white-space:nowrap; flex-shrink:0;
 }
-.elev-gain-badge:empty{ display:none; }
-.elev-gain-badge .elev-gain-arrow{ font-size:12px; line-height:1; }
-.elev-gain-badge .elev-gain-value{ writing-mode:vertical-rl; text-orientation:upright; letter-spacing:-1px; }
 @keyframes rippleAnim{ to{ transform:scale(3.4); opacity:0; } }
 .ripple-span{
   position:absolute; border-radius:50%; pointer-events:none;
@@ -752,11 +746,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
       </div>
       <div class="panel-column profile-column" style="padding-left:10px;">
-        <div class="panel-heading-label">高低差断面図</div>
+        <div class="panel-heading-label" style="display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden; max-width:100%;">
+          <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
+        </div>
         <div id="elevationProfileContainer">
           <div id="elevationProfilePlaceholder">ルートを選択してください</div>
           <svg id="elevationProfileSvg" viewBox="0 0 300 170" preserveAspectRatio="none" style="display:none;"></svg>
-          <div id="elevGainDisplay" class="elev-gain-badge"></div>
         </div>
       </div>
     </div>
@@ -2026,7 +2021,7 @@ function renderElevationProfile(data){
     svg.innerHTML = '';
     placeholder.style.display = 'block';
     placeholder.innerText = 'ルートを選択してください';
-    if (gainEl) gainEl.innerHTML = '';
+    if (gainEl) gainEl.innerText = '';
     return;
   }
 
@@ -2043,7 +2038,7 @@ function renderElevationProfile(data){
   const rangeE = Math.max(1, maxE - minE);
   const maxDist = Math.max(1, data[data.length - 1].dist);
   const gain = data.reduce((acc, d, i) => i === 0 ? 0 : acc + Math.max(0, d.elevation - data[i - 1].elevation), 0);
-  if (gainEl) gainEl.innerHTML = `<span class="elev-gain-arrow">↑</span><span class="elev-gain-value">約${Math.round(gain)}m</span>`;
+  if (gainEl) gainEl.innerText = `↑約${Math.round(gain)}m`;
 
   const plotBottom = H - padB - extrude;
   const xAt = d => padL + (d.dist / maxDist) * (W - padL - padR);
