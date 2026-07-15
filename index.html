@@ -305,7 +305,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
-  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease;
+  touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .3s ease;
   font-size:18px!important; color:#fff!important;
   text-shadow: 0 1px 2px rgba(0,0,0,0.6) !important; font-weight: 500 !important;
 }
@@ -346,9 +346,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #toggleStatusBtn .material-icons-round{ font-size:28px; }
 #toggleStatusBtn:hover, #toggleStatusBtn:active, #toggleStatusBtn:focus{ background:transparent!important; }
+#maximizeStatusBtn{
+  position:absolute!important; top:8px!important; right:44px!important; z-index:2000!important;
+  background:transparent!important; border:none!important; color:#202124!important;
+  cursor:pointer; display:flex!important; align-items:center!important; justify-content:center!important;
+  padding:4px!important; box-shadow:none!important; outline:none!important;
+}
+#maximizeStatusBtn .material-icons-round{ font-size:22px; }
+#maximizeStatusBtn:hover, #maximizeStatusBtn:active, #maximizeStatusBtn:focus{ background:transparent!important; }
+#statusPanel[data-size="maximized"]{ height:380px; }
+@media (max-height: 700px){
+  #statusPanel[data-size="maximized"]{ height:300px; }
+}
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
 #statusPanel[data-state="minimized"] .tab-container{ display:flex!important; }
+#statusPanel[data-state="minimized"] #maximizeStatusBtn{ display:none!important; }
 .status-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:17px; padding-right:35px; }
 #elevationDisplay{ font-weight:bold; color:#d35400; }
 .panel-row{ display:flex; height:100%; }
@@ -677,6 +690,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <div class="tab-btn" onclick="switchTab(3)">タブ③</div>
     <div class="tab-btn" onclick="switchTab(4)">タブ④</div>
   </div>
+
+  <button id="maximizeStatusBtn" onclick="togglePanelMaximize()" title="パネルを拡大/元に戻す">
+    <span class="material-icons-round" id="maximizeIcon">open_in_full</span>
+  </button>
 
   <button id="toggleStatusBtn" onclick="toggleStatusPanel()">
     <span class="material-icons-round" id="toggleIcon">expand_more</span>
@@ -1309,6 +1326,14 @@ function toggleStatusPanel(){
   }, 100);
 }
 
+function togglePanelMaximize(){
+  const panel = document.getElementById('statusPanel');
+  const icon = document.getElementById('maximizeIcon');
+  const isMax = panel.getAttribute('data-size') === 'maximized';
+  panel.setAttribute('data-size', isMax ? 'normal' : 'maximized');
+  if (icon) icon.innerText = isMax ? 'open_in_full' : 'close_fullscreen';
+}
+
 function switchTab(tabNumber){
   document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1355,7 +1380,7 @@ let terrainMeshLatLng = null;
 let terrainMeshRenderedFor = null;
 let terrainMeshCachedData = null; // { elevGrid, N, centerIdx } 再取得なしで回転・ズームの再描画に使う
 let terrainMeshAzimuth = 0;       // 水平回転角（度）
-let terrainMeshZoom = 1;          // ズーム倍率
+let terrainMeshZoom = 0.65;  // ズーム倍率（初期は少し引いて全体が見えるように）
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
@@ -2548,7 +2573,7 @@ async function generateFullTerrainMesh(){
 
     terrainMeshCachedData = { elevGrid, N, centerIdx };
     terrainMeshAzimuth = 0; // 新しい地点を表示するときは向き・ズームをリセット
-    terrainMeshZoom = 1;
+    terrainMeshZoom = 0.65;
     renderTerrainMeshFromCache();
     terrainMeshRenderedFor = target;
   } catch {
@@ -2579,7 +2604,7 @@ function clearTerrainMeshTarget(){
   terrainMeshRenderedFor = null;
   terrainMeshCachedData = null;
   terrainMeshAzimuth = 0;
-  terrainMeshZoom = 1;
+  terrainMeshZoom = 0.65;
   updateTerrainMeshCompass();
 }
 
@@ -3132,7 +3157,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .terrain-mesh-ctrl-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
