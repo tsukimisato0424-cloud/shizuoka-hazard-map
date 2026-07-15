@@ -1879,34 +1879,51 @@ function computeRouteMidpoint(coords){
   return latlngs[Math.floor(latlngs.length / 2)];
 }
 
-function resolveLabelCollision(newPos, isActive){
-  const threshold = 46;
-  const offsetPx = 34;
-  const newPt = map.latLngToContainerPoint(newPos);
+function applyRouteLabelOffset(marker, dx, dy){
+  const el = marker.getElement();
+  const badge = el && el.querySelector('.route-label-badge');
+  if (!badge) return;
+  badge.style.transform = (dx || dy)
+    ? `translate(calc(-50% + ${dx.toFixed(1)}px), calc(-50% + ${dy.toFixed(1)}px))`
+    : 'translate(-50%,-50%)';
+}
 
-  for (const m of routeLabelMarkers){
-    const mp = map.latLngToContainerPoint(m.getLatLng());
-    const dist = Math.hypot(newPt.x - mp.x, newPt.y - mp.y);
-    if (dist < threshold){
-      if (isActive){
-        const el = m.getElement();
-        const badge = el && el.querySelector('.route-label-badge');
-        if (badge) badge.style.transform = `translate(-50%,-50%) translateY(${offsetPx}px)`;
-        return 0;
+// ルートラベル同士が画面上で近接・重なっていたら、常に両方見えるように引き離す。
+// ズームやパンで画面上の距離が変わるたびに呼び直すことで、どんな状態でも重ならないようにする。
+function separateRouteLabelPositions(){
+  if (routeLabelMarkers.length < 2){
+    routeLabelMarkers.forEach(m => applyRouteLabelOffset(m, 0, 0));
+    return;
+  }
+  const minGap = 62; // バッジ同士に確保したい最小距離(px)
+  for (let i = 0; i < routeLabelMarkers.length; i++){
+    for (let j = i + 1; j < routeLabelMarkers.length; j++){
+      const a = routeLabelMarkers[i], b = routeLabelMarkers[j];
+      const pa = map.latLngToContainerPoint(a.getLatLng());
+      const pb = map.latLngToContainerPoint(b.getLatLng());
+      const dx = pb.x - pa.x, dy = pb.y - pa.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < minGap){
+        const push = (minGap - dist) / 2 + 4;
+        // ほぼ完全に重なっている場合は上下にずらす
+        const nx = dist < 0.5 ? 0 : dx / dist;
+        const ny = dist < 0.5 ? 1 : dy / dist;
+        applyRouteLabelOffset(a, -nx * push, -ny * push);
+        applyRouteLabelOffset(b, nx * push, ny * push);
+      } else {
+        applyRouteLabelOffset(a, 0, 0);
+        applyRouteLabelOffset(b, 0, 0);
       }
-      return offsetPx;
     }
   }
-  return 0;
 }
+map.on('move zoomend', separateRouteLabelPositions);
 
 function addRouteLabel(idx, coords, route, styleClass, isActive){
   const mid = computeRouteMidpoint(coords);
-  const selfOffset = resolveLabelCollision(mid, isActive);
   const mins = Math.round(route.duration / 60);
   const km = (route.distance / 1000).toFixed(1);
-  const offsetAttr = selfOffset ? ` style="transform:translate(-50%,-50%) translateY(${selfOffset}px);"` : '';
-  const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}"${offsetAttr}>
+  const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}">
       <span class="route-label-title">ルート${idx + 1}${isActive ? '（選択中）' : ''}</span>
       <span class="route-label-meta">${mins}分・${km}km</span>
     </div>`;
@@ -1915,6 +1932,7 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
   marker.on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
   marker.addTo(map);
   routeLabelMarkers.push(marker);
+  separateRouteLabelPositions();
   return marker;
 }
 
