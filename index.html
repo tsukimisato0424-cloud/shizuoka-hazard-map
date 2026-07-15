@@ -358,12 +358,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
 #statusPanel[data-state="minimized"] .tab-container{ display:flex!important; }
 #statusPanel[data-state="minimized"] #maximizeStatusBtn{ display:none!important; }
-.status-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:17px; padding-right:35px; }
 #elevationDisplay{ font-weight:bold; color:#d35400; }
 .panel-row{ display:flex; height:100%; }
 .panel-column{ flex:1; overflow-y:auto; min-width:0; }
 .profile-column{ display:flex; flex-direction:column; flex:1 !important; min-width:0; }
-.route-modes{ display:flex; gap:8px; flex:1; }
 .route-mode-box{
   flex:1; border-radius:10px; padding:9px 12px; display:flex; align-items:center; gap:10px;
   background:
@@ -489,10 +487,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .emergency-alt-item .alt-name{ font-size:14px; font-weight:bold; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .emergency-alt-item .alt-meta{ font-size:12px; color:#6fe0a0; flex-shrink:0; white-space:nowrap; }
 .emergency-alt-item.hazardous .alt-meta{ color:#ff8a80; }
-.terrain-mesh-trigger{
-  margin-top:6px; display:inline-flex; align-items:center; gap:4px;
-  font-size:13px; color:#8ec2ff; cursor:pointer; text-decoration:underline dotted;
-}
 .leaflet-popup-pane{ pointer-events:none; z-index:10000; }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
 .leaflet-popup-content{ font-size:18px!important; line-height:1.6!important; color:#3c4043; }
@@ -1394,7 +1388,6 @@ let greenRouteLayer = null;
 let routeCandidates = [];
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
-let lastRiskGrid = null; // 直近の地点リスク判定で使った精密グリッド（メッシュ可視化用）
 
 function clearRouteLayers(){
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
@@ -1620,13 +1613,6 @@ function startContinuousTracking(){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
     }
   }, { enableHighAccuracy:true, maximumAge:2000, timeout:15000 });
-}
-
-function stopContinuousTracking(){
-  if (geoWatchId !== null){
-    navigator.geolocation.clearWatch(geoWatchId);
-    geoWatchId = null;
-  }
 }
 
 function updateCurrentLocation(isInitial = false){
@@ -2240,13 +2226,20 @@ function getDemLabel(hsrc){
   return '不明';
 }
 
+const elevationCache = new Map();
 async function getElevationValue(lat, lng){
-  try {
-    const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
-    const data = await (await fetch(url)).json();
-    const elevation = typeof data.elevation === 'number' ? data.elevation : NaN;
-    return { elevation, hsrc: data.hsrc || null };
-  } catch { return { elevation: NaN, hsrc: null }; }
+  const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+  if (elevationCache.has(key)) return elevationCache.get(key);
+  const promise = (async () => {
+    try {
+      const url = `https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lng}&lat=${lat}&outtype=JSON`;
+      const data = await (await fetch(url)).json();
+      const elevation = typeof data.elevation === 'number' ? data.elevation : NaN;
+      return { elevation, hsrc: data.hsrc || null };
+    } catch { return { elevation: NaN, hsrc: null }; }
+  })();
+  elevationCache.set(key, promise);
+  return promise;
 }
 
 function metersToDegOffsets(lat, meters){
@@ -2303,16 +2296,13 @@ async function checkInundationRisk(lat, lng){
   const mixedResolution = surroundingRanks.length > 0 && surroundingRanks.some(r => r !== centerRank);
 
   return {
-    isRisk: riskLevel !== 'none',
     riskLevel,
     diff: isNaN(pondDepth) ? '--' : pondDepth.toFixed(1),
     higherDirCount,
     centerElev,
-    demSource: center.hsrc,
     demLabel: getDemLabel(center.hsrc),
     lowConfidence: centerRank === 1,
-    mixedResolution,
-    grid
+    mixedResolution
   };
 }
 
@@ -2621,20 +2611,19 @@ function resetTerrainMeshFeature(){
   else showTerrainMeshPlaceholder('地点を選択すると、ここに周辺の地形メッシュが表示されます');
 }
 
-async function getAddress(lat, lng){
-  try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ja`;
-    const data = await (await fetch(url)).json();
-    return data.address ? data.display_name : '住所情報が見つかりません';
-  } catch { return '住所取得失敗'; }
-}
-
-let areaMasterCache = null;
-async function getAreaMaster(){
-  if (areaMasterCache) return areaMasterCache;
-  const res = await fetch('https://www.jma.go.jp/bosai/common/const/area.json');
-  areaMasterCache = await res.json();
-  return areaMasterCache;
+const addressCache = new Map();
+function getAddress(lat, lng){
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  if (addressCache.has(key)) return addressCache.get(key);
+  const promise = (async () => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ja`;
+      const data = await (await fetch(url)).json();
+      return data.address ? data.display_name : '住所情報が見つかりません';
+    } catch { return '住所取得失敗'; }
+  })();
+  addressCache.set(key, promise);
+  return promise;
 }
 
 function updateWeatherWarnings(){ /* 拡張予約領域（現状は高低差断面図に置き換え済み） */ }
@@ -2671,7 +2660,6 @@ async function updateDetails(lat, lng){
     riskHtml += `<div style="color:#f3db52; font-size:13px; margin-top:3px;">※ 周辺データの解像度差（建物等の影響の可能性）にご注意ください</div>`;
   }
   riskStatus.innerHTML = riskHtml;
-  lastRiskGrid = risk.grid;
 
   setTerrainMeshTarget(lat, lng);
 
