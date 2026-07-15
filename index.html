@@ -328,11 +328,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .tab-btn.active{
   background:linear-gradient(135deg, rgba(30,60,114,.8), rgba(40,50,80,.92));
   color:#fff; z-index:3; box-shadow:0 -5px 15px rgba(0,100,255,.3); transform:translateY(-2px);
-  animation: activeTabGlowBlink 1.4s ease-in-out infinite;
-}
-@keyframes activeTabGlowBlink{
-  0%,100%{ color:#fff; text-shadow:0 0 8px #00d4ff, 0 0 16px #00d4ff, 1px 1px 0 #000; }
-  50%{ color:#00d4ff; text-shadow:0 0 16px #00d4ff, 0 0 30px #00d4ff, 1px 1px 0 #000; }
+  text-shadow:0 0 8px #00d4ff, 0 0 16px #00d4ff, 1px 1px 0 #000;
 }
 #elevationDisplay, .route-time{
   color:#fff!important; font-weight:800!important;
@@ -343,6 +339,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #tab4{ position:relative; }
 #tab4.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab4 .panel-heading-label{ flex-shrink:0; align-self:flex-start; }
+#tab2.active{ display:flex; flex-direction:column; overflow:hidden; }
+#tab2 .panel-heading-label{ flex-shrink:0; }
+#tab2 .panel-row{ height:auto; flex:1; min-height:0; margin-top:6px; }
+#elevationExtremeCol{ overflow-y:auto; }
 #toggleStatusBtn, #maximizeStatusBtn{
   position:absolute!important; z-index:2000!important; overflow:hidden;
   width:34px; height:34px; border-radius:50%; padding:0!important;
@@ -355,6 +355,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #toggleStatusBtn:active, #maximizeStatusBtn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active)!important; }
 #toggleStatusBtn .material-icons-round{ font-size:20px; color:#2c6690; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #maximizeStatusBtn .material-icons-round{ font-size:17px; color:#2c6690; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+@keyframes maximizeBtnHeartbeat{
+  0%, 100%{ transform:scale(1); box-shadow:var(--bubble-shadow); }
+  25%{ transform:scale(1.2); box-shadow:0 0 16px 5px rgba(47,128,237,.65), var(--bubble-shadow); }
+  40%{ transform:scale(1); box-shadow:var(--bubble-shadow); }
+  55%{ transform:scale(1.14); box-shadow:0 0 12px 4px rgba(47,128,237,.5), var(--bubble-shadow); }
+  70%{ transform:scale(1); box-shadow:var(--bubble-shadow); }
+}
+#maximizeStatusBtn.pulse-heartbeat{ animation: maximizeBtnHeartbeat 1.8s ease-in-out infinite; }
 #statusPanel[data-size="maximized"]{ height:380px; }
 @media (max-height: 700px){
   #statusPanel[data-size="maximized"]{ height:300px; }
@@ -718,14 +726,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div id="latLngDisplay" style="font-size:15px; color:#e2eaf7; margin-top:2px;">緯度/経度: --</div>
         <div style="font-size:16px; margin-top:3px;">海抜: <span id="elevationDisplay">-- m</span></div>
         <div style="font-size:16px; margin-top:3px;">方位: <span id="headingDisplay">-- °</span></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab2" class="tab-content">
-    <div class="panel-row">
-      <div class="panel-column" style="border-right:1px solid #ddd; padding-right:10px;">
-        <div class="panel-heading-label">ルート情報（徒歩）</div>
+        <div class="panel-heading-label" style="margin-top:9px;">ルート情報（徒歩）</div>
         <div class="route-mode-box">
           <div class="route-icon-circle"><span class="material-icons-round" style="font-size:18px;">directions_walk</span></div>
           <div class="route-time-dist">
@@ -733,7 +734,21 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
             <span id="walkDist" class="route-dist">(-- km)</span>
           </div>
         </div>
-        <div style="font-weight:bold; font-size:14px; margin-top:10px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab2" class="tab-content">
+    <div class="panel-heading-label" style="display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden; align-self:flex-start;">
+      <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
+    </div>
+    <div class="panel-row">
+      <div id="elevationProfileContainer" style="flex:1;">
+        <div id="elevationProfilePlaceholder">ルートを選択してください</div>
+        <svg id="elevationProfileSvg" viewBox="0 0 300 170" preserveAspectRatio="none" style="display:none;"></svg>
+      </div>
+      <div class="panel-column" id="elevationExtremeCol" style="flex:0 0 140px; max-width:140px; margin-left:10px; border-left:1px solid transparent; padding-left:10px;">
+        <div style="font-weight:bold; font-size:14px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
         <div id="elevationExtremeInfo" style="font-size:13px; line-height:1.5;">
           <div style="margin-bottom:6px;">
             <span style="color:#ff8a80; font-weight:bold;">▲ 最高地点</span><br>
@@ -743,15 +758,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
             <span style="color:#82b1ff; font-weight:bold;">▼ 最低地点</span><br>
             <span id="lowestPointAddr" style="color:#dfe6f0;">--</span>
           </div>
-        </div>
-      </div>
-      <div class="panel-column profile-column" style="padding-left:10px;">
-        <div class="panel-heading-label" style="display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden; max-width:100%;">
-          <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
-        </div>
-        <div id="elevationProfileContainer">
-          <div id="elevationProfilePlaceholder">ルートを選択してください</div>
-          <svg id="elevationProfileSvg" viewBox="0 0 300 170" preserveAspectRatio="none" style="display:none;"></svg>
         </div>
       </div>
     </div>
@@ -1330,6 +1336,7 @@ function toggleStatusPanel(){
     panel.setAttribute('data-state', isMinimized ? 'minimized' : 'full');
     icon.innerText = isMinimized ? 'expand_less' : 'expand_more';
     panel.style.transform = 'translateY(0)';
+    updateMaximizeBtnPulse();
   }, 100);
 }
 
@@ -1339,6 +1346,18 @@ function togglePanelMaximize(){
   const isMax = panel.getAttribute('data-size') === 'maximized';
   panel.setAttribute('data-size', isMax ? 'normal' : 'maximized');
   if (icon) icon.innerText = isMax ? 'open_in_full' : 'close_fullscreen';
+  updateMaximizeBtnPulse();
+}
+
+function updateMaximizeBtnPulse(){
+  const btn = document.getElementById('maximizeStatusBtn');
+  const panel = document.getElementById('statusPanel');
+  if (!btn || !panel) return;
+  const tab4El = document.getElementById('tab4');
+  const isTab4 = !!(tab4El && tab4El.classList.contains('active'));
+  const isNormal = panel.getAttribute('data-size') !== 'maximized';
+  const isMinimized = panel.getAttribute('data-state') === 'minimized';
+  btn.classList.toggle('pulse-heartbeat', !!(isTab4 && isNormal && !isMinimized));
 }
 
 function switchTab(tabNumber){
@@ -1351,14 +1370,10 @@ function switchTab(tabNumber){
   const maxIcon = document.getElementById('maximizeIcon');
   if (tabNumber === 4){
     generateFullTerrainMesh();
-    if (panel.getAttribute('data-state') !== 'minimized'){
-      panel.setAttribute('data-size', 'maximized');
-      if (maxIcon) maxIcon.innerText = 'close_fullscreen';
-    }
-  } else {
-    panel.setAttribute('data-size', 'normal');
-    if (maxIcon) maxIcon.innerText = 'open_in_full';
   }
+  panel.setAttribute('data-size', 'normal');
+  if (maxIcon) maxIcon.innerText = 'open_in_full';
+  updateMaximizeBtnPulse();
 }
 
 function createPinIcon(color, letter){
