@@ -538,17 +538,37 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
 .terrain-mesh-controls{
   position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:6;
-  display:flex; flex-direction:column; gap:7px; max-height:88%; overflow-y:auto;
-  background:rgba(10,24,48,.5); padding:7px 6px; border-radius:20px;
-  border:1px solid rgba(255,255,255,.2);
+  display:flex; flex-direction:column; align-items:center; gap:10px;
 }
-.terrain-mesh-ctrl-btn{
-  position:relative; overflow:hidden; width:30px; height:30px; border-radius:50%; padding:0; cursor:pointer;
+.mesh-zoom-pill{
+  display:flex; align-items:center; gap:3px;
+  background:rgba(10,24,48,.55); padding:4px; border-radius:20px;
+  border:1px solid rgba(255,255,255,.22);
+}
+.mesh-zoom-btn{
+  position:relative; overflow:hidden; width:29px; height:29px; border-radius:14px; padding:0; cursor:pointer;
   background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow); flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
 }
-.terrain-mesh-ctrl-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
-.terrain-mesh-ctrl-btn .material-icons-round{ font-size:17px; color:#3f83ab; }
+.mesh-zoom-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
+.mesh-zoom-btn .material-icons-round{ font-size:16px; color:#3f83ab; }
+.mesh-dpad{
+  position:relative; width:94px; height:94px;
+  display:grid; grid-template-columns:31px 32px 31px; grid-template-rows:31px 32px 31px;
+  background:rgba(10,24,48,.55); border:1px solid rgba(255,255,255,.22);
+  border-radius:22px;
+}
+.mesh-dpad-btn{
+  padding:0; cursor:pointer; border:none; background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  color:#eaf6ff; transition:background .15s ease;
+}
+.mesh-dpad-btn .material-icons-round{ font-size:21px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.mesh-dpad-btn:active{ background:rgba(120,190,255,.28); }
+.dpad-up{ grid-column:2; grid-row:1; border-radius:18px 18px 0 0; }
+.dpad-left{ grid-column:1; grid-row:2; border-radius:18px 0 0 18px; }
+.dpad-right{ grid-column:3; grid-row:2; border-radius:0 18px 18px 0; }
+.dpad-down{ grid-column:2; grid-row:3; border-radius:0 0 18px 18px; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -890,12 +910,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <span class="dir-label dir-w" id="dirLabelW">西 --</span>
       </div>
       <div class="terrain-mesh-controls">
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(-15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">expand_less</span></button>
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">expand_more</span></button>
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(1.2)" title="拡大"><span class="material-icons-round">add</span></button>
-        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(0.83)" title="縮小"><span class="material-icons-round">remove</span></button>
+        <div class="mesh-zoom-pill">
+          <button type="button" class="mesh-zoom-btn" onclick="terrainMeshZoomBy(1.2)" title="拡大"><span class="material-icons-round">add</span></button>
+          <button type="button" class="mesh-zoom-btn" onclick="terrainMeshZoomBy(0.83)" title="縮小"><span class="material-icons-round">remove</span></button>
+        </div>
+        <div class="mesh-dpad">
+          <button type="button" class="mesh-dpad-btn dpad-up" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">keyboard_arrow_up</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-left" onclick="terrainMeshRotateBy(-15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-right" onclick="terrainMeshRotateBy(15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-down" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">keyboard_arrow_down</span></button>
+        </div>
       </div>
     </div>
     <div id="terrainMeshLegendBar" class="terrain-mesh-legend-bar">
@@ -3517,7 +3541,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .terrain-mesh-ctrl-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
