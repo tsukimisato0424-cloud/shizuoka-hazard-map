@@ -399,8 +399,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .legend-bar-label-low, .legend-bar-label-high{ font-size:11px; color:#c3cfe8; flex-shrink:0; }
 #terrainMeshFullInfo{ display:none; }
 #statusPanel[data-size="maximized"] #terrainMeshFullInfo{ display:block; margin-top:6px; animation:legendFadeIn .35s ease; }
-.mesh-detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; font-size:12px; color:#dfe6f0; text-align:left; }
-.mesh-detail-grid > div{ display:flex; align-items:center; gap:5px; }
+.mesh-detail-compact{
+  display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px;
+  font-size:11.5px; color:#dfe6f0; text-align:left; line-height:1.4;
+}
+.mesh-detail-compact span{ display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
 .mesh-detail-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .terrain-mesh-controls{ display:none !important; }
 #statusPanel[data-size="maximized"] .terrain-mesh-controls{ display:flex !important; animation:legendFadeIn .35s ease; }
@@ -535,17 +538,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullInfo{ flex-shrink:0; font-size:12px; color:#c3cfe8; text-align:center; margin-top:6px; min-height:14px; }
 .terrain-mesh-controls{
   position:absolute; right:10px; top:50%; transform:translateY(-50%); z-index:6;
-  display:flex; flex-direction:column; gap:12px;
-  background:rgba(10,24,48,.5); padding:8px 6px; border-radius:22px;
+  display:flex; flex-direction:column; gap:7px; max-height:88%; overflow-y:auto;
+  background:rgba(10,24,48,.5); padding:7px 6px; border-radius:20px;
   border:1px solid rgba(255,255,255,.2);
 }
 .terrain-mesh-ctrl-btn{
-  position:relative; overflow:hidden; width:32px; height:32px; border-radius:50%; padding:0; cursor:pointer;
-  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
+  position:relative; overflow:hidden; width:30px; height:30px; border-radius:50%; padding:0; cursor:pointer;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow); flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
 }
 .terrain-mesh-ctrl-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
-.terrain-mesh-ctrl-btn .material-icons-round{ font-size:18px; color:#3f83ab; }
+.terrain-mesh-ctrl-btn .material-icons-round{ font-size:17px; color:#3f83ab; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -889,6 +892,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       <div class="terrain-mesh-controls">
         <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(-15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
         <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshRotateBy(15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">expand_less</span></button>
+        <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">expand_more</span></button>
         <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(1.2)" title="拡大"><span class="material-icons-round">add</span></button>
         <button type="button" class="terrain-mesh-ctrl-btn" onclick="terrainMeshZoomBy(0.83)" title="縮小"><span class="material-icons-round">remove</span></button>
       </div>
@@ -1588,9 +1593,10 @@ let highestPointMarker = null, lowestPointMarker = null;
 
 let terrainMeshLatLng = null;
 let terrainMeshRenderedFor = null;
-let terrainMeshCachedData = null; // { elevGrid, N, centerIdx } 再取得なしで回転・ズームの再描画に使う
+let terrainMeshCachedData = null; // { elevGrid, N, centerIdx } 再取得なしで回転・ズーム・上下角度の再描画に使う
 let terrainMeshAzimuth = 0;       // 水平回転角（度）
 let terrainMeshZoom = 1.47;  // ズーム倍率（+ボタン3回分程度の大きさを標準に）
+let terrainMeshTilt = 0.5;   // 上下の見下ろし角度（小さいほど真上から、大きいほど水平に近い視点）
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
@@ -2645,7 +2651,7 @@ function bilinearUpsampleGrid(elevGrid, n, factor){
 // 奥行き方向(緯度方向)の縦方向への影響とheightScaleを強めに取ることで、
 // 従来のほぼ真上からの表示より起伏（高低差）が視覚的に分かりやすくなる。
 // 標高帯ごとに色を変えることで等高線のような立体感も出す。
-function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
+function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltVal){
   const fine = bilinearUpsampleGrid(elevGrid, N, TERRAIN_MESH_UPSCALE);
   const fineN = fine.length;
 
@@ -2660,7 +2666,7 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   // 中心からの相対位置(di,dj)を方位角(theta)で回転させてから画面座標へ投影する。
   const theta = (azimuthDeg || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
-  const planeStep = 13, tiltFactor = 0.5, heightScale = 90;
+  const planeStep = 13, tiltFactor = (tiltVal || 0.5), heightScale = 90;
   const z = zoom || 1;
   const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
   const viewCX = 200, viewCY = 140; // viewBox(400x280、横長)の中心
@@ -2781,7 +2787,7 @@ function updateTerrainMeshCompass(){
 function updateTerrainMeshDirLabelPositions(){
   const theta = (terrainMeshAzimuth || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
-  const tiltFactor = 0.55;
+  const tiltFactor = terrainMeshTilt || 0.5;
   const Rx = 38, Ry = 34; // 中心からの配置半径（コンテナに対する%）
   const dirVectors = { N:[1, 0], E:[0, 1], S:[-1, 0], W:[0, -1] };
   Object.entries(dirVectors).forEach(([dir, [di, dj]]) => {
@@ -2881,7 +2887,7 @@ function renderTerrainMeshFromCache(){
   if (!terrainMeshCachedData) return;
   const { elevGrid, N, centerIdx } = terrainMeshCachedData;
   const { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel } =
-    buildTerrainMeshSVGFull(elevGrid, N, centerIdx, terrainMeshAzimuth, terrainMeshZoom);
+    buildTerrainMeshSVGFull(elevGrid, N, centerIdx, terrainMeshAzimuth, terrainMeshZoom, terrainMeshTilt);
   const placeholder = document.getElementById('terrainMeshFullPlaceholder');
   const svgWrap = document.getElementById('terrainMeshFullSvgWrap');
   if (placeholder) placeholder.style.display = 'none';
@@ -2891,14 +2897,14 @@ function renderTerrainMeshFromCache(){
   if (infoEl){
     const diffToMax = maxE - centerE;
     const diffToMin = centerE - minE;
+    // 図面の縦スペースを確保するため、下の説明は1〜2行に収まる簡潔な形にまとめる
     infoEl.innerHTML = `
-      <div class="mesh-detail-grid">
-        <div><span class="mesh-detail-dot" style="background:#ff8a80;"></span>周辺最高地点との差 +${Math.round(diffToMax)}m</div>
-        <div><span class="mesh-detail-dot" style="background:#82b1ff;"></span>周辺最低地点との差 -${Math.round(diffToMin)}m</div>
-        <div>選択地点の標高 約${Math.round(centerE)}m（${heightLabel}）</div>
-        <div>周辺(約360m四方)の標高 約${Math.round(minE)}〜${Math.round(maxE)}m</div>
+      <div class="mesh-detail-compact">
+        <span><span class="mesh-detail-dot" style="background:#ff8a80;"></span>周辺最高差 +${Math.round(diffToMax)}m</span>
+        <span><span class="mesh-detail-dot" style="background:#82b1ff;"></span>周辺最低差 -${Math.round(diffToMin)}m</span>
+        <span>選択地点 約${Math.round(centerE)}m（${heightLabel}）</span>
+        <span>周辺 約${Math.round(minE)}〜${Math.round(maxE)}m</span>
       </div>
-      <div style="margin-top:5px; opacity:.85;">半透明ドロップ・点滅パネル=選択地点／色は標高帯（1帯 約${bandHeight.toFixed(2)}m）／右下のボタンで回転・拡大縮小できます</div>
     `;
   }
 }
@@ -2919,8 +2925,9 @@ async function generateFullTerrainMesh(){
     if (terrainMeshLatLng !== target) return; // 途中で選択地点が変わっていたら破棄
 
     terrainMeshCachedData = { elevGrid, N, centerIdx };
-    terrainMeshAzimuth = 0; // 新しい地点を表示するときは向き・ズームをリセット
+    terrainMeshAzimuth = 0; // 新しい地点を表示するときは向き・ズーム・角度をリセット
     terrainMeshZoom = 1.47;
+    terrainMeshTilt = 0.5;
     renderTerrainMeshFromCache();
     terrainMeshRenderedFor = target;
     updateTerrainMeshDirLabels(target.lat, target.lng); // 最大化時にのみ表示されるが、先読みしておく
@@ -2929,7 +2936,7 @@ async function generateFullTerrainMesh(){
   }
 }
 
-// ドラッグ・ピンチは動きが重くなりがちなため廃止し、ボタンで回転・拡大縮小する
+// ドラッグ・ピンチは動きが重くなりがちなため廃止し、ボタンで回転・拡大縮小・上下角度を操作する
 function terrainMeshRotateBy(deg){
   if (!terrainMeshCachedData) return;
   terrainMeshAzimuth = (terrainMeshAzimuth + deg + 360) % 360;
@@ -2939,6 +2946,12 @@ function terrainMeshRotateBy(deg){
 function terrainMeshZoomBy(factor){
   if (!terrainMeshCachedData) return;
   terrainMeshZoom = Math.max(0.6, Math.min(2.2, terrainMeshZoom * factor));
+  renderTerrainMeshFromCache();
+}
+
+function terrainMeshTiltBy(delta){
+  if (!terrainMeshCachedData) return;
+  terrainMeshTilt = Math.max(0.22, Math.min(0.85, terrainMeshTilt + delta));
   renderTerrainMeshFromCache();
 }
 
@@ -2953,6 +2966,7 @@ function clearTerrainMeshTarget(){
   terrainMeshCachedData = null;
   terrainMeshAzimuth = 0;
   terrainMeshZoom = 1.47;
+  terrainMeshTilt = 0.5;
   updateTerrainMeshCompass();
 }
 
