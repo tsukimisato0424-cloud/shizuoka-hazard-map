@@ -579,6 +579,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .dpad-left{ grid-column:1; grid-row:2; border-radius:18px 6px 6px 18px; }
 .dpad-right{ grid-column:3; grid-row:2; border-radius:6px 18px 18px 6px; }
 .dpad-down{ grid-column:2; grid-row:3; border-radius:6px 6px 18px 18px; }
+.dpad-center{
+  grid-column:2; grid-row:2; border-radius:50%;
+  font-size:14px; font-weight:900; color:#c0392b;
+  background:linear-gradient(160deg,#fff5f2 0%,#ffd9d0 45%,#ffb9a8 100%);
+}
+.dpad-center:active{ color:#8a231a; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -927,6 +933,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div class="mesh-dpad">
           <button type="button" class="mesh-dpad-btn dpad-up" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">keyboard_arrow_up</span></button>
           <button type="button" class="mesh-dpad-btn dpad-left" onclick="terrainMeshRotateBy(15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-center" onclick="terrainMeshResetView()" title="向き・角度・拡大を元に戻す">C</button>
           <button type="button" class="mesh-dpad-btn dpad-right" onclick="terrainMeshRotateBy(-15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
           <button type="button" class="mesh-dpad-btn dpad-down" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">keyboard_arrow_down</span></button>
         </div>
@@ -2986,6 +2993,15 @@ function terrainMeshZoomBy(factor){
 function terrainMeshTiltBy(delta){
   if (!terrainMeshCachedData) return;
   terrainMeshTilt = Math.max(0.22, Math.min(0.85, terrainMeshTilt + delta));
+  renderTerrainMeshFromCache();
+}
+
+// D-pad中央のCボタン：回転・ズーム・上下角度をすべて初期状態に戻す
+function terrainMeshResetView(){
+  if (!terrainMeshCachedData) return;
+  terrainMeshAzimuth = 0;
+  terrainMeshZoom = 1.47;
+  terrainMeshTilt = 0.5;
   renderTerrainMeshFromCache();
 }
 
