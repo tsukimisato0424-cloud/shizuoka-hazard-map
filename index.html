@@ -336,60 +336,73 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
+#tab1.active{ overflow:hidden; }
 #tab4{ position:relative; }
 #tab4.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab4 .panel-heading-label{ flex-shrink:0; align-self:flex-start; }
 #tab2.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab2 .panel-heading-label{ flex-shrink:0; }
+/* 標準サイズ = サムネイル感覚（コンパクトな固定サイズ）／最大化 = 詳細表示、で
+   タブ2・タブ4はサイズに応じてレイアウトと情報量を切り替える。
+   標準時はflex-growに頼らず高さを固定することで、パネルからのはみ出しを防ぐ。 */
 #tab2 .panel-row{
-  height:auto; flex:1; min-height:0; margin-top:6px; flex-wrap:wrap; align-content:flex-start;
+  height:auto; flex:0 0 auto; min-height:0; margin-top:6px; flex-wrap:wrap; align-content:flex-start;
   transition:all .45s cubic-bezier(.4,0,.2,1);
 }
-#elevationExtremeCol{ overflow-y:auto; }
 #elevationProfileContainer{
-  transition:flex-basis .45s cubic-bezier(.4,0,.2,1), min-height .45s cubic-bezier(.4,0,.2,1), max-width .45s;
+  flex:0 0 90px; height:90px; min-height:0;
+  transition:flex-basis .45s cubic-bezier(.4,0,.2,1), height .45s cubic-bezier(.4,0,.2,1), max-width .45s;
 }
 #elevationExtremeCol{
+  overflow-y:auto; max-height:90px;
   transition:flex-basis .45s cubic-bezier(.4,0,.2,1), max-width .45s, max-height .45s cubic-bezier(.4,0,.2,1),
              margin .45s, padding .45s, border-color .45s;
 }
-/* 標準サイズ = 概要（サムネイル）／最大化 = 詳細表示、という考え方で
-   タブ2・タブ4はサイズに応じてレイアウトと情報量を切り替える */
-#statusPanel[data-size="maximized"] #tab2 .panel-row{ flex-direction:row; }
+#statusPanel[data-size="maximized"] #tab2 .panel-row{ flex:1; min-height:0; }
 #statusPanel[data-size="maximized"] #elevationProfileContainer{
-  flex:1 1 100%; min-height:220px; max-width:100%;
+  flex:1 1 100%; height:auto; min-height:180px; max-width:100%;
 }
 #statusPanel[data-size="maximized"] #elevationExtremeCol{
-  flex:1 1 100%; max-width:none; width:100%; max-height:130px;
-  margin-left:0; margin-top:12px; padding-left:0; padding-top:12px;
+  flex:0 0 auto; max-width:none; width:100%; max-height:58px;
+  margin-left:0; margin-top:8px; padding-left:0; padding-top:8px;
   border-left:none; border-top:1px solid rgba(255,255,255,.16);
 }
-#statusPanel[data-size="maximized"] #elevationExtremeInfo{ display:flex; gap:16px; flex-wrap:wrap; }
-#statusPanel[data-size="maximized"] #elevationExtremeInfo > div{ flex:1; min-width:150px; }
+#statusPanel[data-size="maximized"] #elevationExtremeHeading{ display:none; }
+#statusPanel[data-size="maximized"] #elevationExtremeInfo{ display:flex; flex-direction:column; gap:3px; }
+#statusPanel[data-size="maximized"] .extreme-point{
+  display:flex; align-items:baseline; gap:6px; white-space:nowrap; overflow:hidden;
+  margin-bottom:0 !important; font-size:12px;
+}
+#statusPanel[data-size="maximized"] .extreme-point-label{ flex-shrink:0; }
+#statusPanel[data-size="maximized"] .extreme-point-value{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;
+}
 .terrain-mesh-dir-labels{ position:absolute; inset:0; pointer-events:none; z-index:5; display:none; }
-#statusPanel[data-size="maximized"] .terrain-mesh-dir-labels{ display:block; animation:dirLabelFadeIn .35s ease; }
-@keyframes dirLabelFadeIn{ from{ opacity:0; transform:scale(.94); } to{ opacity:1; transform:scale(1); } }
+#statusPanel[data-size="maximized"] .terrain-mesh-dir-labels{ display:block; }
+@keyframes dirLabelFadeIn{ from{ opacity:0; transform:translate(-50%,-50%) scale(.94); } to{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
 .dir-label{
-  position:absolute; font-size:11px; font-weight:800; color:#eaf6ff;
+  position:absolute; left:50%; top:50%; font-size:11px; font-weight:800; color:#eaf6ff;
   background:rgba(10,24,48,.6); padding:3px 9px; border-radius:10px;
   border:1px solid rgba(255,255,255,.28); white-space:nowrap;
   text-shadow:0 1px 2px rgba(0,0,0,.5); max-width:110px; overflow:hidden; text-overflow:ellipsis;
+  transform:translate(-50%,-50%);
+  transition:left .5s cubic-bezier(.4,0,.2,1), top .5s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+  animation:dirLabelFadeIn .35s ease;
 }
-.dir-n{ top:6px; left:50%; transform:translateX(-50%); }
-.dir-s{ bottom:6px; left:50%; transform:translateX(-50%); }
-.dir-e{ right:6px; top:50%; transform:translateY(-50%); }
-.dir-w{ left:6px; top:50%; transform:translateY(-50%); }
 .terrain-mesh-legend-bar{
   display:none; align-items:center; gap:8px; margin-top:8px; flex-shrink:0;
 }
-#statusPanel[data-size="maximized"] .terrain-mesh-legend-bar{ display:flex; animation:dirLabelFadeIn .35s ease; }
+#statusPanel[data-size="maximized"] .terrain-mesh-legend-bar{ display:flex; animation:legendFadeIn .35s ease; }
+@keyframes legendFadeIn{ from{ opacity:0; } to{ opacity:1; } }
 .legend-bar-gradient{ flex:1; height:9px; border-radius:5px; border:1px solid rgba(255,255,255,.25); }
 .legend-bar-label-low, .legend-bar-label-high{ font-size:11px; color:#c3cfe8; flex-shrink:0; }
 #terrainMeshFullInfo{ display:none; }
-#statusPanel[data-size="maximized"] #terrainMeshFullInfo{ display:block; margin-top:6px; animation:dirLabelFadeIn .35s ease; }
+#statusPanel[data-size="maximized"] #terrainMeshFullInfo{ display:block; margin-top:6px; animation:legendFadeIn .35s ease; }
 .mesh-detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; font-size:12px; color:#dfe6f0; text-align:left; }
 .mesh-detail-grid > div{ display:flex; align-items:center; gap:5px; }
 .mesh-detail-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.terrain-mesh-controls{ display:none; }
+#statusPanel[data-size="maximized"] .terrain-mesh-controls{ display:flex; animation:legendFadeIn .35s ease; }
 #toggleStatusBtn, #maximizeStatusBtn{
   position:absolute!important; z-index:2000!important; overflow:hidden;
   width:34px; height:34px; border-radius:50%; padding:0!important;
@@ -829,20 +842,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
       <span style="overflow:hidden; text-overflow:ellipsis;">高低差断面図</span><span id="elevGainDisplay" class="elev-gain-badge"></span>
     </div>
     <div class="panel-row">
-      <div id="elevationProfileContainer" style="flex:1;">
+      <div id="elevationProfileContainer">
         <div id="elevationProfilePlaceholder">ルートを選択してください</div>
         <svg id="elevationProfileSvg" viewBox="0 0 300 170" preserveAspectRatio="none" style="display:none;"></svg>
       </div>
       <div class="panel-column" id="elevationExtremeCol" style="flex:0 0 140px; max-width:140px; margin-left:10px; border-left:1px solid transparent; padding-left:10px;">
-        <div style="font-weight:bold; font-size:14px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
+        <div id="elevationExtremeHeading" style="font-weight:bold; font-size:14px; margin-bottom:4px; color:#dfe6f0;">経路上の高低差ポイント</div>
         <div id="elevationExtremeInfo" style="font-size:13px; line-height:1.5;">
-          <div style="margin-bottom:6px;">
-            <span style="color:#ff8a80; font-weight:bold;">▲ 最高地点</span><br>
-            <span id="highestPointAddr" style="color:#dfe6f0;">--</span>
+          <div class="extreme-point extreme-point-high">
+            <span class="extreme-point-label" style="color:#ff8a80; font-weight:bold;">▲ 最高地点</span>
+            <span id="highestPointAddr" class="extreme-point-value" style="color:#dfe6f0;">--</span>
           </div>
-          <div>
-            <span style="color:#82b1ff; font-weight:bold;">▼ 最低地点</span><br>
-            <span id="lowestPointAddr" style="color:#dfe6f0;">--</span>
+          <div class="extreme-point extreme-point-low">
+            <span class="extreme-point-label" style="color:#82b1ff; font-weight:bold;">▼ 最低地点</span>
+            <span id="lowestPointAddr" class="extreme-point-value" style="color:#dfe6f0;">--</span>
           </div>
         </div>
       </div>
@@ -2642,10 +2655,10 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
   // 中心からの相対位置(di,dj)を方位角(theta)で回転させてから画面座標へ投影する。
   const theta = (azimuthDeg || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
-  const planeStep = 11, tiltFactor = 0.7, heightScale = 160;
+  const planeStep = 13, tiltFactor = 0.5, heightScale = 90;
   const z = zoom || 1;
   const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
-  const viewCX = 170, viewCY = 200; // viewBox(340x400)の中心
+  const viewCX = 200, viewCY = 140; // viewBox(400x280、横長)の中心
 
   // 標高を含めない「素の」投影座標。選択地点自身の標高でズーム時にずれないよう、
   // 選択地点の素の投影座標を求めてから、それがちょうどviewBox中心に来るように
@@ -2739,7 +2752,7 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom){
       <circle cx="${tipX.toFixed(1)}" cy="${headCY.toFixed(1)}" r="4" fill="#ffffff" fill-opacity=".9"/>
     </g>`;
 
-  const svgMarkup = `<svg viewBox="0 0 340 400" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}</svg>`;
+  const svgMarkup = `<svg viewBox="0 0 400 280" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">${polys}${dropHtml}</svg>`;
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
 }
 
@@ -2754,6 +2767,26 @@ function updateTerrainMeshCompass(){
   const dx = -Math.sin(theta), dy = -Math.cos(theta) * tiltFactor;
   const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
   rotor.style.transform = `rotate(${angleDeg}deg)`;
+  updateTerrainMeshDirLabelPositions();
+}
+
+// 東西南北ラベルを、メッシュの回転(方位)に合わせて周囲を移動させる。
+// コンパスの矢印と同じ回転計算を使いつつ、ラベル自体（文字）は一切回転させない
+// ことで、位置だけが回転に連動し、文字が反転して読めなくなるのを防いでいる。
+function updateTerrainMeshDirLabelPositions(){
+  const theta = (terrainMeshAzimuth || 0) * Math.PI / 180;
+  const cosT = Math.cos(theta), sinT = Math.sin(theta);
+  const tiltFactor = 0.55;
+  const Rx = 38, Ry = 34; // 中心からの配置半径（コンテナに対する%）
+  const dirVectors = { N:[1, 0], E:[0, 1], S:[-1, 0], W:[0, -1] };
+  Object.entries(dirVectors).forEach(([dir, [di, dj]]) => {
+    const rotX = dj * cosT - di * sinT;
+    const rotY = dj * sinT + di * cosT;
+    const el = document.getElementById('dirLabel' + dir);
+    if (!el) return;
+    el.style.left = (50 + rotX * Rx) + '%';
+    el.style.top = (50 + rotY * Ry * tiltFactor) + '%';
+  });
 }
 
 function isTab4Active(){
@@ -2769,6 +2802,7 @@ function resetTerrainMeshDirLabels(){
       el.textContent = `${prefix} --`;
     }
   });
+  updateTerrainMeshDirLabelPositions();
 }
 
 const shortAreaCache = new Map();
