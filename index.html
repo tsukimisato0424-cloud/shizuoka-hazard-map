@@ -542,8 +542,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .mesh-zoom-pill{
   display:flex; align-items:center; gap:3px;
-  background:rgba(10,24,48,.55); padding:4px; border-radius:20px;
-  border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.12); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  padding:4px; border-radius:20px;
+  border:1px solid rgba(255,255,255,.35);
 }
 .mesh-zoom-btn{
   position:relative; overflow:hidden; width:29px; height:29px; border-radius:14px; padding:0; cursor:pointer;
@@ -551,24 +552,34 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   display:flex; align-items:center; justify-content:center;
 }
 .mesh-zoom-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
-.mesh-zoom-btn .material-icons-round{ font-size:16px; color:#3f83ab; }
+.mesh-zoom-btn .material-icons-round{ font-size:16px; color:#2c6690; }
 .mesh-dpad{
-  position:relative; width:94px; height:94px;
-  display:grid; grid-template-columns:31px 32px 31px; grid-template-rows:31px 32px 31px;
-  background:rgba(10,24,48,.55); border:1px solid rgba(255,255,255,.22);
-  border-radius:22px;
+  position:relative; width:96px; height:96px;
+  display:grid; grid-template-columns:31px 34px 31px; grid-template-rows:31px 34px 31px; gap:2px;
+  background:rgba(255,255,255,.10); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+  border-radius:26px; border:1px solid rgba(255,255,255,.32);
+  padding:1px;
 }
 .mesh-dpad-btn{
-  padding:0; cursor:pointer; border:none; background:transparent;
+  position:relative; overflow:hidden; padding:0; cursor:pointer; border:var(--bubble-border);
+  background:var(--bubble-bg); box-shadow:var(--bubble-shadow);
   display:flex; align-items:center; justify-content:center;
-  color:#eaf6ff; transition:background .15s ease;
+  transition:transform .12s ease, box-shadow .12s ease;
 }
-.mesh-dpad-btn .material-icons-round{ font-size:21px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
-.mesh-dpad-btn:active{ background:rgba(120,190,255,.28); }
-.dpad-up{ grid-column:2; grid-row:1; border-radius:18px 18px 0 0; }
-.dpad-left{ grid-column:1; grid-row:2; border-radius:18px 0 0 18px; }
-.dpad-right{ grid-column:3; grid-row:2; border-radius:0 18px 18px 0; }
-.dpad-down{ grid-column:2; grid-row:3; border-radius:0 0 18px 18px; }
+.mesh-dpad-btn::before{
+  content:""; position:absolute; top:2px; left:16%; width:42%; height:28%;
+  border-radius:50%; pointer-events:none; z-index:1;
+  background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
+}
+.mesh-dpad-btn .material-icons-round{
+  position:relative; z-index:2; font-size:20px; color:#2c6690;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.7));
+}
+.mesh-dpad-btn:active{ transform:translateY(1px); box-shadow:var(--bubble-shadow-active); }
+.dpad-up{ grid-column:2; grid-row:1; border-radius:18px 18px 6px 6px; }
+.dpad-left{ grid-column:1; grid-row:2; border-radius:18px 6px 6px 18px; }
+.dpad-right{ grid-column:3; grid-row:2; border-radius:6px 18px 18px 6px; }
+.dpad-down{ grid-column:2; grid-row:3; border-radius:6px 6px 18px 18px; }
 @keyframes currentLocationDropBounce{
   0%,100%{ transform:translateY(0); }
   50%{ transform:translateY(-9px); }
@@ -916,8 +927,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         </div>
         <div class="mesh-dpad">
           <button type="button" class="mesh-dpad-btn dpad-up" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">keyboard_arrow_up</span></button>
-          <button type="button" class="mesh-dpad-btn dpad-left" onclick="terrainMeshRotateBy(-15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
-          <button type="button" class="mesh-dpad-btn dpad-right" onclick="terrainMeshRotateBy(15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-left" onclick="terrainMeshRotateBy(15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
+          <button type="button" class="mesh-dpad-btn dpad-right" onclick="terrainMeshRotateBy(-15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
           <button type="button" class="mesh-dpad-btn dpad-down" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">keyboard_arrow_down</span></button>
         </div>
       </div>
