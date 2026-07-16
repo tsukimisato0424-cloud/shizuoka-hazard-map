@@ -400,11 +400,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #terrainMeshFullInfo{ display:none; }
 #statusPanel[data-size="maximized"] #terrainMeshFullInfo{ display:block; margin-top:6px; animation:legendFadeIn .35s ease; }
 .mesh-detail-compact{
-  display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px;
-  font-size:11.5px; color:#dfe6f0; text-align:left; line-height:1.4;
+  display:flex; flex-wrap:nowrap; align-items:center; gap:10px;
+  font-size:11px; color:#dfe6f0; text-align:left; line-height:1.3;
+  white-space:nowrap; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
 }
-.mesh-detail-compact span{ display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
-.mesh-detail-dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.mesh-detail-compact::-webkit-scrollbar{ display:none; }
+.mesh-detail-compact span{ display:inline-flex; align-items:center; gap:3px; white-space:nowrap; flex-shrink:0; }
+.mesh-detail-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .terrain-mesh-controls{ display:none !important; }
 #statusPanel[data-size="maximized"] .terrain-mesh-controls{ display:flex !important; animation:legendFadeIn .35s ease; }
 #toggleStatusBtn, #maximizeStatusBtn{
@@ -1580,11 +1582,69 @@ function togglePanelMaximize(){
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('maximizeIcon');
   const isMax = panel.getAttribute('data-size') === 'maximized';
-  panel.setAttribute('data-size', isMax ? 'normal' : 'maximized');
-  if (icon) icon.innerText = isMax ? 'open_in_full' : 'close_fullscreen';
+
+  const tab2El = document.getElementById('tab2');
+  const isTab2 = !!(tab2El && tab2El.classList.contains('active'));
+  const profileEl = document.getElementById('elevationProfileContainer');
+  const extremeEl = document.getElementById('elevationExtremeCol');
+  const flipEls = (isTab2 && profileEl && extremeEl) ? [profileEl, extremeEl] : [];
+
+  const applyStateChange = () => {
+    panel.setAttribute('data-size', isMax ? 'normal' : 'maximized');
+    if (icon) icon.innerText = isMax ? 'open_in_full' : 'close_fullscreen';
+    renderElevationProfile(lastElevationProfileData);
+  };
+
+  if (flipEls.length){
+    animateLayoutFlip(panel, flipEls, applyStateChange);
+  } else {
+    applyStateChange();
+  }
+
   updateMaximizeBtnPulse();
   refreshScrollHints();
-  renderElevationProfile(lastElevationProfileData);
+}
+
+/* =========================================================================
+   FLIPアニメーション：標準⇔最大化でレイアウト（flex-directionの切替など、
+   本来CSSトランジションが効かない変化）が起きても、動きが目に見えるように
+   見た目だけ「前の位置・サイズ」から「新しい位置・サイズ」へ滑らかに
+   補間して見せる。図面は広がるように、説明欄は右→下／下→右へ滑るように動く。
+   ========================================================================= */
+function animateLayoutFlip(panel, elements, applyChangeFn){
+  const prevPanelTransition = panel.style.transition;
+  panel.style.transition = 'none';
+  elements.forEach(el => { el.style.transition = 'none'; });
+
+  const first = elements.map(el => el.getBoundingClientRect());
+
+  applyChangeFn();
+
+  void panel.offsetHeight; // 強制リフローで新レイアウトを確定
+  const last = elements.map(el => el.getBoundingClientRect());
+
+  elements.forEach((el, i) => {
+    const f = first[i], l = last[i];
+    if (!l.width || !l.height) return;
+    const dx = f.left - l.left;
+    const dy = f.top - l.top;
+    const sx = f.width / l.width;
+    const sy = f.height / l.height;
+    el.style.transformOrigin = 'top left';
+    el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+  });
+  void elements[0].offsetWidth;
+
+  requestAnimationFrame(() => {
+    panel.style.transition = prevPanelTransition || '';
+    elements.forEach(el => {
+      el.style.transition = 'transform .5s cubic-bezier(.22,.85,.32,1.15)';
+      el.style.transform = '';
+    });
+    setTimeout(() => {
+      elements.forEach(el => { el.style.transition = ''; el.style.transformOrigin = ''; });
+    }, 560);
+  });
 }
 
 function updateMaximizeBtnPulse(){
@@ -2312,20 +2372,23 @@ function renderElevationProfile(data){
   const extrudePts = data.map(d => `${xAt(d).toFixed(1)},${(yAt(d.elevation) + extrude).toFixed(1)}`);
   const extrudePath = `M${xAt(data[0]).toFixed(1)},${(yAt(data[0].elevation) + extrude).toFixed(1)} `
     + `L${extrudePts.join(' ')} L${xAt(data[data.length - 1]).toFixed(1)},${baseY} L${padL},${baseY} Z`;
+  const extrudeEdgePath = `M${xAt(data[0]).toFixed(1)},${(yAt(data[0].elevation) + extrude).toFixed(1)} L${extrudePts.join(' ')}`;
 
   let segmentsHtml = '';
   let areaSegmentsHtml = '';
   for (let i = 1; i < data.length; i++){
     const p1 = data[i - 1], p2 = data[i];
     const hazardous = p1.hazard || p2.hazard;
-    const lineColor = hazardous ? '#ff5252' : '#1a73e8';
-    const fillColor = hazardous ? 'rgba(255,82,82,0.45)' : 'rgba(26,115,232,0.45)';
+    const lineStroke = hazardous ? 'url(#elevLineGradientHazard)' : 'url(#elevLineGradientSafe)';
+    const fillColor = hazardous ? 'url(#elevAreaGradientHazard)' : 'url(#elevAreaGradientSafe)';
 
     const x1 = xAt(p1).toFixed(1), y1 = yAt(p1.elevation).toFixed(1);
     const x2 = xAt(p2).toFixed(1), y2 = yAt(p2.elevation).toFixed(1);
 
     areaSegmentsHtml += `<polygon points="${x1},${y1} ${x2},${y2} ${x2},${baseY} ${x1},${baseY}" fill="${fillColor}" stroke="none"/>`;
-    segmentsHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${lineColor}" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" filter="url(#elevLineGlow)"/>`;
+    segmentsHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${lineStroke}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#elevLineGlow)"/>`;
+    // 稜線に細い光沢のハイライトを重ねて、立体的な帯（リボン）に見えるようにする
+    segmentsHtml += `<line x1="${x1}" y1="${(Number(y1) - 1.1).toFixed(1)}" x2="${x2}" y2="${(Number(y2) - 1.1).toFixed(1)}" stroke="rgba(255,255,255,.5)" stroke-width="1" stroke-linecap="round"/>`;
   }
 
   const gridDivisions = isDetailed ? 4 : 2;
@@ -2353,9 +2416,7 @@ function renderElevationProfile(data){
   const ex = xAt(end).toFixed(1), ey = yAt(end.elevation).toFixed(1);
 
   // 「経路上の高低差ポイント」の説明カードと色を揃えたマーカーをグラフ上にも描画し、
-  // 説明とグラフを視覚的にリンクさせる（最大化時はさらに数値も表示）。
-  // 数値ラベルはS/Gのマークと重なることがあるため、点のすぐ横ではなく
-  // 横軸ラベルの下の余白にまとめて表示する。
+  // 説明とグラフを視覚的にリンクさせる（最大化時はさらに数値ラベルと引き出し線も表示）。
   let highestPt = data[0], lowestPt = data[0];
   data.forEach(p => {
     if (p.elevation > highestPt.elevation) highestPt = p;
@@ -2367,17 +2428,56 @@ function renderElevationProfile(data){
     <circle cx="${hx}" cy="${hy}" r="5.5" fill="#ff8a80" stroke="#3a0a06" stroke-width="1.6"/>
     <circle cx="${lx}" cy="${ly}" r="5.5" fill="#82b1ff" stroke="#06183a" stroke-width="1.6"/>
   `;
-  const extremeCaptionHtml = isDetailed ? `
-    <text x="${((padL + (W - padR)) / 2).toFixed(1)}" y="${(Number(baseY) + 28).toFixed(1)}" font-size="11.5" font-weight="900" text-anchor="middle">
-      <tspan fill="#ff8a80">▲最高 ${Math.round(highestPt.elevation)}m</tspan><tspan fill="#8a99ad">　</tspan><tspan fill="#82b1ff">▼最低 ${Math.round(lowestPt.elevation)}m</tspan>
-    </text>
-  ` : '';
+
+  // ラベルは横軸の下にまとめて配置し、実際の丸印まで引き出し線でつなぐ。
+  // 2点のx座標が近いとラベル同士がぶつかるため、その場合は左右に振り分ける。
+  let extremeCaptionHtml = '';
+  if (isDetailed){
+    const capY = Number(baseY) + 30;
+    const anchorY = capY - 9;
+    const minSep = 58;
+    let hLabelX = Number(hx), lLabelX = Number(lx);
+    if (Math.abs(hLabelX - lLabelX) < minSep){
+      const mid = (hLabelX + lLabelX) / 2;
+      if (hLabelX <= lLabelX){ hLabelX = mid - minSep / 2; lLabelX = mid + minSep / 2; }
+      else { hLabelX = mid + minSep / 2; lLabelX = mid - minSep / 2; }
+    }
+    const chartLeft = padL + 26, chartRight = (W - padR) - 26;
+    hLabelX = Math.min(chartRight, Math.max(chartLeft, hLabelX));
+    lLabelX = Math.min(chartRight, Math.max(chartLeft, lLabelX));
+
+    extremeCaptionHtml = `
+      <line x1="${hx}" y1="${hy}" x2="${hLabelX.toFixed(1)}" y2="${anchorY.toFixed(1)}" stroke="#ff8a80" stroke-width="1.1" stroke-dasharray="2.2 2.2" opacity="0.8"/>
+      <line x1="${lx}" y1="${ly}" x2="${lLabelX.toFixed(1)}" y2="${anchorY.toFixed(1)}" stroke="#82b1ff" stroke-width="1.1" stroke-dasharray="2.2 2.2" opacity="0.8"/>
+      <text x="${hLabelX.toFixed(1)}" y="${capY.toFixed(1)}" font-size="11" font-weight="900" fill="#ff8a80" text-anchor="middle">▲${Math.round(highestPt.elevation)}m</text>
+      <text x="${lLabelX.toFixed(1)}" y="${capY.toFixed(1)}" font-size="11" font-weight="900" fill="#82b1ff" text-anchor="middle">▼${Math.round(lowestPt.elevation)}m</text>
+    `;
+  }
 
   svg.innerHTML = `
     <defs>
-      <linearGradient id="elevExtrudeGradient" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#123056" stop-opacity="0.95"/>
-        <stop offset="100%" stop-color="#0a1830" stop-opacity="0.75"/>
+      <linearGradient id="elevExtrudeGradient" x1="0" y1="${padT}" x2="0" y2="${baseY}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#1d4f8c" stop-opacity="0.95"/>
+        <stop offset="50%" stop-color="#10305c" stop-opacity="0.88"/>
+        <stop offset="100%" stop-color="#050e22" stop-opacity="0.72"/>
+      </linearGradient>
+      <linearGradient id="elevAreaGradientSafe" x1="0" y1="${padT}" x2="0" y2="${baseY}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#7ec4ff" stop-opacity="0.62"/>
+        <stop offset="45%" stop-color="#1a73e8" stop-opacity="0.42"/>
+        <stop offset="100%" stop-color="#0a2f66" stop-opacity="0.10"/>
+      </linearGradient>
+      <linearGradient id="elevAreaGradientHazard" x1="0" y1="${padT}" x2="0" y2="${baseY}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#ffab8f" stop-opacity="0.68"/>
+        <stop offset="45%" stop-color="#ff5252" stop-opacity="0.46"/>
+        <stop offset="100%" stop-color="#5c0a0a" stop-opacity="0.12"/>
+      </linearGradient>
+      <linearGradient id="elevLineGradientSafe" x1="0" y1="${padT}" x2="0" y2="${plotBottom}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#9fd4ff"/>
+        <stop offset="100%" stop-color="#1660c4"/>
+      </linearGradient>
+      <linearGradient id="elevLineGradientHazard" x1="0" y1="${padT}" x2="0" y2="${plotBottom}" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="#ffc3ae"/>
+        <stop offset="100%" stop-color="#e0301f"/>
       </linearGradient>
       <filter id="elevLineGlow" x="-60%" y="-60%" width="220%" height="220%">
         <feGaussianBlur stdDeviation="1.5" result="blur"/>
@@ -2389,6 +2489,7 @@ function renderElevationProfile(data){
     </defs>
     ${gridHtml}
     <path d="${extrudePath}" fill="url(#elevExtrudeGradient)" stroke="none"/>
+    <path d="${extrudeEdgePath}" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="1.1"/>
     ${areaSegmentsHtml}
     <line x1="${padL}" y1="${baseY}" x2="${(W - padR).toFixed(1)}" y2="${baseY}" stroke="rgba(255,255,255,.3)" stroke-width="1"/>
     ${segmentsHtml}
@@ -2956,13 +3057,13 @@ function renderTerrainMeshFromCache(){
   if (infoEl){
     const diffToMax = maxE - centerE;
     const diffToMin = centerE - minE;
-    // 図面の縦スペースを確保するため、下の説明は1〜2行に収まる簡潔な形にまとめる
+    // 図面の縦スペースを確保するため、下の説明は1行に収まる簡潔な形にまとめる
     infoEl.innerHTML = `
       <div class="mesh-detail-compact">
-        <span><span class="mesh-detail-dot" style="background:#ff8a80;"></span>周辺最高差 +${Math.round(diffToMax)}m</span>
-        <span><span class="mesh-detail-dot" style="background:#82b1ff;"></span>周辺最低差 -${Math.round(diffToMin)}m</span>
-        <span>選択地点 約${Math.round(centerE)}m（${heightLabel}）</span>
-        <span>周辺 約${Math.round(minE)}〜${Math.round(maxE)}m</span>
+        <span><span class="mesh-detail-dot" style="background:#ff8a80;"></span>周辺差+${Math.round(diffToMax)}m</span>
+        <span><span class="mesh-detail-dot" style="background:#82b1ff;"></span>周辺差-${Math.round(diffToMin)}m</span>
+        <span>地点約${Math.round(centerE)}m</span>
+        <span>周辺約${Math.round(minE)}〜${Math.round(maxE)}m</span>
       </div>
     `;
   }
