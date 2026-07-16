@@ -342,16 +342,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #tab4 .panel-heading-label{ flex-shrink:0; align-self:flex-start; }
 #tab2.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab2 .panel-heading-label{ flex-shrink:0; }
-/* 標準サイズ = サムネイル感覚（コンパクトな固定サイズ）／最大化 = 詳細表示、で
+/* 標準サイズ = サムネイル感覚／最大化 = 詳細表示、で
    タブ2・タブ4はサイズに応じてレイアウトと情報量を切り替える。
-   標準時はflex-growに頼らず高さを固定することで、パネルからのはみ出しを防ぐ。 */
+   標準時は固定px値に頼らず、tab2内の残り高さいっぱいに自動でフィットさせることで、
+   下に余白を残さずスクロールも発生させない。 */
 #tab2 .panel-row{
-  height:auto; flex:0 0 auto; min-height:0; margin-top:6px; flex-wrap:nowrap; align-content:flex-start;
-  transition:all .45s cubic-bezier(.4,0,.2,1);
+  height:auto; flex:1 1 auto; min-height:0; margin-top:6px; flex-wrap:nowrap; align-content:flex-start;
+  gap:10px; transition:all .45s cubic-bezier(.4,0,.2,1);
 }
 #elevationExtremeCol{
-  flex:1 1 auto; max-width:none; min-width:0; margin-left:10px; border-left:1px solid transparent; padding-left:10px;
-  overflow-y:auto; max-height:90px;
+  flex:1 1 0; max-width:none; min-width:0; margin-left:0; border-left:1px solid transparent; padding-left:10px;
+  overflow-y:auto;
   transition:flex-basis .45s cubic-bezier(.4,0,.2,1), max-width .45s, max-height .45s cubic-bezier(.4,0,.2,1),
              margin .45s, padding .45s, border-color .45s;
 }
@@ -363,7 +364,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #statusPanel[data-size="maximized"] #elevationExtremeCol{
   flex:0 0 auto; max-width:none; width:100%; max-height:none;
-  margin-left:0; margin-top:8px; padding-left:0; padding-top:8px;
+  margin-left:0; margin-top:0; padding-left:0; padding-top:8px;
   border-left:none; border-top:1px solid rgba(255,255,255,.16);
   overflow:visible;
 }
@@ -499,7 +500,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   text-shadow:0 1px 1px rgba(0,0,0,.55)!important;
 }
 #elevationProfileContainer{
-  width:auto; flex:1 1 50%; max-width:50%; height:90px; min-height:0; position:relative;
+  width:auto; flex:1 1 0; min-width:0; height:auto; min-height:0; position:relative;
   background:
     radial-gradient(circle at 20% 0%, rgba(120,180,255,.16), rgba(120,180,255,0) 60%),
     linear-gradient(180deg, rgba(255,255,255,.07) 0%, rgba(255,255,255,.02) 55%, rgba(0,0,0,.08) 100%);
