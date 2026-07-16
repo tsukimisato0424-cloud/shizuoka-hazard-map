@@ -542,6 +542,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:rgba(255,255,255,.10); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
   border-radius:24px; border:1px solid rgba(255,255,255,.32);
   padding:8px;
+  transition:left .28s cubic-bezier(.4,0,.2,1), top .28s cubic-bezier(.4,0,.2,1),
+             right .28s cubic-bezier(.4,0,.2,1), bottom .28s cubic-bezier(.4,0,.2,1),
+             box-shadow .2s ease, opacity .2s ease;
+}
+.terrain-mesh-controls.dragging{
+  transition:box-shadow .2s ease, opacity .2s ease;
+  opacity:.88; box-shadow:0 10px 24px rgba(0,0,0,.45);
+}
+.mesh-controls-handle{
+  width:100%; display:flex; justify-content:center; align-items:center;
+  padding:1px 0 7px; cursor:grab; touch-action:none;
+}
+.mesh-controls-handle:active{ cursor:grabbing; }
+.mesh-handle-bar{
+  width:26px; height:4px; border-radius:2px;
+  background:rgba(255,255,255,.55);
 }
 .mesh-zoom-pill{
   display:flex; align-items:center; gap:6px;
@@ -925,7 +941,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <span class="dir-label dir-s" id="dirLabelS">南 --</span>
         <span class="dir-label dir-w" id="dirLabelW">西 --</span>
       </div>
-      <div class="terrain-mesh-controls">
+      <div class="terrain-mesh-controls" id="terrainMeshControls">
+        <div class="mesh-controls-handle" id="terrainMeshControlsHandle" title="ドラッグして移動">
+          <span class="mesh-handle-bar"></span>
+        </div>
         <div class="mesh-zoom-pill">
           <button type="button" class="mesh-zoom-btn" onclick="terrainMeshZoomBy(1.2)" title="拡大"><span class="material-icons-round">add</span></button>
           <button type="button" class="mesh-zoom-btn" onclick="terrainMeshZoomBy(0.83)" title="縮小"><span class="material-icons-round">remove</span></button>
@@ -933,7 +952,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <div class="mesh-dpad">
           <button type="button" class="mesh-dpad-btn dpad-up" onclick="terrainMeshTiltBy(0.08)" title="視点を水平に近づける"><span class="material-icons-round">keyboard_arrow_up</span></button>
           <button type="button" class="mesh-dpad-btn dpad-left" onclick="terrainMeshRotateBy(15)" title="左回りに回転"><span class="material-icons-round">rotate_left</span></button>
-          <button type="button" class="mesh-dpad-btn dpad-center" onclick="terrainMeshResetView()" title="向き・角度・拡大を元に戻す">C</button>
+          <button type="button" class="mesh-dpad-btn dpad-center" onclick="terrainMeshResetView()" title="向き・角度・拡大・位置を元に戻す">C</button>
           <button type="button" class="mesh-dpad-btn dpad-right" onclick="terrainMeshRotateBy(-15)" title="右回りに回転"><span class="material-icons-round">rotate_right</span></button>
           <button type="button" class="mesh-dpad-btn dpad-down" onclick="terrainMeshTiltBy(-0.08)" title="視点を真上に近づける"><span class="material-icons-round">keyboard_arrow_down</span></button>
         </div>
@@ -3003,6 +3022,88 @@ function terrainMeshResetView(){
   terrainMeshZoom = 1.47;
   terrainMeshTilt = 0.5;
   renderTerrainMeshFromCache();
+  resetTerrainMeshPanelPosition();
+}
+
+/* =========================================================================
+   操作パネル（ズーム＋D-pad）のドラッグ移動。上部のつまみ（ハンドル）だけを
+   ドラッグ対象にすることで、ボタン操作と競合しないようにしている。
+   ドロップ時は指定グリッド単位にスナップし、コンテナ内に収まるよう制限する。
+   Cボタンでは表示状態だけでなく、パネルの位置も初期（右下）に戻す。
+   ========================================================================= */
+let terrainMeshPanelDragging = false;
+let terrainMeshPanelDragStart = null;
+const TERRAIN_MESH_PANEL_GRID = 20; // スナップ先のグリッド単位(px)
+
+function resetTerrainMeshPanelPosition(){
+  const panel = document.getElementById('terrainMeshControls');
+  if (!panel) return;
+  panel.style.left = '';
+  panel.style.top = '';
+  panel.style.right = '';
+  panel.style.bottom = '';
+}
+
+function initTerrainMeshPanelDrag(){
+  const handle = document.getElementById('terrainMeshControlsHandle');
+  const panel = document.getElementById('terrainMeshControls');
+  const container = document.getElementById('terrainMeshFullContainer');
+  if (!handle || !panel || !container || handle.dataset.dragInit) return;
+  handle.dataset.dragInit = '1';
+
+  function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
+
+  function onPointerDown(e){
+    const containerRect = container.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    terrainMeshPanelDragging = true;
+    terrainMeshPanelDragStart = {
+      pointerX: e.clientX, pointerY: e.clientY,
+      startLeft: panelRect.left - containerRect.left,
+      startTop: panelRect.top - containerRect.top
+    };
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.left = terrainMeshPanelDragStart.startLeft + 'px';
+    panel.style.top = terrainMeshPanelDragStart.startTop + 'px';
+    panel.classList.add('dragging');
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+    e.preventDefault();
+  }
+
+  function onPointerMove(e){
+    if (!terrainMeshPanelDragging || !terrainMeshPanelDragStart) return;
+    const containerRect = container.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const dx = e.clientX - terrainMeshPanelDragStart.pointerX;
+    const dy = e.clientY - terrainMeshPanelDragStart.pointerY;
+    const newLeft = clamp(terrainMeshPanelDragStart.startLeft + dx, 0, containerRect.width - panelRect.width);
+    const newTop = clamp(terrainMeshPanelDragStart.startTop + dy, 0, containerRect.height - panelRect.height);
+    panel.style.left = newLeft + 'px';
+    panel.style.top = newTop + 'px';
+  }
+
+  function onPointerUp(e){
+    if (!terrainMeshPanelDragging) return;
+    terrainMeshPanelDragging = false;
+    terrainMeshPanelDragStart = null;
+    panel.classList.remove('dragging');
+    const containerRect = container.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const g = TERRAIN_MESH_PANEL_GRID;
+    let left = Math.round((panelRect.left - containerRect.left) / g) * g;
+    let top = Math.round((panelRect.top - containerRect.top) / g) * g;
+    left = clamp(left, 0, containerRect.width - panelRect.width);
+    top = clamp(top, 0, containerRect.height - panelRect.height);
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    try { handle.releasePointerCapture(e.pointerId); } catch {}
+  }
+
+  handle.addEventListener('pointerdown', onPointerDown);
+  handle.addEventListener('pointermove', onPointerMove);
+  handle.addEventListener('pointerup', onPointerUp);
+  handle.addEventListener('pointercancel', onPointerUp);
 }
 
 function setTerrainMeshTarget(lat, lng){
@@ -3594,6 +3695,7 @@ initScrollHints();
 renderElevationProfile(null);
 updateTerrainMeshCompass();
 setupTerrainMeshLegendBar();
+initTerrainMeshPanelDrag();
 attachCompassListener();
 updateCurrentLocation(true);
 </script>
