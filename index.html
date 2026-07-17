@@ -88,24 +88,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #searchContainer{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
-  z-index:99999; touch-action:none; border-radius:18px; padding:7px 8px;
+  z-index:99999; touch-action:none; border-radius:18px; padding:8px;
 }
-.top-bar-row{ display:flex; align-items:center; gap:6px; }
+.top-bar-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
 .custom-search-bar-compact{
-  flex:1 1 auto; min-width:56px; display:flex; align-items:center;
+  flex:0 0 auto; width:148px; display:flex; align-items:center;
   background:rgba(255,255,255,.14); border-radius:12px; padding:1px 2px;
 }
 .custom-search-bar-compact input{
-  flex:1; min-width:0; border:none; outline:none; font-size:15px!important;
-  letter-spacing:.2px; padding:9px 4px 9px 10px; background:transparent; color:#fff;
+  flex:1; min-width:0; border:none; outline:none; font-size:14px!important;
+  letter-spacing:.2px; padding:9px 2px 9px 10px; background:transparent; color:#fff;
 }
 .custom-search-bar-compact input::placeholder{ color:rgba(255,255,255,.8); }
 .search-icon-btn-compact{
-  position:relative; overflow:hidden; flex-shrink:0; width:34px; height:34px; margin:2px;
+  position:relative; overflow:hidden; flex-shrink:0; width:32px; height:32px; margin:2px;
   border-radius:9px; background:none; border:none; color:#fff; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
 }
-.search-icon-btn-compact .material-icons-round{ font-size:20px; }
+.search-icon-btn-compact .material-icons-round{ font-size:19px; }
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
@@ -117,30 +117,31 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
 .suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
-.hazard-chip-row{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
-.hazard-btn.hazard-chip{
-  position:relative; z-index:1; overflow:hidden; width:34px; height:34px; border-radius:50%;
-  border:1.5px solid rgba(255,255,255,.55);
-  display:flex; flex-direction:row; justify-content:center; align-items:center;
-  padding:0; margin:0; font-size:0!important; flex-shrink:0;
-  box-shadow:0 3px 7px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.4) inset;
+.hazard-tile-row{ display:flex; align-items:stretch; gap:6px; }
+.hazard-btn.hazard-tile{
+  position:relative; z-index:1; overflow:hidden; flex:1 1 0; height:56px; min-width:0;
+  border:1px solid rgba(255,255,255,.65); border-radius:14px;
+  background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
+  backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  font-size:11.5px!important; font-weight:800; line-height:1.25; letter-spacing:.1px;
+  padding:4px 2px; color:#194a70;
+  box-shadow:0 6px 12px rgba(70,130,180,.35), 0 2px 3px rgba(70,130,180,.2),
+             0 1px 0 rgba(255,255,255,.9) inset, 0 -5px 8px rgba(140,190,225,.35) inset;
   transition:.2s;
 }
-.hazard-btn.hazard-chip::before{
-  content:""; position:absolute; top:3px; left:9px; width:40%; height:28%; border-radius:50%;
-  pointer-events:none; background:radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
+.hazard-btn.hazard-tile::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
 }
-.hazard-btn.hazard-chip .material-icons-round{
-  font-size:18px!important; margin:0!important; color:#fff; filter:none;
+.hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:22px; margin-bottom:2px; color:#3f83ab; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+.hazard-btn.hazard-tile span:not(.material-icons-round){ position:relative; z-index:1; }
+.hazard-btn.hazard-tile:active{
+  transform:translateY(2px);
+  box-shadow:0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 8px rgba(90,150,190,.35) inset;
+  border-color:#1a73e8;
 }
-.hazard-btn.hazard-chip[data-type="flood"]{ background:linear-gradient(160deg,#4fa3ec,#1a5fb4); }
-.hazard-btn.hazard-chip[data-type="landslide"]{ background:linear-gradient(160deg,#f2ab6d,#c96a1e); }
-.hazard-btn.hazard-chip[data-type="tsunami"]{ background:linear-gradient(160deg,#4fd0ec,#0089ad); }
-.hazard-btn.hazard-chip[data-type="shelter"]{ background:linear-gradient(160deg,#5ecb8a,#238a52); }
-.hazard-btn.hazard-chip:active{ transform:translateY(1px); }
-.hazard-btn.hazard-chip.active{ border-color:#fff!important; border-width:2px; transform:scale(1.08); }
-.emergency-round-btn-compact{ width:38px; height:38px; flex-shrink:0; }
-.emergency-round-btn-compact .emergency-kanji-mark{ font-size:15px; }
+.hazard-btn.hazard-tile.active{ border-color:#fff!important; border-width:2px; transform:translateY(-1px); }
 @keyframes hazardGlow{
   0%,100%{ box-shadow:0 0 16px 2px var(--glow-color), 0 0 32px 8px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
   50%{ box-shadow:0 0 34px 10px var(--glow-color), 0 0 60px 22px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
@@ -248,13 +249,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ box-shadow:0 0 0 0 rgba(39,174,96,0); }
 }
 #volcanoCoverageNotice{
-  position:absolute; top:calc(74px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(140px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1900; border-radius:14px; padding:10px 14px;
   align-items:center; font-size:14px!important; line-height:1.4!important;
 }
 #rightControlContainer{
-  position:absolute; top:calc(74px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(140px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -767,10 +768,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 @media (max-width: 380px){
   .round-btn, .emergency-round-btn{ width:50px; height:50px; }
   #locationBtn, #refreshBtn, #fullscreenBtn{ width:48px; height:48px; }
-  .hazard-btn.hazard-chip{ width:31px; height:31px; }
-  .hazard-btn.hazard-chip .material-icons-round{ font-size:16px!important; }
-  .custom-search-bar-compact input{ font-size:14px!important; padding:8px 2px 8px 8px; }
-  .hazard-chip-row{ gap:4px; }
+  .hazard-btn.hazard-tile{ height:50px; font-size:10.5px!important; }
+  .hazard-btn.hazard-tile .material-icons-round{ font-size:19px; }
+  .custom-search-bar-compact{ width:118px; }
+  .custom-search-bar-compact input{ font-size:13px!important; padding:8px 2px 8px 8px; }
+  .hazard-tile-row{ gap:4px; }
   .top-bar-row{ gap:4px; }
 }
 @media (max-height: 700px){
@@ -820,17 +822,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
         <span class="material-icons-round">search</span>
       </button>
     </div>
-    <div class="hazard-chip-row">
-      <button class="hazard-btn hazard-chip" data-type="flood" title="洪水想定"><span class="material-icons-round">water</span></button>
-      <button class="hazard-btn hazard-chip" data-type="landslide" title="土砂災害"><span class="material-icons-round">landscape</span></button>
-      <button class="hazard-btn hazard-chip" data-type="tsunami" title="津波浸水"><span class="material-icons-round">tsunami</span></button>
-      <button class="hazard-btn hazard-chip" data-type="shelter" title="避難所"><span class="material-icons-round">gite</span></button>
-    </div>
-    <button id="emergencyBtn" class="emergency-round-btn emergency-round-btn-compact" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
+    <button id="emergencyBtn" class="emergency-round-btn" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
       <span class="ripple-layer"></span>
       <span class="emergency-lamp-ring"></span>
       <span class="emergency-kanji-mark">危</span>
     </button>
+  </div>
+  <div class="hazard-tile-row">
+    <button class="hazard-btn hazard-tile" data-type="flood"><span class="material-icons-round">water</span>洪水想定</button>
+    <button class="hazard-btn hazard-tile" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
+    <button class="hazard-btn hazard-tile" data-type="tsunami"><span class="material-icons-round">tsunami</span>津波浸水</button>
+    <button class="hazard-btn hazard-tile" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
   </div>
   <div id="customSuggestions"></div>
 </div>
@@ -2341,13 +2343,54 @@ function computeRouteMidpoint(coords){
   return latlngs[Math.floor(latlngs.length / 2)];
 }
 
+// 中点付近の進行方向（隣接する2頂点）を、ラベルを線の外側に逃がすための
+// 垂直オフセット計算用にあわせて返す
+function computeRouteMidpointWithDir(coords){
+  const latlngs = coords.map(c => L.latLng(c[1], c[0]));
+  if (latlngs.length < 2) return { mid: latlngs[0], a: latlngs[0], b: latlngs[0] };
+  let total = 0;
+  const dists = [0];
+  for (let i = 1; i < latlngs.length; i++){
+    total += latlngs[i - 1].distanceTo(latlngs[i]);
+    dists.push(total);
+  }
+  const half = total / 2;
+  for (let i = 1; i < dists.length; i++){
+    if (dists[i] >= half){
+      const segStart = dists[i - 1], segEnd = dists[i];
+      const t = segEnd > segStart ? (half - segStart) / (segEnd - segStart) : 0;
+      const a = latlngs[i - 1], b = latlngs[i];
+      const mid = L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t);
+      return { mid, a, b };
+    }
+  }
+  const mid = latlngs[Math.floor(latlngs.length / 2)];
+  return { mid, a: mid, b: mid };
+}
+
+const ROUTE_LABEL_LINE_GAP = 24; // 経路線の外側に離す距離(px)
+
+// 線の進行方向に対して垂直な向き(外側)に、経路ラベルを一定距離離した位置を
+// 現在のズーム・回転状態で毎回計算する
+function computeLabelBaseOffset(marker){
+  if (!marker._segA || !marker._segB) return { x:0, y:0 };
+  const pa = map.latLngToContainerPoint(marker._segA);
+  const pb = map.latLngToContainerPoint(marker._segB);
+  const dx = pb.x - pa.x, dy = pb.y - pa.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 0.5) return { x:0, y:-ROUTE_LABEL_LINE_GAP };
+  // 進行方向を90度回転させて垂直方向(外側)にする
+  const nx = -dy / len, ny = dx / len;
+  return { x: nx * ROUTE_LABEL_LINE_GAP, y: ny * ROUTE_LABEL_LINE_GAP };
+}
+
 function applyRouteLabelOffset(marker, dx, dy){
   const el = marker.getElement();
   const badge = el && el.querySelector('.route-label-badge');
   if (!badge) return;
-  badge.style.transform = (dx || dy)
-    ? `translate(calc(-50% + ${dx.toFixed(1)}px), calc(-50% + ${dy.toFixed(1)}px))`
-    : 'translate(-50%,-50%)';
+  const base = computeLabelBaseOffset(marker);
+  const totalX = base.x + (dx || 0), totalY = base.y + (dy || 0);
+  badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
 }
 
 // ルートラベル同士が画面上で近接・重なっていたら、常に両方見えるように引き離す。
@@ -2382,7 +2425,7 @@ function separateRouteLabelPositions(){
 map.on('move zoomend', separateRouteLabelPositions);
 
 function addRouteLabel(idx, coords, route, styleClass, isActive){
-  const mid = computeRouteMidpoint(coords);
+  const { mid, a, b } = computeRouteMidpointWithDir(coords);
   const mins = Math.round(route.duration / 60);
   const km = (route.distance / 1000).toFixed(1);
   const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}">
@@ -2391,6 +2434,7 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
     </div>`;
   const icon = L.divIcon({ className:'route-label-icon-wrap', html, iconSize:[1,1], iconAnchor:[0,0] });
   const marker = L.marker(mid, { icon, interactive:true, zIndexOffset: 900, keyboard:false });
+  marker._segA = a; marker._segB = b;
   marker.on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
   marker.addTo(map);
   routeLabelMarkers.push(marker);
@@ -3958,6 +4002,23 @@ document.addEventListener('pointercancel', e => {
 
 document.addEventListener('touchstart', () => {}, true);
 
+/* =========================================================================
+   検索/ハザードバーの実際の高さを毎回測って、凡例などの右側フローティング群の
+   位置に反映する。固定pxの当て推量だと機種ごとのフォント表示差でズレて
+   重なってしまうことがあるため、実測値を使うことで確実にズレを防ぐ。
+   ========================================================================= */
+function syncHeaderOffsets(){
+  const bar = document.getElementById('searchContainer');
+  const volcano = document.getElementById('volcanoCoverageNotice');
+  const rightControls = document.getElementById('rightControlContainer');
+  if (!bar) return;
+  const offset = bar.offsetTop + bar.offsetHeight + 8;
+  if (volcano) volcano.style.top = offset + 'px';
+  if (rightControls) rightControls.style.top = offset + 'px';
+}
+window.addEventListener('resize', syncHeaderOffsets);
+window.addEventListener('orientationchange', () => setTimeout(syncHeaderOffsets, 200));
+
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 attachScrollHint(document.getElementById('landformLegendContent'));
 initScrollHints();
@@ -3967,6 +4028,8 @@ setupTerrainMeshLegendBar();
 initTerrainMeshPanelDrag();
 attachCompassListener();
 updateCurrentLocation(true);
+syncHeaderOffsets();
+setTimeout(syncHeaderOffsets, 300); // フォント読み込み等で高さが変わる場合の再計算
 </script>
 </body>
 </html>
