@@ -208,6 +208,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .emergency-route-line{ stroke-dasharray:16 12; animation:emergencyRouteFlow 0.9s linear infinite; }
 @keyframes emergencyRouteFlow{ to{ stroke-dashoffset:-28; } }
+.route-light-flow{
+  stroke-linecap:round; fill:none; pointer-events:none;
+  filter: drop-shadow(0 0 4px rgba(210,248,255,.95)) drop-shadow(0 0 10px rgba(120,210,255,.7));
+}
+@keyframes routeLightFlowMove{ to{ stroke-dashoffset:var(--flow-offset, -600px); } }
+.elev-light-dot{
+  filter: drop-shadow(0 0 4px rgba(210,248,255,.95)) drop-shadow(0 0 8px rgba(120,210,255,.75));
+}
 .emergency-target-pulse{ animation:emergencyTargetPulse 1.4s ease-out infinite; }
 @keyframes emergencyTargetPulse{
   0%{ box-shadow:0 0 0 0 rgba(39,174,96,.85); }
@@ -264,10 +272,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   animation:landformHighlightPulse 1.4s ease-in-out infinite;
 }
 @keyframes legendAttentionGlow{
-  0%,100%{ box-shadow:0 0 14px 3px rgba(255,193,7,.85), var(--bubble-shadow); border-color:#ffd54f; }
-  50%{ box-shadow:0 0 30px 11px rgba(255,193,7,.95), var(--bubble-shadow); border-color:#fff; }
+  0%, 100%{ transform:scale(1); box-shadow:var(--bubble-shadow); filter:brightness(1) saturate(1); border-color:rgba(255,255,255,.7); }
+  25%{ transform:scale(1.14); box-shadow:0 0 18px 6px rgba(255,193,7,.85), var(--bubble-shadow); filter:brightness(1.35) saturate(1.3); border-color:#ffd54f; }
+  40%{ transform:scale(1); box-shadow:var(--bubble-shadow); filter:brightness(1) saturate(1); border-color:rgba(255,255,255,.7); }
+  55%{ transform:scale(1.09); box-shadow:0 0 13px 5px rgba(255,193,7,.7), var(--bubble-shadow); filter:brightness(1.22) saturate(1.2); border-color:#ffd54f; }
+  70%{ transform:scale(1); box-shadow:var(--bubble-shadow); filter:brightness(1) saturate(1); border-color:rgba(255,255,255,.7); }
 }
-#legendAccordion.legend-attention{ animation:legendAttentionGlow 1s ease-in-out infinite; }
+#legendAccordion.legend-attention{ animation:legendAttentionGlow 1.8s ease-in-out infinite; }
 .maptype-content{ padding:8px 0; box-sizing:border-box; }
 .map-type-item{ position:relative; overflow:hidden; padding:14px 16px; font-size:17px; color:#3c4043; cursor:pointer; border-bottom:1px solid #f1f3f4; }
 .map-type-item:last-child{ border-bottom:none; }
@@ -1724,9 +1735,78 @@ let routeCandidates = [];
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
 
+/* =========================================================================
+   ルートの「光が流れる」演出。①検索→②色付きルート表示→③白〜水色の光が
+   スタートからゴールへ滑らかに流れる→④到着で消える/一定間隔で繰り返す。
+   Leafletのポリラインは内部的にSVGの<path>として描画されるため、
+   stroke-dasharray/stroke-dashoffsetで「動く光の帯（コメット）」を作る。
+   高低差断面図の山線アニメーションと同じ秒数(currentRouteFlowDuration)を
+   使うことで、地図上の光の位置と断面図上の光の位置が連動して見えるようにする。
+   ========================================================================= */
+let routeLightFlowLayer = null;
+let currentRouteFlowDuration = 4;
+
+function clearRouteLightFlow(){
+  if (routeLightFlowLayer){ map.removeLayer(routeLightFlowLayer); routeLightFlowLayer = null; }
+}
+
+function computeFlowDuration(distanceMeters){
+  // 経路が長いほどゆっくり流れるように、3〜7秒の範囲でループ秒数を決める
+  const d = typeof distanceMeters === 'number' && !isNaN(distanceMeters) ? distanceMeters : 500;
+  return Math.min(7, Math.max(3, d / 220));
+}
+
+function addRouteLightFlowLayer(latlngs, durationSec){
+  clearRouteLightFlow();
+  const layer = L.polyline(latlngs, {
+    color:'#eaffff', weight:3.4, opacity:0, interactive:false, className:'route-light-flow'
+  }).addTo(map);
+  routeLightFlowLayer = layer;
+
+  const apply = () => {
+    const el = layer.getElement();
+    if (!el || typeof el.getTotalLength !== 'function') return;
+    let len = 0;
+    try { len = el.getTotalLength(); } catch { len = 0; }
+    if (!len) return;
+    const dash = Math.max(26, len * 0.1);
+    const gap = Math.max(len - dash, dash);
+    el.style.strokeDasharray = `${dash} ${gap}`;
+    el.style.setProperty('--flow-offset', (-len) + 'px');
+    el.style.opacity = '0.95';
+  };
+  setTimeout(apply, 30);
+  layer._applyFlow = apply;
+  layer._flowDuration = durationSec;
+  return layer;
+}
+
+map.on('zoomend', () => { if (routeLightFlowLayer && routeLightFlowLayer._applyFlow) routeLightFlowLayer._applyFlow(); });
+
+// 地図の光と高低差断面図の光を、同じタイミングで同時にスタートさせて連動させる
+function startSyncedRouteLightFlow(){
+  if (routeLightFlowLayer){
+    const el = routeLightFlowLayer.getElement();
+    if (el){
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = `routeLightFlowMove ${currentRouteFlowDuration}s linear infinite`;
+    }
+  }
+  const motion = document.getElementById('elevLightMotion');
+  if (motion){
+    try { motion.beginElementAt(0); } catch { try { motion.beginElement(); } catch {} }
+  }
+}
+
+function clearRouteLightLayers(){
+  if (routeLightFlowLayer){ map.removeLayer(routeLightFlowLayer); routeLightFlowLayer = null; }
+}
+
 function clearRouteLayers(){
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
+  clearRouteLightLayers();
   clearRouteLabels();
   routeCandidates = []; activeRouteIdx = 0;
 }
@@ -2066,7 +2146,18 @@ async function checkPointHazard(lat, lon){
   return hits;
 }
 
-const FLOOD_LEGEND_PALETTE = ['#ff5c5c', '#ff9e9e', '#f3db52', '#56ccf2'];
+// 国交省「水害ハザードマップ作成の手引き」で定められた実際の浸水ランク色
+// （タイル画像のピクセル色）を、アプリの凡例スウォッチ色に対応づける。
+// 以前はここがアプリ独自の色（黄・水色など）になっており、実際のタイル色
+// （すべて赤紫〜ピンク系）とかけ離れていたため、常に同じ項目にしか
+// マッチしない不具合があった。
+const FLOOD_RANK_MAP = [
+  { rgb: [220, 122, 220], legend: '#ff5c5c' }, // 20m以上          → 「10.0m以上」扱い
+  { rgb: [242, 133, 201], legend: '#ff5c5c' }, // 10m〜20m         → 「10.0m以上」扱い
+  { rgb: [255, 145, 145], legend: '#ff9e9e' }, // 5m〜10m
+  { rgb: [255, 183, 183], legend: '#f3db52' }, // 3m〜5m
+  { rgb: [255, 216, 192], legend: '#56ccf2' }, // 0.5m〜3m
+];
 const LANDSLIDE_LEGEND_PALETTE = ['#ff3b30', '#ffcc00'];
 
 function hexToRgbArr(hex){
@@ -2074,11 +2165,14 @@ function hexToRgbArr(hex){
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function nearestLegendColor(r, g, b, palette){
+  // palette は土砂災害用の ['#hex', ...] 単純配列、または
+  // 洪水/津波用の [{rgb:[r,g,b], legend:'#hex'}, ...] のどちらにも対応する
   let best = null, bestDist = Infinity;
-  palette.forEach(hex => {
-    const [pr, pg, pb] = hexToRgbArr(hex);
+  palette.forEach(entry => {
+    const isRgbEntry = entry && typeof entry === 'object';
+    const [pr, pg, pb] = isRgbEntry ? entry.rgb : hexToRgbArr(entry);
     const d = (r - pr) ** 2 + (g - pg) ** 2 + (b - pb) ** 2;
-    if (d < bestDist){ bestDist = d; best = hex; }
+    if (d < bestDist){ bestDist = d; best = isRgbEntry ? entry.legend : entry; }
   });
   return best;
 }
@@ -2090,8 +2184,8 @@ async function getPointHazardLegendColor(lat, lon){
   const px = Math.floor((x - tx) * 256), py = Math.floor((y - ty) * 256);
 
   const sources = [
-    { url:`${DISAPORTAL}/01_flood_l2_shinsuishin_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_LEGEND_PALETTE },
-    { url:`${DISAPORTAL}/04_tsunami_newlegend_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_LEGEND_PALETTE },
+    { url:`${DISAPORTAL}/01_flood_l2_shinsuishin_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_RANK_MAP },
+    { url:`${DISAPORTAL}/04_tsunami_newlegend_data/${zoom}/${tx}/${ty}.png`, palette: FLOOD_RANK_MAP },
     { url:`${DISAPORTAL}/05_dosekiryukeikaikuiki/${zoom}/${tx}/${ty}.png`, palette: LANDSLIDE_LEGEND_PALETTE }
   ];
 
@@ -2502,6 +2596,12 @@ function renderElevationProfile(data){
     <circle cx="${ex}" cy="${ey}" r="6.5" fill="#e53935" stroke="#fff" stroke-width="1.8"/>
     <text x="${sx}" y="${Math.max(padT - 2, Number(sy) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#1a73e8" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">S</text>
     <text x="${ex}" y="${Math.max(padT - 2, Number(ey) - 15).toFixed(1)}" font-size="15" font-weight="900" fill="#e53935" text-anchor="middle" stroke="#0a1830" stroke-width="3" paint-order="stroke" stroke-linejoin="round">G</text>
+    <path id="elevMotionGuide" d="M${data.map(d => `${xAt(d).toFixed(1)},${yAt(d.elevation).toFixed(1)}`).join(' L')}" fill="none" stroke="none"/>
+    <circle r="4.6" class="elev-light-dot" fill="#eaffff" stroke="#0a1830" stroke-width="1.2">
+      <animateMotion id="elevLightMotion" dur="${currentRouteFlowDuration}s" repeatCount="indefinite" begin="indefinite" rotate="0">
+        <mpath href="#elevMotionGuide"/>
+      </animateMotion>
+    </circle>
   `;
 }
 
@@ -2521,13 +2621,16 @@ async function activateHazardRoute(idx){
   if (routeLayer) map.removeLayer(routeLayer);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
   routeLayer = L.layerGroup(segments.flatMap(seg => {
-    const hit = L.polyline(seg.points, { color:'#000000', weight:26, opacity:0.01 })
+    const hit = L.polyline(seg.points, { color:'#000000', weight:28, opacity:0.01 })
       .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-    const visible = L.polyline(seg.points, { color: seg.color, weight:6, opacity:0.85 })
+    const visible = L.polyline(seg.points, { color: seg.color, weight:9, opacity:0.9 })
       .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
     return [hit, visible];
   })).addTo(map);
   bringHazardRouteToFront();
+
+  currentRouteFlowDuration = computeFlowDuration(route.distance);
+  addRouteLightFlowLayer(latlngs, currentRouteFlowDuration);
 
   updateRouteHazardAlert(foundTypes);
   document.getElementById('routeHazardStatus').innerHTML = foundTypes.size > 0
@@ -2539,6 +2642,7 @@ async function activateHazardRoute(idx){
   buildElevationProfileData(coords, pointFlags).then(data => {
     renderElevationProfile(data);
     updateElevationExtremes(data);
+    startSyncedRouteLightFlow();
   });
 }
 
@@ -2551,11 +2655,14 @@ function drawGreenRoute(idx){
   if (!cand) return;
   const latlngs = cand.coords.map(c => [c[1], c[0]]);
   if (greenRouteLayer) map.removeLayer(greenRouteLayer);
-  const hit = L.polyline(latlngs, { color:'#000000', weight:26, opacity:0.01 })
+  const hit = L.polyline(latlngs, { color:'#000000', weight:28, opacity:0.01 })
     .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-  const visible = L.polyline(latlngs, { color:'#27ae60', weight:6, opacity:0.85 })
+  // 輪郭は今までの緑、内側はより薄く透明感のある緑にして二層で描画する
+  const outline = L.polyline(latlngs, { color:'#27ae60', weight:9, opacity:0.85 })
     .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-  greenRouteLayer = L.layerGroup([hit, visible]).addTo(map);
+  const inner = L.polyline(latlngs, { color:'#a9ecc4', weight:4.5, opacity:0.8 })
+    .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
+  greenRouteLayer = L.layerGroup([hit, outline, inner]).addTo(map);
 
   addRouteLabel(idx, cand.coords, cand.route, 'route-label-green', false);
 
@@ -3493,6 +3600,7 @@ function createEmergencyTargetIcon(){
 function clearEmergencyLayers(){
   if (emergencyRouteLayer){ map.removeLayer(emergencyRouteLayer); emergencyRouteLayer = null; }
   if (emergencyTargetMarker){ map.removeLayer(emergencyTargetMarker); emergencyTargetMarker = null; }
+  clearRouteLightLayers();
 }
 
 function deactivateEmergencyMode(silent){
@@ -3560,8 +3668,11 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   const latlngs = coords.map(c => [c[1], c[0]]);
   const segments = buildColoredRouteSegments(latlngs, pointFlags);
   emergencyRouteLayer = L.layerGroup(segments.map(seg =>
-    L.polyline(seg.points, { color: seg.color, weight:6, opacity:0.95, className:'emergency-route-line' })
+    L.polyline(seg.points, { color: seg.color, weight:9, opacity:0.95, className:'emergency-route-line' })
   )).addTo(map);
+
+  currentRouteFlowDuration = computeFlowDuration(route.distance);
+  addRouteLightFlowLayer(latlngs, currentRouteFlowDuration);
 
   updateRouteHazardAlert(foundTypes);
 
@@ -3587,6 +3698,7 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   buildElevationProfileData(coords, pointFlags).then(data => {
     renderElevationProfile(data);
     updateElevationExtremes(data);
+    startSyncedRouteLightFlow();
   });
 
   map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), { padding:[80, 160] });
