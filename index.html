@@ -88,18 +88,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #searchContainer{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
-  padding:0; z-index:99999; touch-action:none;
+  z-index:99999; touch-action:none; border-radius:18px; padding:7px 8px;
 }
-.search-row{ display:flex; align-items:center; gap:10px; }
-.custom-search-bar{ flex:1; min-width:0; border-radius:14px; display:flex; align-items:center; padding:2px 4px; }
-.custom-search-bar input, .search-icon-btn{ position:relative; z-index:1; }
-.custom-search-bar input{
-  flex:1; min-width:0; border:none; outline:none; font-size:19px!important;
-  letter-spacing:.3px; padding:15px 12px; background:transparent; color:#fff;
+.top-bar-row{ display:flex; align-items:center; gap:6px; }
+.custom-search-bar-compact{
+  flex:1 1 auto; min-width:56px; display:flex; align-items:center;
+  background:rgba(255,255,255,.14); border-radius:12px; padding:1px 2px;
 }
-.custom-search-bar input::placeholder{ color:rgba(255,255,255,.85); }
-.search-icon-btn{ position:relative; overflow:hidden; border-radius:10px; background:none; border:none; color:#fff; cursor:pointer; padding:8px; display:flex; align-items:center; flex-shrink:0; }
-.search-icon-btn .material-icons-round{ font-size:26px; }
+.custom-search-bar-compact input{
+  flex:1; min-width:0; border:none; outline:none; font-size:15px!important;
+  letter-spacing:.2px; padding:9px 4px 9px 10px; background:transparent; color:#fff;
+}
+.custom-search-bar-compact input::placeholder{ color:rgba(255,255,255,.8); }
+.search-icon-btn-compact{
+  position:relative; overflow:hidden; flex-shrink:0; width:34px; height:34px; margin:2px;
+  border-radius:9px; background:none; border:none; color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.search-icon-btn-compact .material-icons-round{ font-size:20px; }
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
@@ -111,36 +117,30 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
 .suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
-#hazardMenuCard{
-  position:absolute; top:calc(78px + env(safe-area-inset-top,0px));
-  left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
-  z-index:2000; border-radius:18px; padding:10px;
-  display:grid; grid-template-columns:repeat(4,1fr); gap:6px; touch-action:none;
-}
-#hazardMenuCard::before{ background-position:12% 6%; }
-.hazard-btn{
-  position:relative; z-index:1; overflow:hidden; width:100%; height:70px; border:1px solid rgba(255,255,255,.65); border-radius:16px;
-  background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
-  backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
-  display:flex; flex-direction:column; justify-content:center; align-items:center;
-  font-size:16px!important; font-weight:800; line-height:1.3; letter-spacing:.3px;
-  padding:6px 3px; color:#194a70;
-  box-shadow:0 8px 16px rgba(70,130,180,.35), 0 2px 3px rgba(70,130,180,.2),
-             0 1px 0 rgba(255,255,255,.9) inset, 0 -6px 10px rgba(140,190,225,.35) inset;
+.hazard-chip-row{ display:flex; align-items:center; gap:5px; flex-shrink:0; }
+.hazard-btn.hazard-chip{
+  position:relative; z-index:1; overflow:hidden; width:34px; height:34px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.55);
+  display:flex; flex-direction:row; justify-content:center; align-items:center;
+  padding:0; margin:0; font-size:0!important; flex-shrink:0;
+  box-shadow:0 3px 7px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.4) inset;
   transition:.2s;
 }
-.hazard-btn::before{
-  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
+.hazard-btn.hazard-chip::before{
+  content:""; position:absolute; top:3px; left:9px; width:40%; height:28%; border-radius:50%;
+  pointer-events:none; background:radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 70%);
 }
-.hazard-btn .material-icons-round{ position:relative; z-index:1; font-size:32px; margin-bottom:4px; color:#3f83ab; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-.hazard-btn span:not(.material-icons-round){ position:relative; z-index:1; }
-.hazard-btn:active{
-  transform:translateY(2px);
-  box-shadow:0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 8px rgba(90,150,190,.35) inset;
-  border-color:#1a73e8;
+.hazard-btn.hazard-chip .material-icons-round{
+  font-size:18px!important; margin:0!important; color:#fff; filter:none;
 }
-.hazard-btn.active{ border-color:#fff!important; border-width:2px; transform:translateY(-1px); }
+.hazard-btn.hazard-chip[data-type="flood"]{ background:linear-gradient(160deg,#4fa3ec,#1a5fb4); }
+.hazard-btn.hazard-chip[data-type="landslide"]{ background:linear-gradient(160deg,#f2ab6d,#c96a1e); }
+.hazard-btn.hazard-chip[data-type="tsunami"]{ background:linear-gradient(160deg,#4fd0ec,#0089ad); }
+.hazard-btn.hazard-chip[data-type="shelter"]{ background:linear-gradient(160deg,#5ecb8a,#238a52); }
+.hazard-btn.hazard-chip:active{ transform:translateY(1px); }
+.hazard-btn.hazard-chip.active{ border-color:#fff!important; border-width:2px; transform:scale(1.08); }
+.emergency-round-btn-compact{ width:38px; height:38px; flex-shrink:0; }
+.emergency-round-btn-compact .emergency-kanji-mark{ font-size:15px; }
 @keyframes hazardGlow{
   0%,100%{ box-shadow:0 0 16px 2px var(--glow-color), 0 0 32px 8px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
   50%{ box-shadow:0 0 34px 10px var(--glow-color), 0 0 60px 22px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
@@ -248,13 +248,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ box-shadow:0 0 0 0 rgba(39,174,96,0); }
 }
 #volcanoCoverageNotice{
-  position:absolute; top:calc(158px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(74px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1900; border-radius:14px; padding:10px 14px;
   align-items:center; font-size:14px!important; line-height:1.4!important;
 }
 #rightControlContainer{
-  position:absolute; top:calc(176px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(74px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -707,11 +707,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .leaflet-popup, .leaflet-popup-content-wrapper, .leaflet-popup-tip, .leaflet-popup-close-button{ pointer-events:auto; }
 .leaflet-popup-content{ font-size:18px!important; line-height:1.6!important; color:#3c4043; }
 .leaflet-popup-content-wrapper{ background:rgba(255,255,255,.98)!important; border-radius:16px!important; box-shadow:0 10px 20px rgba(0,0,0,.2)!important; }
-#searchContainer, #hazardMenuCard, #statusPanel{
+#searchContainer, #statusPanel{
   transition:transform .4s cubic-bezier(.4,0,.2,1), opacity .4s; opacity:1; transform:translateY(0);
 }
 #searchContainer.hidden{ transform:translateY(-100px); opacity:0; }
-#hazardMenuCard.hidden{ transform:translateX(-100%); opacity:0; }
 #statusPanel.hidden{ transform:translateY(150px); opacity:0; }
 #authOverlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -766,13 +765,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .tap-highlight{ filter:brightness(1.15); }
 #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn{ position:relative; overflow:hidden; }
 @media (max-width: 380px){
-  .hazard-btn{ font-size:13.5px!important; padding:6px 2px; }
-  .hazard-btn .material-icons-round{ font-size:28px; }
-  #hazardMenuCard{ gap:4px; padding:8px; }
   .round-btn, .emergency-round-btn{ width:50px; height:50px; }
   #locationBtn, #refreshBtn, #fullscreenBtn{ width:48px; height:48px; }
-  .search-icon-btn .material-icons-round{ font-size:24px; }
-  .custom-search-bar input{ font-size:17px!important; padding:13px 10px; }
+  .hazard-btn.hazard-chip{ width:31px; height:31px; }
+  .hazard-btn.hazard-chip .material-icons-round{ font-size:16px!important; }
+  .custom-search-bar-compact input{ font-size:14px!important; padding:8px 2px 8px 8px; }
+  .hazard-chip-row{ gap:4px; }
+  .top-bar-row{ gap:4px; }
 }
 @media (max-height: 700px){
   #rightControlContainer{ gap:7px; }
@@ -813,28 +812,27 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <div id="map"></div>
 
-<div id="searchContainer">
-  <div class="search-row">
-    <div class="custom-search-bar glass-panel">
-      <input type="text" id="customSearchInput" placeholder="施設名、または住所・地番を入力...">
-      <button class="search-icon-btn" id="customSearchBtn">
+<div id="searchContainer" class="glass-panel top-bar">
+  <div class="top-bar-row">
+    <div class="custom-search-bar-compact">
+      <input type="text" id="customSearchInput" placeholder="施設名・住所">
+      <button class="search-icon-btn-compact" id="customSearchBtn">
         <span class="material-icons-round">search</span>
       </button>
     </div>
-    <button id="emergencyBtn" class="emergency-round-btn" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
+    <div class="hazard-chip-row">
+      <button class="hazard-btn hazard-chip" data-type="flood" title="洪水想定"><span class="material-icons-round">water</span></button>
+      <button class="hazard-btn hazard-chip" data-type="landslide" title="土砂災害"><span class="material-icons-round">landscape</span></button>
+      <button class="hazard-btn hazard-chip" data-type="tsunami" title="津波浸水"><span class="material-icons-round">tsunami</span></button>
+      <button class="hazard-btn hazard-chip" data-type="shelter" title="避難所"><span class="material-icons-round">gite</span></button>
+    </div>
+    <button id="emergencyBtn" class="emergency-round-btn emergency-round-btn-compact" type="button" aria-label="緊急避難ルート案内" title="緊急避難ルート案内">
       <span class="ripple-layer"></span>
       <span class="emergency-lamp-ring"></span>
       <span class="emergency-kanji-mark">危</span>
     </button>
   </div>
   <div id="customSuggestions"></div>
-</div>
-
-<div id="hazardMenuCard" class="glass-panel">
-  <button class="hazard-btn" data-type="flood"><span class="material-icons-round">water</span>洪水想定</button>
-  <button class="hazard-btn" data-type="landslide"><span class="material-icons-round">landscape</span>土砂災害</button>
-  <button class="hazard-btn" data-type="tsunami"><span class="material-icons-round">tsunami</span>津波浸水</button>
-  <button class="hazard-btn" data-type="shelter"><span class="material-icons-round">gite</span>避難所</button>
 </div>
 
 <div id="volcanoCoverageNotice" class="glass-panel" style="display:none;">
@@ -3613,7 +3611,7 @@ document.getElementById('customSearchBtn').addEventListener('click', () => execu
 
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
-const uiElements = ['searchContainer', 'hazardMenuCard', 'statusPanel'].map(id => document.getElementById(id));
+const uiElements = ['searchContainer', 'statusPanel'].map(id => document.getElementById(id));
 const floatingSubElements = [legendCard, mapTypeCard];
 let isUIVisible = true;
 
