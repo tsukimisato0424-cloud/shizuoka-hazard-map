@@ -90,22 +90,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:99999; touch-action:none; border-radius:16px; padding:6px 7px;
 }
-.top-bar-row{ display:flex; align-items:center; gap:5px; }
+.top-bar-row{ display:flex; align-items:center; gap:4px; }
 .custom-search-bar-compact{
-  flex:0 0 88px; width:88px; display:flex; align-items:center;
-  background:rgba(255,255,255,.14); border-radius:11px; padding:1px;
+  flex:0 0 58px; width:58px; display:flex; align-items:center;
+  background:rgba(255,255,255,.14); border-radius:10px; padding:1px;
 }
 .custom-search-bar-compact input{
-  flex:1; min-width:0; border:none; outline:none; font-size:12px!important;
-  letter-spacing:0; padding:8px 1px 8px 8px; background:transparent; color:#fff;
+  flex:1; min-width:0; border:none; outline:none; font-size:11px!important;
+  letter-spacing:0; padding:8px 0 8px 6px; background:transparent; color:#fff;
 }
 .custom-search-bar-compact input::placeholder{ color:rgba(255,255,255,.8); }
 .search-icon-btn-compact{
-  position:relative; overflow:hidden; flex-shrink:0; width:26px; height:26px; margin:2px;
-  border-radius:8px; background:none; border:none; color:#fff; cursor:pointer;
+  position:relative; overflow:hidden; flex-shrink:0; width:22px; height:22px; margin:2px;
+  border-radius:7px; background:none; border:none; color:#fff; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
 }
-.search-icon-btn-compact .material-icons-round{ font-size:16px; }
+.search-icon-btn-compact .material-icons-round{ font-size:15px; }
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
@@ -117,29 +117,31 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .suggestion-item:last-child{ border-bottom:none; }
 .suggestion-item:hover{ background-color:#f8f9fa; }
 .suggestion-item .material-icons-round{ color:#70757a; font-size:22px; margin-right:10px; }
-.hazard-tile-row{ display:flex; align-items:stretch; gap:4px; flex:1 1 auto; min-width:0; }
+.hazard-tile-row{ display:flex; align-items:stretch; gap:5px; flex:1 1 auto; min-width:0; }
 .hazard-btn.hazard-tile{
-  position:relative; z-index:1; overflow:hidden; flex:1 1 0; height:46px; min-width:0;
-  border:1px solid rgba(255,255,255,.65); border-radius:11px;
-  background:linear-gradient(160deg,#eef8ff 0%,#d3ecfb 45%,#b9dff5 100%);
-  backdrop-filter:blur(6px) saturate(160%); -webkit-backdrop-filter:blur(6px) saturate(160%);
+  position:relative; z-index:1; overflow:hidden; flex:1 1 0; height:56px; min-width:0;
+  border:1px solid rgba(255,255,255,.5); border-radius:13px;
+  backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
-  font-size:8.5px!important; font-weight:800; line-height:1.15; letter-spacing:0;
-  padding:2px 1px; color:#194a70;
-  box-shadow:0 5px 10px rgba(70,130,180,.35), 0 2px 3px rgba(70,130,180,.2),
-             0 1px 0 rgba(255,255,255,.9) inset, 0 -4px 7px rgba(140,190,225,.35) inset;
+  font-size:10.5px!important; font-weight:800; line-height:1.15; letter-spacing:0;
+  padding:3px 1px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
+  box-shadow:0 5px 10px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.35) inset,
+             0 -4px 8px rgba(255,255,255,.12) inset;
   transition:.2s;
 }
+.hazard-btn.hazard-tile[data-type="flood"]{ background:linear-gradient(160deg, rgba(120,180,245,.42) 0%, rgba(40,95,180,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="landslide"]{ background:linear-gradient(160deg, rgba(245,180,120,.42) 0%, rgba(190,105,30,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="tsunami"]{ background:linear-gradient(160deg, rgba(110,215,240,.42) 0%, rgba(0,120,150,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="shelter"]{ background:linear-gradient(160deg, rgba(120,220,165,.42) 0%, rgba(30,130,75,.30) 100%); }
 .hazard-btn.hazard-tile::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.95), rgba(255,255,255,0) 55%);
+  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.55), rgba(255,255,255,0) 55%);
 }
-.hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:17px; margin-bottom:1px; color:#3f83ab; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+.hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:22px; margin-bottom:2px; color:#fff; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
 .hazard-btn.hazard-tile span:not(.material-icons-round){ position:relative; z-index:1; }
 .hazard-btn.hazard-tile:active{
   transform:translateY(2px);
-  box-shadow:0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset, 0 4px 8px rgba(90,150,190,.35) inset;
-  border-color:#1a73e8;
+  box-shadow:0 2px 4px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.25) inset;
 }
 .hazard-btn.hazard-tile.active{ border-color:#fff!important; border-width:2px; transform:translateY(-1px); }
 .emergency-round-btn-compact{ width:46px; height:46px; flex-shrink:0; }
@@ -251,13 +253,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ box-shadow:0 0 0 0 rgba(39,174,96,0); }
 }
 #volcanoCoverageNotice{
-  position:absolute; top:calc(66px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(70px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1900; border-radius:14px; padding:10px 14px;
   align-items:center; font-size:14px!important; line-height:1.4!important;
 }
 #rightControlContainer{
-  position:absolute; top:calc(66px + env(safe-area-inset-top,0px));
+  position:absolute; top:calc(70px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
   display:flex; flex-direction:column; gap:10px;
 }
@@ -753,6 +755,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .route-label-badge.route-label-green{ border-color:#27ae60; color:#1e6b3c; }
 .route-label-badge.is-active{ box-shadow:0 0 0 3px rgba(26,115,232,.35), 0 4px 14px rgba(0,20,50,.45); }
 .route-label-badge.route-label-green.is-active{ box-shadow:0 0 0 3px rgba(39,174,96,.35), 0 4px 14px rgba(0,20,50,.45); }
+.route-label-tail{
+  position:absolute; left:50%; top:50%; width:12px; height:0;
+  transform-origin:50% 0%; pointer-events:none; z-index:-1;
+  clip-path: polygon(20% 0%, 80% 0%, 50% 100%);
+  background:#1a73e8;
+}
+.route-label-badge.route-label-green .route-label-tail{ background:#27ae60; }
 .elev-gain-badge{
   display:inline-block; font-size:12px!important; font-weight:800!important;
   color:#3a2a06!important; background:rgba(255,213,79,.85);
@@ -773,7 +782,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   .hazard-btn.hazard-tile{ height:42px; font-size:0!important; border-radius:9px; }
   .hazard-btn.hazard-tile span:not(.material-icons-round){ display:none; }
   .hazard-btn.hazard-tile .material-icons-round{ font-size:18px; margin-bottom:0; }
-  .custom-search-bar-compact{ flex-basis:64px; width:64px; }
+  .custom-search-bar-compact{ flex-basis:46px; width:46px; }
   .custom-search-bar-compact input{ font-size:0!important; padding:8px 0 8px 6px; }
   .search-icon-btn-compact{ width:24px; height:24px; }
   .hazard-tile-row{ gap:3px; }
@@ -2396,6 +2405,22 @@ function applyRouteLabelOffset(marker, dx, dy){
   const base = computeLabelBaseOffset(marker);
   const totalX = base.x + (dx || 0), totalY = base.y + (dy || 0);
   badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
+
+  // 吹き出しのしっぽ：バッジ中心を起点に、アンカー（経路線上の点）へ向かう
+  // 方向・距離ぴったりに伸ばして回転させる。バッジ自身の不透明な背景が
+  // 内側部分を自然に隠すので、先端だけが経路線に触れる吹き出しに見える。
+  const tail = badge.querySelector('.route-label-tail');
+  if (tail){
+    const dist = Math.hypot(totalX, totalY);
+    if (dist < 2){
+      tail.style.height = '0px';
+    } else {
+      const dirX = -totalX / dist, dirY = -totalY / dist;
+      const angleDeg = Math.atan2(-dirX, dirY) * 180 / Math.PI;
+      tail.style.height = dist.toFixed(1) + 'px';
+      tail.style.transform = `translateX(-50%) rotate(${angleDeg.toFixed(1)}deg)`;
+    }
+  }
 }
 
 // ルートラベル同士が画面上で近接・重なっていたら、常に両方見えるように引き離す。
@@ -2434,6 +2459,7 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
   const mins = Math.round(route.duration / 60);
   const km = (route.distance / 1000).toFixed(1);
   const html = `<div class="route-label-badge ${styleClass}${isActive ? ' is-active' : ''}">
+      <span class="route-label-tail"></span>
       <span class="route-label-title">ルート${idx + 1}${isActive ? '（選択中）' : ''}</span>
       <span class="route-label-meta">${mins}分・${km}km</span>
     </div>`;
