@@ -92,6 +92,21 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .top-bar-row{ display:flex; align-items:center; gap:4px; }
 .custom-search-bar-compact{
+  transition:flex-basis .35s cubic-bezier(.4,0,.2,1), width .35s cubic-bezier(.4,0,.2,1);
+}
+#searchContainer.search-expanded .custom-search-bar-compact{ flex:1 1 100%!important; width:100%!important; }
+.hazard-tile-row, .emergency-round-btn-compact{
+  transition:flex-basis .35s cubic-bezier(.4,0,.2,1), width .35s cubic-bezier(.4,0,.2,1),
+             opacity .25s ease, margin .35s ease;
+}
+#searchContainer.search-expanded .hazard-tile-row{
+  flex:0 0 0!important; width:0!important; min-width:0!important; opacity:0; overflow:hidden; pointer-events:none;
+}
+#searchContainer.search-expanded .emergency-round-btn-compact{
+  flex:0 0 0!important; width:0!important; min-width:0!important; opacity:0; overflow:hidden;
+  margin:0!important; pointer-events:none;
+}
+.custom-search-bar-compact{
   flex:0 0 58px; width:58px; display:flex; align-items:center;
   background:rgba(255,255,255,.14); border-radius:10px; padding:1px;
 }
@@ -261,8 +276,39 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #rightControlContainer{
   position:absolute; top:calc(70px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px)); z-index:1000;
-  display:flex; flex-direction:column; gap:10px;
+  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
 }
+.control-toggle-btn{
+  background:linear-gradient(160deg,#f5f5f5 0%,#dcdcdc 45%,#c2c2c2 100%);
+}
+.control-toggle-btn .material-icons-round{ color:#5a5a5a; font-size:23px; filter:none; }
+.control-toggle-btn.active{
+  background:linear-gradient(160deg,#4a4a4a 0%,#2c2c2c 100%);
+}
+.control-toggle-btn.active .material-icons-round{ color:#fff; }
+.right-control-items{
+  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+  max-height:0; max-width:56px; overflow:hidden; opacity:0; pointer-events:none;
+  transition:max-height .35s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+}
+.right-control-items.expanded{ max-height:600px; max-width:none; opacity:1; overflow:visible; pointer-events:auto; }
+.right-control-items.expand-left{
+  flex-direction:row-reverse; max-height:56px; max-width:0;
+  transition:max-width .35s cubic-bezier(.4,0,.2,1), opacity .2s ease;
+}
+.right-control-items.expand-left.expanded{ max-width:600px; }
+.right-control-items > *{
+  opacity:0; transform:translateY(-10px); flex-shrink:0;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.right-control-items.expand-left > *{ transform:translateX(10px); }
+.right-control-items.expanded > *{ opacity:1; transform:translate(0,0); }
+.right-control-items.expanded > *:nth-child(1){ transition-delay:.03s; }
+.right-control-items.expanded > *:nth-child(2){ transition-delay:.08s; }
+.right-control-items.expanded > *:nth-child(3){ transition-delay:.13s; }
+.right-control-items.expanded > *:nth-child(4){ transition-delay:.18s; }
+.right-control-items.expanded > *:nth-child(5){ transition-delay:.23s; }
+.right-control-items.expanded > *:nth-child(6){ transition-delay:.28s; }
 #legendAccordion, #mapTypeContainer{ border-radius:50%; }
 #legendAccordion[open-state="true"], #mapTypeContainer[open-state="true"]{ background:#fff; box-shadow:0 15px 35px rgba(20,50,90,.3); }
 #legendAccordion[open-state="true"]{ width:240px; height:340px; border-radius:16px; max-height:calc(100vh - 260px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)); }
@@ -857,6 +903,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 </div>
 
 <div id="rightControlContainer">
+  <button id="rightControlToggle" class="round-btn control-toggle-btn" type="button" aria-label="ツール表示切替" title="ツール表示切替">
+    <span class="material-icons-round">apps</span>
+  </button>
+  <div id="rightControlItems" class="right-control-items">
   <div id="legendAccordion" class="round-btn" open-state="false">
     <details id="legendDetails">
       <summary>
@@ -901,6 +951,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <button id="locationBtn" class="round-btn"><span class="material-icons-round">my_location</span></button>
   <button id="refreshBtn" class="round-btn"><span class="material-icons-round">refresh</span></button>
   <button id="fullscreenBtn" class="round-btn"><span class="material-icons-round" id="fullscreenIcon">fullscreen</span></button>
+  </div>
 </div>
 
 <div id="statusPanel" class="glass-panel" data-state="full">
@@ -2382,28 +2433,34 @@ function computeRouteMidpointWithDir(coords){
   return { mid, a: mid, b: mid };
 }
 
-const ROUTE_LABEL_LINE_GAP = 38; // 経路線の外側に離す距離(px)
+const ROUTE_LABEL_LINE_GAP = 20; // バッジの「端」から経路線までの最小クリアランス(px)
 
-// 線の進行方向に対して垂直な向き(外側)に、経路ラベルを一定距離離した位置を
-// 現在のズーム・回転状態で毎回計算する
-function computeLabelBaseOffset(marker){
-  if (!marker._segA || !marker._segB) return { x:0, y:0 };
+// 線の進行方向に対して垂直な向き(外側)の単位ベクトルを求める
+function computeLabelDirection(marker){
+  if (!marker._segA || !marker._segB) return { x:0, y:-1 };
   const pa = map.latLngToContainerPoint(marker._segA);
   const pb = map.latLngToContainerPoint(marker._segB);
   const dx = pb.x - pa.x, dy = pb.y - pa.y;
   const len = Math.hypot(dx, dy);
-  if (len < 0.5) return { x:0, y:-ROUTE_LABEL_LINE_GAP };
-  // 進行方向を90度回転させて垂直方向(外側)にする
-  const nx = -dy / len, ny = dx / len;
-  return { x: nx * ROUTE_LABEL_LINE_GAP, y: ny * ROUTE_LABEL_LINE_GAP };
+  if (len < 0.5) return { x:0, y:-1 };
+  return { x: -dy / len, y: dx / len };
 }
 
 function applyRouteLabelOffset(marker, dx, dy){
   const el = marker.getElement();
   const badge = el && el.querySelector('.route-label-badge');
   if (!badge) return;
-  const base = computeLabelBaseOffset(marker);
-  const totalX = base.x + (dx || 0), totalY = base.y + (dy || 0);
+  const dir = computeLabelDirection(marker);
+  const halfW = (badge.offsetWidth || 100) / 2;
+  const halfH = (badge.offsetHeight || 40) / 2;
+  // 矩形(バッジ)がオフセット方向にどれだけ張り出すか（サポート関数）を求め、
+  // バッジの端が確実に経路線をクリアする距離だけ中心を押し出す。
+  // 固定距離だとバッジの横幅（文言の長さ）次第で線にかかってしまうため、
+  // 実際のサイズを毎回測って計算する。
+  const extent = Math.abs(dir.x) * halfW + Math.abs(dir.y) * halfH;
+  const pushDist = extent + ROUTE_LABEL_LINE_GAP;
+  const baseX = dir.x * pushDist, baseY = dir.y * pushDist;
+  const totalX = baseX + (dx || 0), totalY = baseY + (dy || 0);
   badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
 
   // 吹き出しのしっぽ：バッジ中央を通さず、アンカー方向にあるバッジの「角」を
@@ -2416,8 +2473,6 @@ function applyRouteLabelOffset(marker, dx, dy){
       tail.style.height = '0px';
     } else {
       const dirX = -totalX / dist, dirY = -totalY / dist; // バッジ中心→アンカーの単位ベクトル
-      const halfW = (badge.offsetWidth || 100) / 2;
-      const halfH = (badge.offsetHeight || 40) / 2;
       const cornerX = dirX >= 0 ? halfW : -halfW;
       const cornerY = dirY >= 0 ? halfH : -halfH;
       const toAnchorX = -totalX - cornerX; // 角→アンカーのベクトル
@@ -3691,6 +3746,10 @@ async function executeHybridSearch(query){
 
 const searchInput = document.getElementById('customSearchInput');
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHybridSearch(searchInput.value); });
+searchInput.addEventListener('focus', () => { document.getElementById('searchContainer').classList.add('search-expanded'); });
+searchInput.addEventListener('blur', () => {
+  if (!searchInput.value) document.getElementById('searchContainer').classList.remove('search-expanded');
+});
 document.getElementById('customSearchBtn').addEventListener('click', () => executeHybridSearch(searchInput.value));
 
 const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -4065,7 +4124,34 @@ initScrollHints();
 renderElevationProfile(null);
 updateTerrainMeshCompass();
 setupTerrainMeshLegendBar();
+/* =========================================================================
+   右側フローティング群（凡例・地図切替・方位・現在地・更新・全画面）を
+   まとめて格納する「ファンクションボタン」。初期は格納状態で、タップすると
+   下方向へ順番に展開する。ステータスパネルとの間に十分な縦スペースが
+   無い機種では、代わりに左方向へ展開する。
+   ========================================================================= */
+function initRightControlToggle(){
+  const toggle = document.getElementById('rightControlToggle');
+  const items = document.getElementById('rightControlItems');
+  if (!toggle || !items) return;
+
+  toggle.addEventListener('click', () => {
+    const isExpanded = items.classList.contains('expanded');
+    if (!isExpanded){
+      const toggleRect = toggle.getBoundingClientRect();
+      const panel = document.getElementById('statusPanel');
+      const panelTop = panel ? panel.getBoundingClientRect().top : window.innerHeight;
+      const availableDown = panelTop - toggleRect.bottom - 12;
+      const neededDown = items.children.length * 66; // ボタン6個分の目安
+      items.classList.toggle('expand-left', availableDown < neededDown);
+    }
+    items.classList.toggle('expanded', !isExpanded);
+    toggle.classList.toggle('active', !isExpanded);
+  });
+}
+
 initTerrainMeshPanelDrag();
+initRightControlToggle();
 attachCompassListener();
 updateCurrentLocation(true);
 syncHeaderOffsets();
