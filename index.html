@@ -121,23 +121,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .hazard-btn.hazard-tile{
   position:relative; z-index:1; overflow:hidden; flex:1 1 0; height:56px; min-width:0;
   box-sizing:border-box; border:2px solid rgba(255,255,255,.32); border-radius:13px;
-  backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%);
+  backdrop-filter:blur(8px) saturate(200%); -webkit-backdrop-filter:blur(8px) saturate(200%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
-  font-size:10.5px!important; font-weight:800; line-height:1.15; letter-spacing:0;
-  padding:3px 1px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
+  font-size:12px!important; font-weight:800; line-height:1.05; letter-spacing:0;
+  padding:1px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);
   box-shadow:0 5px 10px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.35) inset,
              0 -4px 8px rgba(255,255,255,.12) inset;
   transition:background .2s, border-color .2s, box-shadow .2s, transform .2s;
 }
-.hazard-btn.hazard-tile[data-type="flood"]{ background:linear-gradient(160deg, rgba(120,180,245,.20) 0%, rgba(40,95,180,.12) 100%); }
-.hazard-btn.hazard-tile[data-type="landslide"]{ background:linear-gradient(160deg, rgba(245,180,120,.20) 0%, rgba(190,105,30,.12) 100%); }
-.hazard-btn.hazard-tile[data-type="tsunami"]{ background:linear-gradient(160deg, rgba(110,215,240,.20) 0%, rgba(0,120,150,.12) 100%); }
-.hazard-btn.hazard-tile[data-type="shelter"]{ background:linear-gradient(160deg, rgba(120,220,165,.20) 0%, rgba(30,130,75,.12) 100%); }
+.hazard-btn.hazard-tile[data-type="flood"]{ background:linear-gradient(160deg, rgba(70,150,240,.46) 0%, rgba(15,75,165,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="landslide"]{ background:linear-gradient(160deg, rgba(240,150,60,.46) 0%, rgba(175,85,10,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="tsunami"]{ background:linear-gradient(160deg, rgba(50,205,235,.46) 0%, rgba(0,105,135,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="shelter"]{ background:linear-gradient(160deg, rgba(70,205,140,.46) 0%, rgba(15,115,60,.30) 100%); }
 .hazard-btn.hazard-tile::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
   background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
 }
-.hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:22px; margin-bottom:2px; color:#fff; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
+.hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:27px; margin-bottom:1px; color:#fff; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
 .hazard-btn.hazard-tile span:not(.material-icons-round){ position:relative; z-index:1; }
 .hazard-btn.hazard-tile:active{
   transform:translateY(2px);
@@ -2406,18 +2406,27 @@ function applyRouteLabelOffset(marker, dx, dy){
   const totalX = base.x + (dx || 0), totalY = base.y + (dy || 0);
   badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
 
-  // 吹き出しのしっぽ：バッジ中心を起点に、アンカー（経路線上の点）へ向かう
-  // 方向・距離ぴったりに伸ばして回転させる。バッジ自身の不透明な背景が
-  // 内側部分を自然に隠すので、先端だけが経路線に触れる吹き出しに見える。
+  // 吹き出しのしっぽ：バッジ中央を通さず、アンカー方向にあるバッジの「角」を
+  // 始点にしてそこから経路線（アンカー）へ向けて伸ばす。バッジの本体と重ならず、
+  // 他のラベルとも交差しにくくなる。
   const tail = badge.querySelector('.route-label-tail');
   if (tail){
     const dist = Math.hypot(totalX, totalY);
     if (dist < 2){
       tail.style.height = '0px';
     } else {
-      const dirX = -totalX / dist, dirY = -totalY / dist;
-      const angleDeg = Math.atan2(-dirX, dirY) * 180 / Math.PI;
-      tail.style.height = dist.toFixed(1) + 'px';
+      const dirX = -totalX / dist, dirY = -totalY / dist; // バッジ中心→アンカーの単位ベクトル
+      const halfW = (badge.offsetWidth || 100) / 2;
+      const halfH = (badge.offsetHeight || 40) / 2;
+      const cornerX = dirX >= 0 ? halfW : -halfW;
+      const cornerY = dirY >= 0 ? halfH : -halfH;
+      const toAnchorX = -totalX - cornerX; // 角→アンカーのベクトル
+      const toAnchorY = -totalY - cornerY;
+      const cornerDist = Math.hypot(toAnchorX, toAnchorY) || 1;
+      const angleDeg = Math.atan2(-toAnchorX, toAnchorY) * 180 / Math.PI;
+      tail.style.left = `calc(50% + ${cornerX.toFixed(1)}px)`;
+      tail.style.top = `calc(50% + ${cornerY.toFixed(1)}px)`;
+      tail.style.height = cornerDist.toFixed(1) + 'px';
       tail.style.transform = `translateX(-50%) rotate(${angleDeg.toFixed(1)}deg)`;
     }
   }
