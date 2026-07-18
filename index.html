@@ -120,22 +120,22 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .hazard-tile-row{ display:flex; align-items:stretch; gap:5px; flex:1 1 auto; min-width:0; }
 .hazard-btn.hazard-tile{
   position:relative; z-index:1; overflow:hidden; flex:1 1 0; height:56px; min-width:0;
-  border:1px solid rgba(255,255,255,.5); border-radius:13px;
+  box-sizing:border-box; border:2px solid rgba(255,255,255,.32); border-radius:13px;
   backdrop-filter:blur(8px) saturate(160%); -webkit-backdrop-filter:blur(8px) saturate(160%);
   display:flex; flex-direction:column; justify-content:center; align-items:center;
   font-size:10.5px!important; font-weight:800; line-height:1.15; letter-spacing:0;
   padding:3px 1px; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.35);
   box-shadow:0 5px 10px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.35) inset,
              0 -4px 8px rgba(255,255,255,.12) inset;
-  transition:.2s;
+  transition:background .2s, border-color .2s, box-shadow .2s, transform .2s;
 }
-.hazard-btn.hazard-tile[data-type="flood"]{ background:linear-gradient(160deg, rgba(120,180,245,.42) 0%, rgba(40,95,180,.30) 100%); }
-.hazard-btn.hazard-tile[data-type="landslide"]{ background:linear-gradient(160deg, rgba(245,180,120,.42) 0%, rgba(190,105,30,.30) 100%); }
-.hazard-btn.hazard-tile[data-type="tsunami"]{ background:linear-gradient(160deg, rgba(110,215,240,.42) 0%, rgba(0,120,150,.30) 100%); }
-.hazard-btn.hazard-tile[data-type="shelter"]{ background:linear-gradient(160deg, rgba(120,220,165,.42) 0%, rgba(30,130,75,.30) 100%); }
+.hazard-btn.hazard-tile[data-type="flood"]{ background:linear-gradient(160deg, rgba(120,180,245,.20) 0%, rgba(40,95,180,.12) 100%); }
+.hazard-btn.hazard-tile[data-type="landslide"]{ background:linear-gradient(160deg, rgba(245,180,120,.20) 0%, rgba(190,105,30,.12) 100%); }
+.hazard-btn.hazard-tile[data-type="tsunami"]{ background:linear-gradient(160deg, rgba(110,215,240,.20) 0%, rgba(0,120,150,.12) 100%); }
+.hazard-btn.hazard-tile[data-type="shelter"]{ background:linear-gradient(160deg, rgba(120,220,165,.20) 0%, rgba(30,130,75,.12) 100%); }
 .hazard-btn.hazard-tile::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.55), rgba(255,255,255,0) 55%);
+  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
 }
 .hazard-btn.hazard-tile .material-icons-round{ position:relative; z-index:1; font-size:22px; margin-bottom:2px; color:#fff; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
 .hazard-btn.hazard-tile span:not(.material-icons-round){ position:relative; z-index:1; }
@@ -143,12 +143,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   transform:translateY(2px);
   box-shadow:0 2px 4px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.25) inset;
 }
-.hazard-btn.hazard-tile.active{ border-color:#fff!important; border-width:2px; transform:translateY(-1px); }
+.hazard-btn.hazard-tile.active{ border-color:#fff!important; transform:translateY(-1px); filter:brightness(1.25) saturate(1.3); }
 .emergency-round-btn-compact{ width:46px; height:46px; flex-shrink:0; }
 .emergency-round-btn-compact .emergency-kanji-mark{ font-size:18px; }
 @keyframes hazardGlow{
-  0%,100%{ box-shadow:0 0 16px 2px var(--glow-color), 0 0 32px 8px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
-  50%{ box-shadow:0 0 34px 10px var(--glow-color), 0 0 60px 22px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
+  0%,100%{ box-shadow:0 0 18px 3px var(--glow-color), 0 0 36px 10px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
+  50%{ box-shadow:0 0 40px 13px var(--glow-color), 0 0 70px 26px var(--glow-color), 0 4px 10px rgba(0,0,0,.15); }
 }
 .hazard-btn.active[data-type="flood"]     { background:linear-gradient(135deg,#2f80ed,#0056b3); color:#fff; --glow-color:rgba(47,128,237,.9); animation:hazardGlow 1.6s ease-in-out infinite; }
 .hazard-btn.active[data-type="landslide"] { background:linear-gradient(135deg,#f2994a,#d35400); color:#fff; --glow-color:rgba(242,153,74,.9); animation:hazardGlow 1.6s ease-in-out infinite; }
@@ -2430,7 +2430,7 @@ function separateRouteLabelPositions(){
     routeLabelMarkers.forEach(m => applyRouteLabelOffset(m, 0, 0));
     return;
   }
-  const minGap = 62; // バッジ同士に確保したい最小距離(px)
+  const minGap = 140; // バッジ同士に確保したい最小距離(px)。バッジ自体が大きい(幅120px前後)ため十分な余白を確保する
   for (let i = 0; i < routeLabelMarkers.length; i++){
     for (let j = i + 1; j < routeLabelMarkers.length; j++){
       const a = routeLabelMarkers[i], b = routeLabelMarkers[j];
