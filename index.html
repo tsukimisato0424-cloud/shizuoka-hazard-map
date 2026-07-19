@@ -1705,6 +1705,7 @@ function togglePanelMaximize(){
 
   updateMaximizeBtnPulse();
   refreshScrollHints();
+  reflowRightControlLayout();
 }
 
 /* =========================================================================
@@ -2444,7 +2445,8 @@ function computeLabelDirection(marker){
   const dx = pb.x - pa.x, dy = pb.y - pa.y;
   const len = Math.hypot(dx, dy);
   if (len < 0.5) return { x:0, y:-1 };
-  return { x: -dy / len, y: dx / len };
+  const sign = marker._sideSign || 1;
+  return { x: (-dy / len) * sign, y: (dx / len) * sign };
 }
 
 // 矩形(半幅halfW・半高halfH、中心が原点)の外周に、方向(dirX,dirY)へ進んだときに
@@ -2565,6 +2567,8 @@ function addRouteLabel(idx, coords, route, styleClass, isActive){
   const icon = L.divIcon({ className:'route-label-icon-wrap', html, iconSize:[1,1], iconAnchor:[0,0] });
   const marker = L.marker(mid, { icon, interactive:true, zIndexOffset: 900, keyboard:false });
   marker._segA = a; marker._segB = b;
+  // ルール：ラベルは常に相手ラベルと反対側になるよう、追加順に左右(側)を交互にする
+  marker._sideSign = (routeLabelMarkers.length % 2 === 0) ? 1 : -1;
   marker.on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
   marker.addTo(map);
   routeLabelMarkers.push(marker);
@@ -3294,7 +3298,7 @@ function updateTerrainMeshDirLabelPositions(){
     const el = document.getElementById('dirLabel' + dir);
     if (!el) return;
     el.style.left = (50 + rotX * Rx) + '%';
-    el.style.top = (50 + rotY * Ry) + '%';
+    el.style.top = (50 - rotY * Ry) + '%';
   });
 }
 
@@ -4150,8 +4154,8 @@ function syncHeaderOffsets(){
   if (volcano) volcano.style.top = offset + 'px';
   if (rightControls) rightControls.style.top = offset + 'px';
 }
-window.addEventListener('resize', syncHeaderOffsets);
-window.addEventListener('orientationchange', () => setTimeout(syncHeaderOffsets, 200));
+window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); });
+window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); }, 200));
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 attachScrollHint(document.getElementById('landformLegendContent'));
@@ -4165,6 +4169,19 @@ setupTerrainMeshLegendBar();
    下方向へ順番に展開する。ステータスパネルとの間に十分な縦スペースが
    無い機種では、代わりに左方向へ展開する。
    ========================================================================= */
+// 展開時に、下方向のスペースが十分か判定してtrue=左展開が必要かを返す
+function shouldRightControlsExpandLeft(){
+  const toggle = document.getElementById('rightControlToggle');
+  const items = document.getElementById('rightControlItems');
+  if (!toggle || !items) return false;
+  const toggleRect = toggle.getBoundingClientRect();
+  const panel = document.getElementById('statusPanel');
+  const panelTop = panel ? panel.getBoundingClientRect().top : window.innerHeight;
+  const availableDown = panelTop - toggleRect.bottom - 12;
+  const neededDown = items.children.length * 66; // ボタン6個分の目安
+  return availableDown < neededDown;
+}
+
 function initRightControlToggle(){
   const toggle = document.getElementById('rightControlToggle');
   const items = document.getElementById('rightControlItems');
@@ -4173,16 +4190,31 @@ function initRightControlToggle(){
   toggle.addEventListener('click', () => {
     const isExpanded = items.classList.contains('expanded');
     if (!isExpanded){
-      const toggleRect = toggle.getBoundingClientRect();
-      const panel = document.getElementById('statusPanel');
-      const panelTop = panel ? panel.getBoundingClientRect().top : window.innerHeight;
-      const availableDown = panelTop - toggleRect.bottom - 12;
-      const neededDown = items.children.length * 66; // ボタン6個分の目安
-      items.classList.toggle('expand-left', availableDown < neededDown);
+      items.classList.toggle('expand-left', shouldRightControlsExpandLeft());
     }
     items.classList.toggle('expanded', !isExpanded);
     toggle.classList.toggle('active', !isExpanded);
   });
+}
+
+// ステータスパネルの最大化などで下方向のスペースが変わったとき、展開中の
+// メニューと重なりそうなら「収納→左展開」の動きを見せてから向きを切り替える
+function reflowRightControlLayout(){
+  const toggle = document.getElementById('rightControlToggle');
+  const items = document.getElementById('rightControlItems');
+  if (!toggle || !items || !items.classList.contains('expanded')) return;
+
+  const shouldBeLeft = shouldRightControlsExpandLeft();
+  const isLeft = items.classList.contains('expand-left');
+  if (shouldBeLeft === isLeft) return;
+
+  items.classList.remove('expanded');
+  toggle.classList.remove('active');
+  setTimeout(() => {
+    items.classList.toggle('expand-left', shouldBeLeft);
+    items.classList.add('expanded');
+    toggle.classList.add('active');
+  }, 260);
 }
 
 initTerrainMeshPanelDrag();
