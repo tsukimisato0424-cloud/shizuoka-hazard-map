@@ -90,7 +90,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:99999; touch-action:none; border-radius:16px; padding:6px 7px;
 }
-.top-bar-row{ display:flex; align-items:center; gap:4px; }
+.top-bar-row{ display:flex; align-items:stretch; gap:4px; }
 .custom-search-bar-compact{
   transition:flex-basis .35s cubic-bezier(.4,0,.2,1), width .35s cubic-bezier(.4,0,.2,1);
 }
@@ -107,12 +107,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   margin:0!important; pointer-events:none;
 }
 .custom-search-bar-compact{
-  flex:0 0 58px; width:58px; display:flex; align-items:center;
+  flex:0 0 58px; width:58px; display:flex; align-items:center; height:auto;
   background:rgba(255,255,255,.14); border-radius:10px; padding:1px;
 }
 .custom-search-bar-compact input{
-  flex:1; min-width:0; border:none; outline:none; font-size:11px!important;
-  letter-spacing:0; padding:8px 0 8px 6px; background:transparent; color:#fff;
+  flex:1; min-width:0; height:100%; border:none; outline:none; font-size:11px!important;
+  letter-spacing:0; padding:0 0 0 6px; background:transparent; color:#fff; box-sizing:border-box;
 }
 .custom-search-bar-compact input::placeholder{ color:rgba(255,255,255,.8); }
 .search-icon-btn-compact{
@@ -293,10 +293,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .right-control-items.expanded{ max-height:600px; max-width:none; opacity:1; overflow:visible; pointer-events:auto; }
 .right-control-items.expand-left{
+  position:absolute; top:0; right:66px; align-items:center;
   flex-direction:row-reverse; max-height:56px; max-width:0;
   transition:max-width .35s cubic-bezier(.4,0,.2,1), opacity .2s ease;
 }
-.right-control-items.expand-left.expanded{ max-width:600px; }
+.right-control-items.expand-left.expanded{ max-width:600px; overflow:visible; }
 .right-control-items > *{
   opacity:0; transform:translateY(-10px); flex-shrink:0;
   transition:opacity .25s ease, transform .25s ease;
@@ -2446,6 +2447,34 @@ function computeLabelDirection(marker){
   return { x: -dy / len, y: dx / len };
 }
 
+// 矩形(半幅halfW・半高halfH、中心が原点)の外周に、方向(dirX,dirY)へ進んだときに
+// ぶつかる距離を正確に求める（角ではなく辺上の正確な出口点になる）
+function rectExitDistance(dirX, dirY, halfW, halfH){
+  const tx = Math.abs(dirX) > 1e-6 ? halfW / Math.abs(dirX) : Infinity;
+  const ty = Math.abs(dirY) > 1e-6 ? halfH / Math.abs(dirY) : Infinity;
+  return Math.min(tx, ty);
+}
+
+// バッジ中心(cx,cy)・半径(halfW,halfH)が、表示中の全ルート候補の線からどれだけ
+// 離れているか（最小距離）を調べる。自分自身の経路も含めて全ルートをチェックする
+// ことで、ラベルが「どの経路線にも重ならない」ようにする。
+function minDistanceToAnyRoute(cx, cy, halfW, halfH){
+  let minDist = Infinity;
+  routeCandidates.forEach(cand => {
+    if (!cand || !cand.coords) return;
+    const step = Math.max(1, Math.floor(cand.coords.length / 40)); // 点が多い経路は間引いて負荷を抑える
+    for (let i = 0; i < cand.coords.length; i += step){
+      const c = cand.coords[i];
+      const p = map.latLngToContainerPoint(L.latLng(c[1], c[0]));
+      const dx = Math.max(Math.abs(p.x - cx) - halfW, 0);
+      const dy = Math.max(Math.abs(p.y - cy) - halfH, 0);
+      const d = Math.hypot(dx, dy);
+      if (d < minDist) minDist = d;
+    }
+  });
+  return minDist;
+}
+
 function applyRouteLabelOffset(marker, dx, dy){
   const el = marker.getElement();
   const badge = el && el.querySelector('.route-label-badge');
@@ -2455,17 +2484,25 @@ function applyRouteLabelOffset(marker, dx, dy){
   const halfH = (badge.offsetHeight || 40) / 2;
   // 矩形(バッジ)がオフセット方向にどれだけ張り出すか（サポート関数）を求め、
   // バッジの端が確実に経路線をクリアする距離だけ中心を押し出す。
-  // 固定距離だとバッジの横幅（文言の長さ）次第で線にかかってしまうため、
-  // 実際のサイズを毎回測って計算する。
   const extent = Math.abs(dir.x) * halfW + Math.abs(dir.y) * halfH;
-  const pushDist = extent + ROUTE_LABEL_LINE_GAP;
+  let pushDist = extent + ROUTE_LABEL_LINE_GAP;
+
+  // それでもまだ何らかの経路線に近すぎる場合は、同じ方向へさらに押し出す
+  const anchorPt = map.latLngToContainerPoint(marker.getLatLng());
+  for (let iter = 0; iter < 8; iter++){
+    const cx = anchorPt.x + dir.x * pushDist + (dx || 0);
+    const cy = anchorPt.y + dir.y * pushDist + (dy || 0);
+    const clearance = minDistanceToAnyRoute(cx, cy, halfW, halfH);
+    if (clearance >= 8) break;
+    pushDist += 16;
+  }
+
   const baseX = dir.x * pushDist, baseY = dir.y * pushDist;
   const totalX = baseX + (dx || 0), totalY = baseY + (dy || 0);
   badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
 
-  // 吹き出しのしっぽ：バッジ中央を通さず、アンカー方向にあるバッジの「角」を
-  // 始点にしてそこから経路線（アンカー）へ向けて伸ばす。バッジの本体と重ならず、
-  // 他のラベルとも交差しにくくなる。
+  // 吹き出しのしっぽ：バッジの「辺上の出口点」を正確に始点にし、そこから
+  // 経路線（アンカー）へ向けて伸ばす。バッジの本体を一切通らないので重ならない。
   const tail = badge.querySelector('.route-label-tail');
   if (tail){
     const dist = Math.hypot(totalX, totalY);
@@ -2473,15 +2510,13 @@ function applyRouteLabelOffset(marker, dx, dy){
       tail.style.height = '0px';
     } else {
       const dirX = -totalX / dist, dirY = -totalY / dist; // バッジ中心→アンカーの単位ベクトル
-      const cornerX = dirX >= 0 ? halfW : -halfW;
-      const cornerY = dirY >= 0 ? halfH : -halfH;
-      const toAnchorX = -totalX - cornerX; // 角→アンカーのベクトル
-      const toAnchorY = -totalY - cornerY;
-      const cornerDist = Math.hypot(toAnchorX, toAnchorY) || 1;
-      const angleDeg = Math.atan2(-toAnchorX, toAnchorY) * 180 / Math.PI;
-      tail.style.left = `calc(50% + ${cornerX.toFixed(1)}px)`;
-      tail.style.top = `calc(50% + ${cornerY.toFixed(1)}px)`;
-      tail.style.height = cornerDist.toFixed(1) + 'px';
+      const exitDist = rectExitDistance(dirX, dirY, halfW, halfH);
+      const exitX = dirX * exitDist, exitY = dirY * exitDist;
+      const remaining = Math.max(0, dist - exitDist);
+      const angleDeg = Math.atan2(-dirX, dirY) * 180 / Math.PI;
+      tail.style.left = `calc(50% + ${exitX.toFixed(1)}px)`;
+      tail.style.top = `calc(50% + ${exitY.toFixed(1)}px)`;
+      tail.style.height = remaining.toFixed(1) + 'px';
       tail.style.transform = `translateX(-50%) rotate(${angleDeg.toFixed(1)}deg)`;
     }
   }
