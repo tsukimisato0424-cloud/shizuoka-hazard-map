@@ -2435,7 +2435,7 @@ function computeRouteMidpointWithDir(coords){
   return { mid, a: mid, b: mid };
 }
 
-const ROUTE_LABEL_LINE_GAP = 55; // バッジの「端」から経路線までの最小クリアランス(px)
+const ROUTE_LABEL_LINE_GAP = 22; // バッジの「端」から経路線までの最小クリアランス(px)
 
 // 線の進行方向に対して垂直な向き(外側)の単位ベクトルを求める
 function computeLabelDirection(marker){
@@ -2495,8 +2495,8 @@ function applyRouteLabelOffset(marker, dx, dy){
     const cx = anchorPt.x + dir.x * pushDist + (dx || 0);
     const cy = anchorPt.y + dir.y * pushDist + (dy || 0);
     const clearance = minDistanceToAnyRoute(cx, cy, halfW, halfH);
-    if (clearance >= 24) break;
-    pushDist += 20;
+    if (clearance >= 10) break;
+    pushDist += 14;
   }
 
   const baseX = dir.x * pushDist, baseY = dir.y * pushDist;
