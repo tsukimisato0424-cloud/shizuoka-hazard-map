@@ -1711,16 +1711,41 @@ function toggleStatusPanel(){
   }, 100);
 }
 
+// 最大化/元に戻す時に「ポヨヨン」と弾むFLIPアニメーションを掛ける対象要素を、
+// 現在アクティブなタブごとに返す。タブ②(高低差)は行→列のレイアウト転換が
+// 起きるため2要素を個別にFLIPし、それ以外のタブは主要な表示ブロックを
+// 1つのまとまりとしてFLIPすることで、同じ弾むような動きを再現する。
+function getMaximizeFlipTargets(){
+  const active = document.querySelector('.tab-content.active');
+  if (!active) return [];
+  switch (active.id){
+    case 'tab2': {
+      const p = document.getElementById('elevationProfileContainer');
+      const e = document.getElementById('elevationExtremeCol');
+      return (p && e) ? [p, e] : [];
+    }
+    case 'tab4': {
+      const c = document.getElementById('terrainMeshFullContainer');
+      return c ? [c] : [];
+    }
+    case 'tab1': {
+      return Array.from(document.querySelectorAll('#tab1 .panel-column'));
+    }
+    case 'tab3': {
+      const c = document.getElementById('landformLegendContent');
+      return c ? [c] : [];
+    }
+    default:
+      return [];
+  }
+}
+
 function togglePanelMaximize(){
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('maximizeIcon');
   const isMax = panel.getAttribute('data-size') === 'maximized';
 
-  const tab2El = document.getElementById('tab2');
-  const isTab2 = !!(tab2El && tab2El.classList.contains('active'));
-  const profileEl = document.getElementById('elevationProfileContainer');
-  const extremeEl = document.getElementById('elevationExtremeCol');
-  const flipEls = (isTab2 && profileEl && extremeEl) ? [profileEl, extremeEl] : [];
+  const flipEls = getMaximizeFlipTargets();
 
   // パネルの高さは固定値（通常/最大化 × 画面高さブレークポイント）で決まっているため、
   // DOM計測を待たずにここで差分を算出し、パネルの高さアニメーション(0.3s)と
