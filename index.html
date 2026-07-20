@@ -486,6 +486,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .nav-sub-row b{ color:#fff; }
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
+.panel-flip-inner.flipped .tab-container{ opacity:0; pointer-events:none; }
+.nav-start-icon-wrap{ background:transparent!important; border:none!important; }
+.nav-start-badge{
+  display:flex; align-items:center; gap:6px; justify-content:center;
+  padding:8px 14px; border-radius:20px; cursor:pointer; white-space:nowrap;
+  font-weight:800; font-size:14px; color:#fff;
+  background:linear-gradient(135deg, #1a73e8, #0d47a1);
+  border:2px solid rgba(255,255,255,.65);
+  box-shadow:0 6px 16px rgba(0,20,60,.5), 0 0 0 1px rgba(255,255,255,.25) inset;
+  animation: navStartPulse 1.7s ease-in-out infinite;
+  touch-action:manipulation;
+}
+.nav-start-badge .material-icons-round{ font-size:18px; }
+@keyframes navStartPulse{
+  0%,100%{ transform:scale(1); box-shadow:0 6px 16px rgba(0,20,60,.5); }
+  50%{ transform:scale(1.07); box-shadow:0 6px 22px rgba(26,115,232,.8), 0 0 20px 5px rgba(26,115,232,.4); }
+}
 .tab-btn{
   position:relative; overflow:hidden; width:clamp(66px, 20vw, 88px); padding:11px 8px; text-align:center; cursor:pointer;
   font-size:16px; font-weight:700; border-radius:16px 16px 0 0; border:none;
@@ -2087,6 +2104,7 @@ function clearRouteLayers(){
   clearRouteLabels();
   routeCandidates = []; activeRouteIdx = 0;
   activeNavRouteData = null;
+  activeNavRouteCoords = null;
   updateNavAvailability();
   if (navActive) endNavigation();
 }
@@ -2218,9 +2236,10 @@ function correctedClientToLatLng(clientX, clientY){
 }
 
 const headingToggleBtn = document.getElementById('headingToggleBtn');
-headingToggleBtn.addEventListener('click', () => {
+
+function setHeadingUpMode(active){
   enableCompass();
-  headingUpModeActive = !headingUpModeActive;
+  headingUpModeActive = active;
   headingToggleBtn.classList.toggle('active', headingUpModeActive);
   const mapEl = map.getContainer();
 
@@ -2250,6 +2269,10 @@ headingToggleBtn.addEventListener('click', () => {
     applyHeadingToMarker();
     if (currentLocation) map.panTo(currentLocation, { animate:true });
   }
+}
+
+headingToggleBtn.addEventListener('click', () => {
+  setHeadingUpMode(!headingUpModeActive);
 });
 
 let geoWatchId = null;
@@ -2304,7 +2327,7 @@ function startContinuousTracking(){
       map.panTo(newLoc, { animate:true, duration:0.6, easeLinearity:0.4 });
     }
 
-    if (navActive) updateNavigationProgress(newLoc);
+    if (navActive) updateNavigationProgress(newLoc, pos.coords.accuracy);
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -3068,19 +3091,28 @@ async function activateHazardRoute(idx){
   });
 
   activeNavRouteData = route;
+  activeNavRouteCoords = coords;
   updateNavAvailability();
 }
 
 /* =========================================================================
    音声ナビゲーション（ステータスパネルの水平フリップで裏面に表示）。
    OSRMのsteps（maneuver.type/modifier）から指示文とアイコンを組み立て、
-   現在地が次の分岐点に近づいたらステップを進めて音声で読み上げる。
+   現在地を経路の折れ線に投影(マップマッチング)して進行距離を求めることで、
+   GPSの横ブレに強い形でステップ判定を行う。
    ========================================================================= */
-let activeNavRouteData = null; // 現在アクティブな経路のOSRM route(legs/steps)オブジェクト
+let activeNavRouteData = null;   // 現在アクティブな経路のOSRM route(legs/steps)オブジェクト
+let activeNavRouteCoords = null; // 現在アクティブな経路のジオメトリ（[lon,lat]の配列）
 let navActive = false;
 let navSteps = [];
 let navStepIndex = 0;
+let navStepCumDist = [];  // 各ステップ開始時点での、経路全体に対する累積距離(m)
+let navTotalDist = 0;
+let navRoutePts = null;   // 経路ジオメトリのLatLng配列（進行距離の投影に使用）
+let navRouteCum = null;   // navRoutePtsに対応する累積距離(m)
 let navMuted = false;
+let navPrevHeadingUpState = false; // ナビ開始前のヘッドアップ状態（終了時に復元）
+let navStartMarker = null;
 
 const NAV_MODIFIER_ICON = {
   uturn:'u_turn_left', 'sharp right':'turn_sharp_right', right:'turn_right',
@@ -3118,10 +3150,24 @@ function formatNavDistance(m){
   return Math.round(m / 5) * 5 + ' m';
 }
 
+function createNavStartIcon(){
+  const html = `<div class="nav-start-badge" onclick="startNavigation()">
+      <span class="material-icons-round">navigation</span>ナビ開始
+    </div>`;
+  return L.divIcon({ className:'nav-start-icon-wrap', html, iconSize:[112, 34], iconAnchor:[56, 78] });
+}
+
+function updateNavStartMarker(){
+  if (navStartMarker){ map.removeLayer(navStartMarker); navStartMarker = null; }
+  if (navActive || !destination || !activeNavRouteData) return;
+  navStartMarker = L.marker(destination, { icon: createNavStartIcon(), interactive:true, zIndexOffset: 950, keyboard:false }).addTo(map);
+}
+
 function updateNavAvailability(){
   const btn = document.getElementById('navStartBtn');
-  if (!btn) return;
-  btn.disabled = !(activeNavRouteData && activeNavRouteData.legs && activeNavRouteData.legs.length);
+  const ok = !!(activeNavRouteData && activeNavRouteData.legs && activeNavRouteData.legs.length);
+  if (btn) btn.disabled = !ok;
+  updateNavStartMarker();
 }
 
 function speakInstruction(text){
@@ -3136,10 +3182,12 @@ function speakInstruction(text){
   } catch { /* このブラウザでは音声合成が使えない場合は無視 */ }
 }
 
-function updateNavRemaining(){
+function updateNavRemaining(traveledDist){
   if (!activeNavRouteData) return;
-  const remainingDist = navSteps.slice(navStepIndex).reduce((sum, s) => sum + (s.distance || 0), 0);
-  const totalDist = activeNavRouteData.distance || 1;
+  const totalDist = navTotalDist || activeNavRouteData.distance || 1;
+  const remainingDist = typeof traveledDist === 'number'
+    ? Math.max(0, totalDist - traveledDist)
+    : navSteps.slice(navStepIndex).reduce((sum, s) => sum + (s.distance || 0), 0);
   const totalDuration = activeNavRouteData.duration || 0;
   const remainingTime = totalDuration * (remainingDist / totalDist);
   const distEl = document.getElementById('navRemainingDist');
@@ -3164,12 +3212,25 @@ function updateNavDisplay(){
 }
 
 function startNavigation(){
-  if (!activeNavRouteData || !activeNavRouteData.legs) return;
+  if (!activeNavRouteData || !activeNavRouteData.legs || !activeNavRouteCoords) return;
   navSteps = activeNavRouteData.legs.flatMap(leg => leg.steps || []);
   if (!navSteps.length) return;
 
   navActive = true;
   navStepIndex = navSteps.length > 1 ? 1 : 0;
+
+  // 各ステップ開始時点の累積距離テーブルを作成（GPS投影で求めた進行距離から
+  // 現在ステップを逆引きできるようにする）
+  let cum = 0;
+  navStepCumDist = navSteps.map(s => { const c = cum; cum += (s.distance || 0); return c; });
+  navTotalDist = cum;
+
+  const routeLatLngs = activeNavRouteCoords.map(c => [c[1], c[0]]);
+  const built = buildCumulativeDistances(routeLatLngs);
+  navRoutePts = built.pts;
+  navRouteCum = built.cum;
+
+  updateNavStartMarker(); // ナビ中はマップ上の「ナビ開始」バッジを消す
 
   const panel = document.getElementById('statusPanel');
   if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
@@ -3180,6 +3241,9 @@ function startNavigation(){
   const flipInner = document.getElementById('panelFlipInner');
   if (flipInner) flipInner.classList.add('flipped');
 
+  navPrevHeadingUpState = headingUpModeActive;
+  if (!headingUpModeActive) setHeadingUpMode(true);
+
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
   speakInstruction('ナビを開始します。' + buildInstructionText(navSteps[navStepIndex]));
@@ -3189,11 +3253,15 @@ function endNavigation(){
   navActive = false;
   navSteps = [];
   navStepIndex = 0;
+  navRoutePts = null;
+  navRouteCum = null;
   const flipInner = document.getElementById('panelFlipInner');
   if (flipInner) flipInner.classList.remove('flipped');
   if ('speechSynthesis' in window){
     try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   }
+  if (headingUpModeActive && !navPrevHeadingUpState) setHeadingUpMode(false);
+  updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
 }
 
 function toggleNavMute(){
@@ -3206,28 +3274,65 @@ function toggleNavMute(){
 }
 
 const NAV_ARRIVE_THRESHOLD_M = 15;
+const NAV_MAX_ACCURACY_M = 40; // これより精度が悪いGPS測位はステップ判定に使わない
 
-function updateNavigationProgress(latlng){
+// 現在地を経路の折れ線上に投影し、最も近い区間における進行距離(m)を返す。
+// 単純な「次の分岐点までの直線距離」よりGPSの横ブレに強く、複数区間先へ
+// 一気に進んだ場合も正しく現在地の進行度を推定できる。
+function projectLatLngToSegment(p, a, b){
+  const cosLat = Math.cos(a.lat * Math.PI / 180) || 1;
+  const toXY = (ll) => ({ x:(ll.lng - a.lng) * cosLat * 111320, y:(ll.lat - a.lat) * 111320 });
+  const B = toXY(b), P = toXY(p);
+  const lenSq = (B.x * B.x + B.y * B.y) || 1e-9;
+  let t = (P.x * B.x + P.y * B.y) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const projX = B.x * t, projY = B.y * t;
+  const dist = Math.hypot(P.x - projX, P.y - projY);
+  return { t, dist };
+}
+
+function projectToNavRoute(latlng){
+  if (!navRoutePts || navRoutePts.length < 2) return null;
+  let best = null;
+  for (let i = 1; i < navRoutePts.length; i++){
+    const a = navRoutePts[i - 1], b = navRoutePts[i];
+    const res = projectLatLngToSegment(latlng, a, b);
+    const segCum = navRouteCum[i - 1] + res.t * (navRouteCum[i] - navRouteCum[i - 1]);
+    if (!best || res.dist < best.dist) best = { dist: res.dist, cumDist: segCum };
+  }
+  return best;
+}
+
+function updateNavigationProgress(latlng, accuracy){
   if (!navActive || !navSteps.length) return;
-  const step = navSteps[navStepIndex];
-  const loc = step && step.maneuver && step.maneuver.location;
-  if (!loc) return;
+  if (typeof accuracy === 'number' && accuracy > NAV_MAX_ACCURACY_M) return;
 
-  const dist = latlng.distanceTo(L.latLng(loc[1], loc[0]));
+  const proj = projectToNavRoute(latlng);
+  if (!proj) return;
+
+  // 進行距離から該当ステップを特定。GPSのジャンプで複数ステップ分
+  // 進んでいた場合も追従できるよう、条件を満たす限り前方へ進める（後退はしない）。
+  let idx = navStepIndex;
+  while (idx < navSteps.length - 1 && proj.cumDist >= navStepCumDist[idx + 1] - NAV_ARRIVE_THRESHOLD_M) idx++;
+  if (idx > navStepIndex){
+    navStepIndex = idx;
+    updateNavDisplay();
+    speakInstruction(buildInstructionText(navSteps[navStepIndex]));
+  }
+
+  const distToNext = navStepIndex < navSteps.length - 1
+    ? Math.max(0, navStepCumDist[navStepIndex + 1] - proj.cumDist)
+    : Math.max(0, navTotalDist - proj.cumDist);
   const distEl = document.getElementById('navDistanceToStep');
-  if (distEl) distEl.innerText = formatNavDistance(dist);
+  if (distEl) distEl.innerText = formatNavDistance(distToNext);
 
-  if (dist < NAV_ARRIVE_THRESHOLD_M){
-    if (navStepIndex < navSteps.length - 1){
-      navStepIndex++;
-      updateNavDisplay();
-      speakInstruction(buildInstructionText(navSteps[navStepIndex]));
-    } else {
-      const textEl = document.getElementById('navInstructionText');
-      if (textEl) textEl.innerText = '目的地に到着しました';
-      speakInstruction('目的地に到着しました');
-      setTimeout(() => { if (navActive) endNavigation(); }, 4000);
-    }
+  updateNavRemaining(proj.cumDist);
+
+  if (navStepIndex === navSteps.length - 1 && distToNext < NAV_ARRIVE_THRESHOLD_M){
+    const textEl = document.getElementById('navInstructionText');
+    if (textEl) textEl.innerText = '目的地に到着しました';
+    speakInstruction('目的地に到着しました');
+    setTimeout(() => { if (navActive) endNavigation(); }, 4000);
   }
 }
 
@@ -4208,6 +4313,7 @@ function deactivateEmergencyMode(silent){
   emergencyOptionIndex = -1;
   resetTerrainMeshFeature();
   activeNavRouteData = null;
+  activeNavRouteCoords = null;
   updateNavAvailability();
   if (navActive) endNavigation();
   if (!silent){
@@ -4303,6 +4409,7 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   setTerrainMeshTarget(candidate.latlng.lat, candidate.latlng.lng);
 
   activeNavRouteData = route;
+  activeNavRouteCoords = coords;
   updateNavAvailability();
 
   map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), { padding:[80, 160] });
@@ -4484,7 +4591,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, #navEndBtn, #navMuteBtn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
