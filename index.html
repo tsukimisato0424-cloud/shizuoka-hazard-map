@@ -485,6 +485,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:14px; color:#c3cfe8;
 }
 .nav-sub-row b{ color:#fff; }
+.nav-zoom-row{ display:flex; gap:12px; margin-top:12px; }
+.nav-cancel-btn{
+  margin-top:14px; width:100%; max-width:260px; padding:10px 16px;
+  border-radius:14px; border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.12); color:#fff; font-weight:800; font-size:14px;
+  display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
+  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+}
+.nav-cancel-btn:active{ background:rgba(255,255,255,.24); }
+.nav-cancel-btn .material-icons-round{ font-size:17px; }
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .panel-flip-inner.flipped .tab-container{ opacity:0; pointer-events:none; }
 .nav-start-icon-wrap{ background:transparent!important; border:none!important; }
@@ -1195,6 +1205,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <span>残り <b id="navRemainingDist">--</b></span>
     <span>到着目安 <b id="navRemainingTime">--</b></span>
   </div>
+  <div class="nav-zoom-row">
+    <button type="button" class="mesh-zoom-btn" onclick="map.zoomIn()" title="拡大"><span class="material-icons-round">add</span></button>
+    <button type="button" class="mesh-zoom-btn" onclick="map.zoomOut()" title="縮小"><span class="material-icons-round">remove</span></button>
+  </div>
+  <button id="navCancelBtn" class="nav-cancel-btn" onclick="endNavigation()">
+    <span class="material-icons-round">arrow_back</span>案内を中止してパネルに戻る
+  </button>
 </div>
 </div>
 </div>
@@ -3151,7 +3168,7 @@ function formatNavDistance(m){
 }
 
 function createNavStartIcon(){
-  const html = `<div class="nav-start-badge" onclick="startNavigation()">
+  const html = `<div class="nav-start-badge">
       <span class="material-icons-round">navigation</span>ナビ開始
     </div>`;
   return L.divIcon({ className:'nav-start-icon-wrap', html, iconSize:[112, 34], iconAnchor:[56, 78] });
@@ -3160,7 +3177,9 @@ function createNavStartIcon(){
 function updateNavStartMarker(){
   if (navStartMarker){ map.removeLayer(navStartMarker); navStartMarker = null; }
   if (navActive || !destination || !activeNavRouteData) return;
-  navStartMarker = L.marker(destination, { icon: createNavStartIcon(), interactive:true, zIndexOffset: 950, keyboard:false }).addTo(map);
+  navStartMarker = L.marker(destination, { icon: createNavStartIcon(), interactive:true, zIndexOffset: 950, keyboard:false })
+    .on('click', e => { L.DomEvent.stopPropagation(e); startNavigation(); })
+    .addTo(map);
 }
 
 function updateNavAvailability(){
@@ -3243,6 +3262,7 @@ function startNavigation(){
 
   navPrevHeadingUpState = headingUpModeActive;
   if (!headingUpModeActive) setHeadingUpMode(true);
+  if (currentLocation) map.setView(currentLocation, Math.max(map.getZoom(), 18), { animate:true });
 
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
@@ -4591,7 +4611,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, #navEndBtn, #navMuteBtn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, #navEndBtn, #navMuteBtn, .nav-cancel-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
