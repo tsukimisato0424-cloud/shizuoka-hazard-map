@@ -109,24 +109,23 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .custom-search-bar-compact{
   position:relative; overflow:hidden;
   flex:0 0 58px; width:58px; height:56px; box-sizing:border-box;
-  border:2px solid rgba(255,255,255,.32); border-radius:13px;
-  backdrop-filter:blur(8px) saturate(200%); -webkit-backdrop-filter:blur(8px) saturate(200%);
-  background:linear-gradient(160deg, rgba(120,140,255,.46) 0%, rgba(55,60,180,.30) 100%);
-  box-shadow:0 5px 10px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.35) inset, 0 -4px 8px rgba(255,255,255,.12) inset;
+  border:var(--bubble-border); border-radius:13px;
+  background:var(--bubble-bg); box-shadow:var(--bubble-shadow);
   padding:1px;
 }
 .custom-search-bar-compact::before{
-  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
-  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
+  content:""; position:absolute; top:3px; left:6px; width:46%; height:32%;
+  border-radius:50%; pointer-events:none; z-index:2;
+  background:radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 70%);
 }
 .search-tile-collapsed{
   position:absolute; inset:0; z-index:1; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:1px; cursor:pointer;
-  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);
+  color:var(--ink);
   transition:opacity .2s ease; pointer-events:auto;
 }
-.search-tile-collapsed .material-icons-round{ font-size:27px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
-.search-tile-collapsed .tile-label{ font-size:12px!important; font-weight:800; letter-spacing:0; }
+.search-tile-collapsed .material-icons-round{ font-size:26px; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
+.search-tile-collapsed .tile-label{ font-size:12px!important; font-weight:800; letter-spacing:0; color:var(--ink); }
 .search-tile-expanded{
   position:absolute; inset:0; z-index:1; display:flex; align-items:center;
   opacity:0; pointer-events:none; transition:opacity .2s ease;
@@ -134,16 +133,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #searchContainer.search-expanded .search-tile-collapsed{ opacity:0; pointer-events:none; }
 #searchContainer.search-expanded .search-tile-expanded{ opacity:1; pointer-events:auto; }
 .custom-search-bar-compact input{
-  flex:1; min-width:0; height:100%; border:none; outline:none; font-size:11px!important;
-  letter-spacing:0; padding:0 0 0 6px; background:transparent; color:#fff; box-sizing:border-box;
+  flex:1; min-width:0; height:100%; border:none; outline:none; font-size:18px!important;
+  letter-spacing:.3px; padding:0 0 0 10px; background:transparent; color:#202124; box-sizing:border-box;
 }
-.custom-search-bar-compact input::placeholder{ color:rgba(255,255,255,.8); }
+.custom-search-bar-compact input::placeholder{ color:rgba(60,64,67,.55); }
 .search-icon-btn-compact{
-  position:relative; overflow:hidden; flex-shrink:0; width:22px; height:22px; margin:2px;
-  border-radius:7px; background:none; border:none; color:#fff; cursor:pointer;
+  position:relative; overflow:hidden; flex-shrink:0; width:30px; height:30px; margin:2px;
+  border-radius:9px; background:none; border:none; color:var(--ink); cursor:pointer;
   display:flex; align-items:center; justify-content:center;
 }
-.search-icon-btn-compact .material-icons-round{ font-size:15px; }
+.search-icon-btn-compact .material-icons-round{ font-size:20px; }
 #customSuggestions{
   background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.2);
   margin-top:6px; max-height:280px; overflow-y:auto; display:none;
@@ -1723,6 +1722,14 @@ function togglePanelMaximize(){
   const extremeEl = document.getElementById('elevationExtremeCol');
   const flipEls = (isTab2 && profileEl && extremeEl) ? [profileEl, extremeEl] : [];
 
+  // パネルの高さは固定値（通常/最大化 × 画面高さブレークポイント）で決まっているため、
+  // DOM計測を待たずにここで差分を算出し、パネルの高さアニメーション(0.3s)と
+  // 同じタイミング・同じ長さで地図側もパンさせて連動させる。
+  const shortScreen = window.matchMedia('(max-height: 700px)').matches;
+  const normalPanelH = shortScreen ? 180 : 200;
+  const maxPanelH = shortScreen ? 300 : 380;
+  const panelHeightDelta = isMax ? (normalPanelH - maxPanelH) : (maxPanelH - normalPanelH);
+
   const applyStateChange = () => {
     panel.setAttribute('data-size', isMax ? 'normal' : 'maximized');
     if (icon) icon.innerText = isMax ? 'open_in_full' : 'close_fullscreen';
@@ -1735,9 +1742,21 @@ function togglePanelMaximize(){
     applyStateChange();
   }
 
+  panMapForPanelResize(panelHeightDelta);
+
   updateMaximizeBtnPulse();
   refreshScrollHints();
   reflowRightControlLayout();
+}
+
+// パネルが下からせり上がって大きくなる/元に戻る分だけ、地図全体を
+// 見えているスペースの中央に収まるようパンする。マーカーやルート等は
+// 動かさず、地図の表示位置だけをパネルの動きに連動させて滑らかに動かす。
+function panMapForPanelResize(heightDelta){
+  if (!heightDelta || !map) return;
+  try {
+    map.panBy([0, heightDelta / 2], { duration: 0.3, easeLinearity: 0.25, noMoveStart: true });
+  } catch { /* ignore */ }
 }
 
 /* =========================================================================
