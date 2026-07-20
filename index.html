@@ -495,6 +495,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .nav-cancel-btn:active{ background:rgba(255,255,255,.24); }
 .nav-cancel-btn .material-icons-round{ font-size:17px; }
+.nav-mini-map-container{
+  position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
+  right:calc(10px + env(safe-area-inset-right,0px));
+  width:128px; height:128px; z-index:1000; border-radius:18px; overflow:hidden;
+  border:2px solid rgba(255,255,255,.55); box-shadow:0 10px 24px rgba(0,10,30,.5);
+  display:none;
+}
+.nav-mini-map-container.active{ display:block; }
+#navMiniMap{ width:100%; height:100%; }
+.nav-mini-map-n{
+  position:absolute; top:6px; left:6px; z-index:1000;
+  background:rgba(10,24,48,.72); color:#fff; font-size:11px; font-weight:900;
+  padding:2px 6px; border-radius:8px; pointer-events:none;
+}
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .panel-flip-inner.flipped .tab-container{ opacity:0; pointer-events:none; }
 .nav-start-icon-wrap{ background:transparent!important; border:none!important; }
@@ -1017,6 +1031,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <div id="volcanoCoverageNotice" class="glass-panel" style="display:none;">
   <span class="material-icons-round" style="font-size:20px; margin-right:8px; flex-shrink:0;">info</span>
   <span>この付近には火山土地条件図データが整備されていません（主要な活火山周辺のみ提供）</span>
+</div>
+
+<div id="navMiniMapContainer" class="nav-mini-map-container">
+  <span class="nav-mini-map-n">N</span>
+  <div id="navMiniMap"></div>
 </div>
 
 <div id="rightControlContainer">
@@ -2344,7 +2363,7 @@ function startContinuousTracking(){
       map.panTo(newLoc, { animate:true, duration:0.6, easeLinearity:0.4 });
     }
 
-    if (navActive) updateNavigationProgress(newLoc, pos.coords.accuracy);
+    if (navActive){ updateNavigationProgress(newLoc, pos.coords.accuracy); updateNavMiniMap(); }
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -3130,6 +3149,52 @@ let navRouteCum = null;   // navRoutePtsに対応する累積距離(m)
 let navMuted = false;
 let navPrevHeadingUpState = false; // ナビ開始前のヘッドアップ状態（終了時に復元）
 let navStartMarker = null;
+let navMiniMap = null;
+let navMiniMapCurrentMarker = null;
+let navMiniMapDestMarker = null;
+let navMiniMapRouteLine = null;
+
+function ensureNavMiniMap(){
+  if (navMiniMap) return navMiniMap;
+  navMiniMap = L.map('navMiniMap', {
+    zoomControl:false, attributionControl:false, dragging:false,
+    touchZoom:false, scrollWheelZoom:false, doubleClickZoom:false,
+    boxZoom:false, keyboard:false, tap:false, inertia:false
+  });
+  L.tileLayer(`${GSI}/pale/{z}/{x}/{y}.png`, { attribution:'' }).addTo(navMiniMap);
+  return navMiniMap;
+}
+
+// ナビ中の概況ミニマップ（ワイプ）。メイン地図はヘッドアップで回転するため、
+// 常に北が上のまま現在地とゴールの位置関係を把握できるようにする。
+function updateNavMiniMap(){
+  if (!navActive || !navMiniMap) return;
+  if (navMiniMapCurrentMarker){ navMiniMap.removeLayer(navMiniMapCurrentMarker); navMiniMapCurrentMarker = null; }
+  if (navMiniMapDestMarker){ navMiniMap.removeLayer(navMiniMapDestMarker); navMiniMapDestMarker = null; }
+  if (navMiniMapRouteLine){ navMiniMap.removeLayer(navMiniMapRouteLine); navMiniMapRouteLine = null; }
+
+  if (activeNavRouteCoords && activeNavRouteCoords.length > 1){
+    const latlngs = activeNavRouteCoords.map(c => [c[1], c[0]]);
+    navMiniMapRouteLine = L.polyline(latlngs, { color:'#1a73e8', weight:3, opacity:0.85 }).addTo(navMiniMap);
+  }
+  if (currentLocation){
+    navMiniMapCurrentMarker = L.circleMarker(currentLocation, {
+      radius:6, color:'#fff', weight:2, fillColor:'#1a73e8', fillOpacity:1
+    }).addTo(navMiniMap);
+  }
+  if (destination){
+    navMiniMapDestMarker = L.marker(destination, { icon: createPinIcon('#e53935', 'G') }).addTo(navMiniMap);
+  }
+
+  const bounds = [];
+  if (currentLocation) bounds.push(currentLocation);
+  if (destination) bounds.push(destination);
+  if (bounds.length === 2){
+    navMiniMap.fitBounds(L.latLngBounds(bounds), { padding:[20, 20] });
+  } else if (bounds.length === 1){
+    navMiniMap.setView(bounds[0], 16);
+  }
+}
 
 const NAV_MODIFIER_ICON = {
   uturn:'u_turn_left', 'sharp right':'turn_sharp_right', right:'turn_right',
@@ -3251,6 +3316,17 @@ function startNavigation(){
 
   updateNavStartMarker(); // ナビ中はマップ上の「ナビ開始」バッジを消す
 
+  // ナビ中はハザードパネル（検索・ハザードボタン列）と右側ファンクションボタンを隠し、
+  // 代わりに右上へ常に北が上のワイプ（概況ミニマップ）を表示する
+  const searchBar = document.getElementById('searchContainer');
+  if (searchBar) searchBar.style.display = 'none';
+  const rightControls = document.getElementById('rightControlContainer');
+  if (rightControls) rightControls.style.display = 'none';
+  const miniContainer = document.getElementById('navMiniMapContainer');
+  if (miniContainer) miniContainer.classList.add('active');
+  ensureNavMiniMap();
+  setTimeout(() => { if (navMiniMap) navMiniMap.invalidateSize(); updateNavMiniMap(); }, 60);
+
   const panel = document.getElementById('statusPanel');
   if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
   panel.setAttribute('data-size', 'normal');
@@ -3281,6 +3357,15 @@ function endNavigation(){
     try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   }
   if (headingUpModeActive && !navPrevHeadingUpState) setHeadingUpMode(false);
+
+  const searchBar = document.getElementById('searchContainer');
+  if (searchBar) searchBar.style.display = '';
+  const rightControls = document.getElementById('rightControlContainer');
+  if (rightControls) rightControls.style.display = '';
+  const miniContainer = document.getElementById('navMiniMapContainer');
+  if (miniContainer) miniContainer.classList.remove('active');
+  syncHeaderOffsets();
+
   updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
 }
 
