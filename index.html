@@ -429,32 +429,27 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,0));
 }
 /* =========================================================================
-   ステータスパネルの水平フリップ（カードめくり）演出。ナビ開始時に
-   perspectiveを親に、実際の回転(rotateY)は内側のpanel-flip-innerに掛け、
-   表(通常タブ群)と裏(ターン・バイ・ターンのナビ表示)をbackface-visibility:hidden
-   で使い分ける。Googleマップの音声ナビのような、大きな矢印＋距離＋指示文の
-   カードが裏面に現れるイメージ。
+   ステータスパネルの表裏切り替え（通常タブ群 ⇔ ターン・バイ・ターンのナビ表示）。
+   以前はrotateY(180deg)の3D flipで実装していたが、機種によっては
+   backface-visibilityが完全に効かず、表面のボタンやタブが裏面に透けて見えたり
+   パネル自体の位置がずれて見えることがあったため、opacity+scaleXによる
+   2Dのクロスフェードに変更。#statusPanel自体には一切transformを掛けないため、
+   最下段固定の位置は常に安定する。
    ========================================================================= */
-#statusPanel{ perspective:1400px; }
-.panel-flip-inner{
-  position:relative; width:100%; height:100%;
-  transform-style:preserve-3d;
-  transition:transform .6s cubic-bezier(.34,1.56,.64,1);
-}
-.panel-flip-inner.flipped{ transform:rotateY(180deg); }
+.panel-flip-inner{ position:relative; width:100%; height:100%; }
 .panel-face{
   position:absolute; inset:0;
-  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1);
+  transform-origin:center center;
 }
-.panel-face-front{ pointer-events:auto; }
+.panel-face-front{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
 .panel-face-back{
-  transform:rotateY(180deg);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   padding:16px; box-sizing:border-box; text-align:center;
-  pointer-events:none;
+  opacity:0; transform:scaleX(0); pointer-events:none; z-index:1;
 }
-.panel-flip-inner.flipped .panel-face-front{ pointer-events:none; }
-.panel-flip-inner.flipped .panel-face-back{ pointer-events:auto; }
+.panel-flip-inner.flipped .panel-face-front{ opacity:0; transform:scaleX(0); pointer-events:none; z-index:1; }
+.panel-flip-inner.flipped .panel-face-back{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
 #navEndBtn{
   position:absolute!important; top:8px!important; left:8px!important; right:auto!important;
 }
@@ -485,6 +480,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   font-size:14px; color:#c3cfe8;
 }
 .nav-sub-row b{ color:#fff; }
+.nav-progress-bar{
+  width:82%; max-width:230px; height:10px; margin:8px 0 2px;
+  border-radius:6px; background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.28); overflow:hidden;
+}
+.nav-progress-fill{
+  height:100%; width:0%; border-radius:6px;
+  background:linear-gradient(90deg, #1a73e8, #00d4ff);
+  box-shadow:0 0 8px 1px rgba(0,212,255,.6);
+  transition:width .4s ease;
+}
 .nav-zoom-row{ display:flex; gap:12px; margin-top:12px; }
 .nav-cancel-btn{
   margin-top:14px; width:100%; max-width:260px; padding:10px 16px;
@@ -1219,6 +1225,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </button>
   <div class="nav-maneuver-icon" id="navManeuverIcon"><span class="material-icons-round">straight</span></div>
   <div id="navDistanceToStep">-- m</div>
+  <div class="nav-progress-bar"><div class="nav-progress-fill" id="navProgressFill"></div></div>
   <div id="navInstructionText">ルートを計算しています…</div>
   <div class="nav-sub-row">
     <span>残り <b id="navRemainingDist">--</b></span>
@@ -3140,6 +3147,10 @@ async function activateHazardRoute(idx){
 let activeNavRouteData = null;   // 現在アクティブな経路のOSRM route(legs/steps)オブジェクト
 let activeNavRouteCoords = null; // 現在アクティブな経路のジオメトリ（[lon,lat]の配列）
 let navActive = false;
+// navStepIndexは「現在歩いている区間(0=出発直後)」を表す。案内すべき指示は
+// 常に「その次」の分岐(navSteps[navStepIndex+1])であり、navSteps[navStepIndex]
+// 自体は既に通過済みの分岐なので表示には使わない（以前はここがズレて
+// 曲がった後に指示が表示される="精度が悪い"状態になっていた）。
 let navSteps = [];
 let navStepIndex = 0;
 let navStepCumDist = [];  // 各ステップ開始時点での、経路全体に対する累積距離(m)
@@ -3149,10 +3160,19 @@ let navRouteCum = null;   // navRoutePtsに対応する累積距離(m)
 let navMuted = false;
 let navPrevHeadingUpState = false; // ナビ開始前のヘッドアップ状態（終了時に復元）
 let navStartMarker = null;
+let navHiddenGreenLayer = false;    // ナビ中に緑ルートを隠したかどうか
+let navHiddenRouteLabels = [];      // ナビ中に隠したルートラベルマーカー
+let navRerouting = false;
+let navLastRerouteTime = 0;
 let navMiniMap = null;
 let navMiniMapCurrentMarker = null;
 let navMiniMapDestMarker = null;
 let navMiniMapRouteLine = null;
+
+const NAV_ARRIVE_THRESHOLD_M = 15;
+const NAV_MAX_ACCURACY_M = 40;      // これより精度が悪いGPS測位はステップ判定に使わない
+const NAV_REROUTE_DISTANCE_M = 40;  // 経路からこれ以上離れたらリルート
+const NAV_REROUTE_COOLDOWN_MS = 20000; // リルートの最短間隔
 
 function ensureNavMiniMap(){
   if (navMiniMap) return navMiniMap;
@@ -3226,6 +3246,12 @@ function buildInstructionText(step){
   return roadName + (NAV_MODIFIER_TEXT[mod] || 'そのまま進んでください');
 }
 
+// 案内すべき「次の分岐」のステップを返す（常にnavStepIndexの1つ先）
+function getUpcomingStep(){
+  const idx = Math.min(navStepIndex + 1, navSteps.length - 1);
+  return navSteps[idx];
+}
+
 function formatNavDistance(m){
   if (!isFinite(m) || m < 0) return '-- m';
   if (m >= 1000) return (m / 1000).toFixed(1) + ' km';
@@ -3281,7 +3307,7 @@ function updateNavRemaining(traveledDist){
 }
 
 function updateNavDisplay(){
-  const step = navSteps[navStepIndex];
+  const step = getUpcomingStep();
   if (!step) return;
   const iconEl = document.querySelector('#navManeuverIcon .material-icons-round');
   const textEl = document.getElementById('navInstructionText');
@@ -3295,26 +3321,45 @@ function updateNavDisplay(){
   updateNavRemaining();
 }
 
+// ナビ中は緑（代替）ルートと、経路切り替え用のラベルバッジ類を非表示にする
+// （ターン・バイ・ターン中は経路変更の必要がなく、地図の見通しを優先する）
+function hideNonEssentialRouteLayersForNav(){
+  navHiddenGreenLayer = !!(greenRouteLayer && map.hasLayer(greenRouteLayer));
+  if (navHiddenGreenLayer) map.removeLayer(greenRouteLayer);
+  navHiddenRouteLabels = routeLabelMarkers.filter(m => map.hasLayer(m));
+  navHiddenRouteLabels.forEach(m => map.removeLayer(m));
+}
+function restoreNonEssentialRouteLayersAfterNav(){
+  if (navHiddenGreenLayer && greenRouteLayer && !map.hasLayer(greenRouteLayer)) greenRouteLayer.addTo(map);
+  navHiddenGreenLayer = false;
+  navHiddenRouteLabels.forEach(m => { if (!map.hasLayer(m)) m.addTo(map); });
+  navHiddenRouteLabels = [];
+}
+
+function buildNavStepTables(routeData, coords){
+  const steps = routeData.legs.flatMap(leg => leg.steps || []);
+  let cum = 0;
+  const cumDist = steps.map(s => { const c = cum; cum += (s.distance || 0); return c; });
+  const latlngs = coords.map(c => [c[1], c[0]]);
+  const built = buildCumulativeDistances(latlngs);
+  return { steps, cumDist, total: cum, pts: built.pts, cum2: built.cum };
+}
+
 function startNavigation(){
   if (!activeNavRouteData || !activeNavRouteData.legs || !activeNavRouteCoords) return;
-  navSteps = activeNavRouteData.legs.flatMap(leg => leg.steps || []);
+  const built = buildNavStepTables(activeNavRouteData, activeNavRouteCoords);
+  navSteps = built.steps;
   if (!navSteps.length) return;
 
   navActive = true;
-  navStepIndex = navSteps.length > 1 ? 1 : 0;
-
-  // 各ステップ開始時点の累積距離テーブルを作成（GPS投影で求めた進行距離から
-  // 現在ステップを逆引きできるようにする）
-  let cum = 0;
-  navStepCumDist = navSteps.map(s => { const c = cum; cum += (s.distance || 0); return c; });
-  navTotalDist = cum;
-
-  const routeLatLngs = activeNavRouteCoords.map(c => [c[1], c[0]]);
-  const built = buildCumulativeDistances(routeLatLngs);
+  navStepIndex = 0; // 出発直後。案内は常にnavStepIndex+1（＝最初の分岐）を指す
+  navStepCumDist = built.cumDist;
+  navTotalDist = built.total;
   navRoutePts = built.pts;
-  navRouteCum = built.cum;
+  navRouteCum = built.cum2;
 
   updateNavStartMarker(); // ナビ中はマップ上の「ナビ開始」バッジを消す
+  hideNonEssentialRouteLayersForNav();
 
   // ナビ中はハザードパネル（検索・ハザードボタン列）と右側ファンクションボタンを隠し、
   // 代わりに右上へ常に北が上のワイプ（概況ミニマップ）を表示する
@@ -3342,7 +3387,7 @@ function startNavigation(){
 
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
-  speakInstruction('ナビを開始します。' + buildInstructionText(navSteps[navStepIndex]));
+  speakInstruction('ナビを開始します。' + buildInstructionText(getUpcomingStep()));
 }
 
 function endNavigation(){
@@ -3351,12 +3396,15 @@ function endNavigation(){
   navStepIndex = 0;
   navRoutePts = null;
   navRouteCum = null;
+  navRerouting = false;
   const flipInner = document.getElementById('panelFlipInner');
   if (flipInner) flipInner.classList.remove('flipped');
   if ('speechSynthesis' in window){
     try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
   }
   if (headingUpModeActive && !navPrevHeadingUpState) setHeadingUpMode(false);
+
+  restoreNonEssentialRouteLayersAfterNav();
 
   const searchBar = document.getElementById('searchContainer');
   if (searchBar) searchBar.style.display = '';
@@ -3378,12 +3426,9 @@ function toggleNavMute(){
   }
 }
 
-const NAV_ARRIVE_THRESHOLD_M = 15;
-const NAV_MAX_ACCURACY_M = 40; // これより精度が悪いGPS測位はステップ判定に使わない
-
-// 現在地を経路の折れ線上に投影し、最も近い区間における進行距離(m)を返す。
-// 単純な「次の分岐点までの直線距離」よりGPSの横ブレに強く、複数区間先へ
-// 一気に進んだ場合も正しく現在地の進行度を推定できる。
+// 現在地を経路の折れ線上に投影し、最も近い区間における進行距離(m)と、
+// 経路からの垂直距離(m)を返す。単純な「次の分岐点までの直線距離」より
+// GPSの横ブレに強く、複数区間先へ一気に進んだ場合も正しく追従できる。
 function projectLatLngToSegment(p, a, b){
   const cosLat = Math.cos(a.lat * Math.PI / 180) || 1;
   const toXY = (ll) => ({ x:(ll.lng - a.lng) * cosLat * 111320, y:(ll.lat - a.lat) * 111320 });
@@ -3408,12 +3453,79 @@ function projectToNavRoute(latlng){
   return best;
 }
 
+// 現在地が経路から大きく外れた場合に、現在地→同じ目的地で経路を再計算する。
+// 連続でリルートし続けないよう、実行中フラグとクールダウンで抑制する。
+async function rerouteNavigation(){
+  if (navRerouting || !navActive || !currentLocation || !destination) return;
+  const now = Date.now();
+  if (now - navLastRerouteTime < NAV_REROUTE_COOLDOWN_MS) return;
+  navRerouting = true;
+  navLastRerouteTime = now;
+
+  const textEl = document.getElementById('navInstructionText');
+  if (textEl) textEl.innerText = 'ルートを再計算しています…';
+  speakInstruction('ルートを再計算しています');
+
+  try {
+    const from = `${currentLocation.lng},${currentLocation.lat}`;
+    const to = `${destination.lng},${destination.lat}`;
+    const res = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson&steps=true`)
+      .then(r => r.json()).catch(() => null);
+    const newRoute = res && res.routes && res.routes[0];
+    if (!newRoute || !navActive){ navRerouting = false; return; }
+
+    const coords = newRoute.geometry.coordinates;
+    const latlngs = coords.map(c => [c[1], c[0]]);
+    const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
+
+    if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
+    const segments = buildColoredRouteSegments(latlngs, pointFlags);
+    routeLayer = L.layerGroup(segments.flatMap(seg => [
+      L.polyline(seg.points, { color:'#000000', weight:28, opacity:0.01 }),
+      L.polyline(seg.points, { color: seg.color, weight:9, opacity:0.9 })
+    ])).addTo(map);
+    bringHazardRouteToFront();
+    updateRouteHazardAlert(foundTypes);
+
+    document.getElementById('walkTime').innerText = `${Math.round(newRoute.duration / 60)} 分`;
+    document.getElementById('walkDist').innerText = `(${(newRoute.distance / 1000).toFixed(1)} km)`;
+
+    activeNavRouteData = newRoute;
+    activeNavRouteCoords = coords;
+
+    const built = buildNavStepTables(newRoute, coords);
+    navSteps = built.steps;
+    navStepIndex = 0;
+    navStepCumDist = built.cumDist;
+    navTotalDist = built.total;
+    navRoutePts = built.pts;
+    navRouteCum = built.cum2;
+
+    updateNavDisplay();
+    updateNavMiniMap();
+    if (currentLocation) updateNavigationProgress(currentLocation);
+    speakInstruction('新しいルートを案内します。' + buildInstructionText(getUpcomingStep()));
+
+    buildElevationProfileData(coords, pointFlags).then(data => {
+      renderElevationProfile(data);
+      updateElevationExtremes(data);
+    });
+  } catch { /* 失敗時はクールダウン後に次回の逸脱で再試行される */ }
+  finally {
+    navRerouting = false;
+  }
+}
+
 function updateNavigationProgress(latlng, accuracy){
   if (!navActive || !navSteps.length) return;
   if (typeof accuracy === 'number' && accuracy > NAV_MAX_ACCURACY_M) return;
 
   const proj = projectToNavRoute(latlng);
   if (!proj) return;
+
+  if (proj.dist > NAV_REROUTE_DISTANCE_M){
+    rerouteNavigation();
+  }
 
   // 進行距離から該当ステップを特定。GPSのジャンプで複数ステップ分
   // 進んでいた場合も追従できるよう、条件を満たす限り前方へ進める（後退はしない）。
@@ -3422,14 +3534,19 @@ function updateNavigationProgress(latlng, accuracy){
   if (idx > navStepIndex){
     navStepIndex = idx;
     updateNavDisplay();
-    speakInstruction(buildInstructionText(navSteps[navStepIndex]));
+    speakInstruction(buildInstructionText(getUpcomingStep()));
   }
 
-  const distToNext = navStepIndex < navSteps.length - 1
-    ? Math.max(0, navStepCumDist[navStepIndex + 1] - proj.cumDist)
-    : Math.max(0, navTotalDist - proj.cumDist);
+  const segStart = navStepCumDist[navStepIndex] || 0;
+  const segEnd = navStepIndex < navSteps.length - 1 ? navStepCumDist[navStepIndex + 1] : navTotalDist;
+  const distToNext = Math.max(0, segEnd - proj.cumDist);
   const distEl = document.getElementById('navDistanceToStep');
   if (distEl) distEl.innerText = formatNavDistance(distToNext);
+
+  const segLen = segEnd - segStart;
+  const progressFrac = segLen > 0 ? Math.max(0, Math.min(1, (proj.cumDist - segStart) / segLen)) : 1;
+  const fillEl = document.getElementById('navProgressFill');
+  if (fillEl) fillEl.style.width = (progressFrac * 100).toFixed(0) + '%';
 
   updateNavRemaining(proj.cumDist);
 
