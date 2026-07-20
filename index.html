@@ -321,11 +321,11 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .right-control-items.expand-left.expanded{ max-width:600px; overflow:visible; }
 .right-control-items > *{
-  opacity:0; transform:translateY(-10px); flex-shrink:0;
-  transition:opacity .25s ease, transform .25s ease;
+  opacity:0; transform:translateY(-18px) scale(.5); transform-origin:center top; flex-shrink:0;
+  transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.56,.64,1);
 }
-.right-control-items.expand-left > *{ transform:translateX(10px); }
-.right-control-items.expanded > *{ opacity:1; transform:translate(0,0); }
+.right-control-items.expand-left > *{ transform:translateX(18px) scale(.5); transform-origin:right center; }
+.right-control-items.expanded > *{ opacity:1; transform:translate(0,0) scale(1); }
 .right-control-items.expanded > *:nth-child(1){ transition-delay:.03s; }
 .right-control-items.expanded > *:nth-child(2){ transition-delay:.08s; }
 .right-control-items.expanded > *:nth-child(3){ transition-delay:.13s; }
