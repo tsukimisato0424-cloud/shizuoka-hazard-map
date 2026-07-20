@@ -107,9 +107,32 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   margin:0!important; pointer-events:none;
 }
 .custom-search-bar-compact{
-  flex:0 0 58px; width:58px; display:flex; align-items:center; height:auto;
-  background:rgba(255,255,255,.14); border-radius:10px; padding:1px;
+  position:relative; overflow:hidden;
+  flex:0 0 58px; width:58px; height:56px; box-sizing:border-box;
+  border:2px solid rgba(255,255,255,.32); border-radius:13px;
+  backdrop-filter:blur(8px) saturate(200%); -webkit-backdrop-filter:blur(8px) saturate(200%);
+  background:linear-gradient(160deg, rgba(120,140,255,.46) 0%, rgba(55,60,180,.30) 100%);
+  box-shadow:0 5px 10px rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.35) inset, 0 -4px 8px rgba(255,255,255,.12) inset;
+  padding:1px;
 }
+.custom-search-bar-compact::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:radial-gradient(circle at 22% 14%, rgba(255,255,255,.45), rgba(255,255,255,0) 55%);
+}
+.search-tile-collapsed{
+  position:absolute; inset:0; z-index:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1px; cursor:pointer;
+  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);
+  transition:opacity .2s ease; pointer-events:auto;
+}
+.search-tile-collapsed .material-icons-round{ font-size:27px; filter:drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
+.search-tile-collapsed .tile-label{ font-size:12px!important; font-weight:800; letter-spacing:0; }
+.search-tile-expanded{
+  position:absolute; inset:0; z-index:1; display:flex; align-items:center;
+  opacity:0; pointer-events:none; transition:opacity .2s ease;
+}
+#searchContainer.search-expanded .search-tile-collapsed{ opacity:0; pointer-events:none; }
+#searchContainer.search-expanded .search-tile-expanded{ opacity:1; pointer-events:auto; }
 .custom-search-bar-compact input{
   flex:1; min-width:0; height:100%; border:none; outline:none; font-size:11px!important;
   letter-spacing:0; padding:0 0 0 6px; background:transparent; color:#fff; box-sizing:border-box;
@@ -829,7 +852,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   .hazard-btn.hazard-tile{ height:42px; font-size:0!important; border-radius:9px; }
   .hazard-btn.hazard-tile span:not(.material-icons-round){ display:none; }
   .hazard-btn.hazard-tile .material-icons-round{ font-size:18px; margin-bottom:0; }
-  .custom-search-bar-compact{ flex-basis:46px; width:46px; }
+  .custom-search-bar-compact{ flex-basis:46px; width:46px; height:42px; }
+  .search-tile-collapsed .material-icons-round{ font-size:20px; }
+  .search-tile-collapsed .tile-label{ display:none; }
   .custom-search-bar-compact input{ font-size:0!important; padding:8px 0 8px 6px; }
   .search-icon-btn-compact{ width:24px; height:24px; }
   .hazard-tile-row{ gap:3px; }
@@ -878,10 +903,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <div id="searchContainer" class="glass-panel top-bar">
   <div class="top-bar-row">
     <div class="custom-search-bar-compact">
-      <input type="text" id="customSearchInput" placeholder="施設・住所">
-      <button class="search-icon-btn-compact" id="customSearchBtn">
+      <div class="search-tile-collapsed" id="searchTileCollapsed">
         <span class="material-icons-round">search</span>
-      </button>
+        <span class="tile-label">検索</span>
+      </div>
+      <div class="search-tile-expanded">
+        <input type="text" id="customSearchInput" placeholder="施設・住所">
+        <button class="search-icon-btn-compact" id="customSearchBtn">
+          <span class="material-icons-round">search</span>
+        </button>
+      </div>
     </div>
     <div class="hazard-tile-row">
       <button class="hazard-btn hazard-tile" data-type="flood"><span class="material-icons-round">water</span>洪水</button>
@@ -1280,6 +1311,7 @@ window.triggerRouteToShelter = (lat, lng) => {
   map.closePopup();
   deactivateEmergencyMode();
   selectLocation(lat, lng);
+  updateDetails(lat, lng);
 };
 
 const LANDFORM_MAX_ZOOM = 16;
@@ -3808,6 +3840,10 @@ async function executeHybridSearch(query){
 }
 
 const searchInput = document.getElementById('customSearchInput');
+const searchTileCollapsed = document.getElementById('searchTileCollapsed');
+if (searchTileCollapsed){
+  searchTileCollapsed.addEventListener('click', () => searchInput.focus());
+}
 searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') executeHybridSearch(searchInput.value); });
 searchInput.addEventListener('focus', () => { document.getElementById('searchContainer').classList.add('search-expanded'); });
 searchInput.addEventListener('blur', () => {
