@@ -2414,7 +2414,7 @@ function setHeadingUpMode(active){
     document.documentElement.style.setProperty('--map-counter-rotation', '0deg');
     updateNorthIndicator();
     map.invalidateSize({ pan:false });
-    map.dragging.enable();
+    if (!navActive) map.dragging.enable();
     applyHeadingToMarker();
     if (currentLocation) map.panTo(currentLocation, { animate:true });
   }
@@ -2474,6 +2474,14 @@ function startContinuousTracking(){
       currentMarker = L.marker(newLoc, { icon: currentLocationIcon }).addTo(map);
       displayedLocation = newLoc;
       applyHeadingToMarker();
+    } else if (navActive){
+      // ナビ中は地図側のpanTo(下記)が中心をこの地点へ合わせにいくため、
+      // マーカー自身は独自のイージングで補間せずそのまま実座標に置く。
+      // 2つの別々のアニメーション（マーカー補間と地図パン）が異なる
+      // イージングで同時に走ると、現在地が画面中央から一瞬ズレて見える
+      // （置き去りにされたように見える）原因になっていたため。
+      currentMarker.setLatLng(newLoc);
+      displayedLocation = newLoc;
     } else {
       animateMarkerTo(newLoc);
     }
