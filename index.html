@@ -534,8 +534,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 
 /* 地図上の「案内地点」標識マーカー。パネル側のアイコンと同じ形・同じ点滅で表示し、
-   「この角を曲がるための標識」であることが一目でわかるようにする */
+   「この角を曲がるための標識」であることが一目でわかるようにする。
+   外側の要素で地図の回転を打ち消す(--map-counter-rotation)ことで、ヘッドアップ中
+   マップ本体が回転してもこの標識アイコン自体は常に正立を保つ。
+   ※国土地理院タイルの地名等はラスター画像に焼き込まれているため、これは
+   打ち消せない（ベクトルタイルでない限り不可能）。 */
 .nav-map-maneuver-icon-wrap{ background:transparent!important; border:none!important; }
+.nav-map-maneuver-icon-outer{
+  transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear;
+  display:flex; align-items:center; justify-content:center;
+}
 .nav-map-maneuver-icon{
   width:52px; height:52px; border-radius:50%;
   background:linear-gradient(160deg, rgba(120,180,255,.55) 0%, rgba(20,60,140,.55) 100%);
@@ -3361,7 +3369,7 @@ function updateNavRemaining(traveledDist){
 let navManeuverMapMarker = null;
 
 function createNavManeuverMapIcon(iconName){
-  const html = `<div class="nav-map-maneuver-icon"><span class="material-icons-round">${iconName}</span></div>`;
+  const html = `<div class="nav-map-maneuver-icon-outer"><div class="nav-map-maneuver-icon"><span class="material-icons-round">${iconName}</span></div></div>`;
   return L.divIcon({ className:'nav-map-maneuver-icon-wrap', html, iconSize:[52, 52], iconAnchor:[26, 26] });
 }
 
@@ -4929,6 +4937,14 @@ document.addEventListener('pointercancel', e => {
 });
 
 document.addEventListener('touchstart', () => {}, true);
+
+// Safariのピンチズーム（2本指ジェスチャー）はtouch-action/viewportメタだけでは
+// 完全に防げないことがあり、地図をピンチ操作した後にページ全体が拡大されたままになって
+// 固定配置のパネル類がズレて見える不具合の原因になっていた。gesture系イベントを
+// 明示的に無効化し、ページ自体の拡大縮小を確実に抑止する。
+['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+  document.addEventListener(evt, e => e.preventDefault());
+});
 
 /* =========================================================================
    検索/ハザードバーの実際の高さを毎回測って、凡例などの右側フローティング群の
