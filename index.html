@@ -56,7 +56,7 @@ body::before, body::after{
 }
 body::before{ top:0; height:env(safe-area-inset-top,0px); }
 body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
-#map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
+#map{ height:100%; width:100%; position:fixed; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
 /* ヘッドアップ回転時、地図を拡大して四隅が切れないようにする。150%では
    回転角によって対角線が足りず四隅が切れて背景色が見えることがあったため
    200%に拡大。vh/vwはアドレスバー分の高さのズレの影響を受けるため、
@@ -3546,8 +3546,17 @@ function startNavigation(){
   if (!headingUpModeActive) setHeadingUpMode(true);
   // ヘッドアップの回転処理とパン/ズームのアニメーションを同時に走らせると
   // Leafletの内部座標計算が競合して地図が一瞬乱れることがあったため、
-  // 回転の適用を先に済ませてからズームは即時反映（アニメーションなし）にする
+  // 回転の適用を先に済ませてからズームは即時反映（アニメーションなし）にする。
+  // さらに、開始前に地図をドラッグしていた場合、回転モード用コンテナの
+  // リサイズ(200%拡大)とLeaflet内部のサイズ再計算が同期フレーム内では
+  // 間に合わず、位置がズレて見えることがあったため、1フレーム待ってから
+  // 最終的な中心合わせをやり直す。
   if (currentLocation) map.setView(currentLocation, Math.max(map.getZoom(), 18), { animate:false });
+  requestAnimationFrame(() => {
+    if (!navActive) return;
+    map.invalidateSize({ pan:false });
+    if (currentLocation) map.setView(currentLocation, map.getZoom(), { animate:false });
+  });
 
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
