@@ -43,10 +43,14 @@ html, body{
 /* 100%/100vhはアドレスバー等が表示された状態の実際に見える高さではなく
    「最大想定の高さ」で計算されてしまうことがあり、ステータスパネルやワイプの
    bottom/top指定が実画面の下端からズレて浮いて見える原因になっていた。
-   dvh（実際に見えているビューポート高さ）が使える環境ではそちらを優先する。 */
+   dvh（実際に見えているビューポート高さ）が使える環境ではそちらを優先しつつ、
+   さらにJS側でvisualViewportを継続監視して--real-vh/--real-vwに反映することで、
+   ドラッグ・ピンチ操作中にアドレスバーが出入りした場合も追従できるようにする
+   （dvhの再計算タイミングに依存しない、より確実な二重の対策）。 */
 @supports (height: 100dvh){
   html, body{ height:100dvh; }
 }
+html, body{ height:var(--real-vh, 100%); width:var(--real-vw, 100%); }
 body::before, body::after{
   content:""; position:fixed; left:0; right:0; background:var(--brand); z-index:100000; pointer-events:none;
 }
@@ -56,10 +60,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 /* ヘッドアップ回転時、地図を拡大して四隅が切れないようにする。150%では
    回転角によって対角線が足りず四隅が切れて背景色が見えることがあったため
    200%に拡大。vh/vwはアドレスバー分の高さのズレの影響を受けるため、
-   dvh/dvwが使える環境ではそちらを優先する。 */
+   dvh/dvw、さらにJS側の--real-vh/--real-vwが使える環境ではそちらを優先する。 */
 #map.heading-rotate-mode{ height:200vh; width:200vw; top:50%; left:50%; }
 @supports (height: 100dvh){
   #map.heading-rotate-mode{ height:200dvh; width:200dvw; }
+}
+#map.heading-rotate-mode{
+  height:calc(var(--real-vh, 100vh) * 2);
+  width:calc(var(--real-vw, 100vw) * 2);
 }
 .glass-panel {
   position:relative; overflow:hidden;
@@ -555,9 +563,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-mini-map-container{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px));
-  width:128px; height:128px; z-index:1000; border-radius:18px; overflow:hidden;
+  width:154px; height:154px; z-index:1000; border-radius:18px; overflow:hidden;
   border:2px solid rgba(255,255,255,.55); box-shadow:0 10px 24px rgba(0,10,30,.5);
   display:none;
+  /* ミニマップ自体は常に北固定で回転しないため、メイン地図の回転打ち消し量を
+     継承させない（継承すると自作ピン等が誤って回転してしまう） */
+  --map-counter-rotation: 0deg;
 }
 .nav-mini-map-container.active{ display:block; }
 #navMiniMap{ width:100%; height:100%; }
@@ -1308,6 +1319,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 
 <script>
 'use strict';
+
+// 実際に見えているビューポートサイズ（アドレスバーの出入りを含む）をCSS変数へ
+// 反映する。ドラッグやピンチ操作の最中にアドレスバーが出入りしても、dvhの
+// 再計算タイミングに頼らずズレなく追従できるようにするための保険。
+function updateRealViewportSize(){
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  const w = vv ? vv.width : window.innerWidth;
+  document.documentElement.style.setProperty('--real-vh', h + 'px');
+  document.documentElement.style.setProperty('--real-vw', w + 'px');
+}
+updateRealViewportSize();
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', updateRealViewportSize);
+  window.visualViewport.addEventListener('scroll', updateRealViewportSize);
+} else {
+  window.addEventListener('resize', updateRealViewportSize);
+}
 
 function checkPassword(){
   const input = document.getElementById('passInput').value;
