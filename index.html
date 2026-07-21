@@ -109,7 +109,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #headingToggleBtn.active .north-indicator, #navHeadingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
 #navHeadingToggleBtn{
-  position:absolute; width:44px; height:44px;
+  position:fixed; width:44px; height:44px;
   top:calc(10px + env(safe-area-inset-top,0px) + 154px + 10px);
   right:calc(10px + env(safe-area-inset-right,0px) + 5px);
   z-index:1000; display:none;
@@ -442,7 +442,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .heading-cone.visible{ opacity:1; }
 #statusPanel{
-  position:absolute; bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1500; overflow:visible; border-radius:24px!important; height:200px;
   touch-action:none; transition:transform .4s cubic-bezier(.175,.885,.32,1275), box-shadow .4s ease, height .3s ease;
@@ -568,7 +568,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .nav-map-maneuver-icon .material-icons-round{ font-size:26px; color:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
 .nav-mini-map-container{
-  position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
+  position:fixed; top:calc(10px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px));
   width:154px; height:154px; z-index:1000; border-radius:18px; overflow:hidden;
   border:2px solid rgba(255,255,255,.55); box-shadow:0 10px 24px rgba(0,10,30,.5);
@@ -3526,6 +3526,10 @@ function startNavigation(){
   const panel = document.getElementById('statusPanel');
   if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
   panel.classList.add('nav-mode');
+  // toggleStatusPanel()等が残したtransformが万一残っていても、ナビ開始時は
+  // 必ず最下段の定位置に強制的にリセットする（position:fixed化と合わせた二重の保険）
+  panel.style.transform = 'none';
+  panel.style.bottom = 'calc(20px + env(safe-area-inset-bottom,0px))';
 
   const flipInner = document.getElementById('panelFlipInner');
   if (flipInner) flipInner.classList.add('flipped');
