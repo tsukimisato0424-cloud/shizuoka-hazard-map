@@ -96,18 +96,25 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .round-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
 .round-btn:disabled{ opacity:.35; pointer-events:none; }
 .round-btn .material-icons-round{ position:relative; z-index:1; font-size:26px; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#headingToggleBtn{ position:relative; }
-#headingToggleBtn .north-indicator{
+#headingToggleBtn, #navHeadingToggleBtn{ position:relative; }
+#headingToggleBtn .north-indicator, #navHeadingToggleBtn .north-indicator{
   position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
   width:24px; height:24px; border-radius:50%; font-size:12px; font-weight:900;
   color:#e53935; background:#ffffff; box-shadow:0 0 0 2px rgba(70,130,180,.25) inset;
   transform:rotate(0deg); transition:transform .25s linear;
 }
-#headingToggleBtn.active{
+#headingToggleBtn.active, #navHeadingToggleBtn.active{
   background:linear-gradient(135deg,#2f80ed,#0d47a1); border-color:#fff;
   box-shadow:0 0 18px 4px rgba(47,128,237,.75), 0 4px 10px rgba(0,0,0,.25);
 }
-#headingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
+#headingToggleBtn.active .north-indicator, #navHeadingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
+#navHeadingToggleBtn{
+  position:absolute; width:44px; height:44px;
+  top:calc(10px + env(safe-area-inset-top,0px) + 154px + 10px);
+  right:calc(10px + env(safe-area-inset-right,0px) + 5px);
+  z-index:1000; display:none;
+}
+#navHeadingToggleBtn.nav-visible{ display:flex; }
 #searchContainer{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px)); right:calc(10px + env(safe-area-inset-right,0px));
@@ -1109,6 +1116,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <span class="nav-mini-map-n">N</span>
   <div id="navMiniMap"></div>
 </div>
+
+<button id="navHeadingToggleBtn" class="round-btn" type="button" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
+  <span class="north-indicator" id="navNorthIndicator">N</span>
+</button>
 
 <div id="rightControlContainer">
   <button id="rightControlToggle" class="round-btn control-toggle-btn" type="button" aria-label="ツール表示切替" title="ツール表示切替">
@@ -2131,6 +2142,7 @@ let terrainMeshTilt = 0.5;   // 上下の見下ろし角度（小さいほど真
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
 let routeCandidates = [];
+let routeRequestToken = 0; // 新しいルート計算が始まったら古い非同期処理の結果を破棄するためのトークン
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
 
@@ -2230,6 +2242,7 @@ function startSyncedRouteLightFlow(){
 }
 
 function clearRouteLayers(){
+  routeRequestToken++;
   if (routeLayer){ map.removeLayer(routeLayer); routeLayer = null; }
   if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
   clearRouteLightLayers();
@@ -2349,9 +2362,11 @@ function applyMapRotationTransform(){
 }
 
 function updateNorthIndicator(){
+  const deg = headingUpModeActive ? mapRotationDeg : 0;
   const el = document.getElementById('northIndicator');
-  if (!el) return;
-  el.style.transform = `rotate(${headingUpModeActive ? mapRotationDeg : 0}deg)`;
+  if (el) el.style.transform = `rotate(${deg}deg)`;
+  const navEl = document.getElementById('navNorthIndicator');
+  if (navEl) navEl.style.transform = `rotate(${deg}deg)`;
 }
 
 function correctedClientToLatLng(clientX, clientY){
@@ -2373,6 +2388,8 @@ function setHeadingUpMode(active){
   enableCompass();
   headingUpModeActive = active;
   headingToggleBtn.classList.toggle('active', headingUpModeActive);
+  const navHeadingBtn = document.getElementById('navHeadingToggleBtn');
+  if (navHeadingBtn) navHeadingBtn.classList.toggle('active', headingUpModeActive);
   const mapEl = map.getContainer();
 
   if (headingUpModeActive){
@@ -2406,6 +2423,12 @@ function setHeadingUpMode(active){
 headingToggleBtn.addEventListener('click', () => {
   setHeadingUpMode(!headingUpModeActive);
 });
+const navHeadingToggleBtn = document.getElementById('navHeadingToggleBtn');
+if (navHeadingToggleBtn){
+  navHeadingToggleBtn.addEventListener('click', () => {
+    setHeadingUpMode(!headingUpModeActive);
+  });
+}
 
 let geoWatchId = null;
 let displayedLocation = null;
@@ -2455,7 +2478,7 @@ function startContinuousTracking(){
       animateMarkerTo(newLoc);
     }
 
-    if (headingUpModeActive){
+    if (headingUpModeActive || navActive){
       map.panTo(newLoc, { animate:true, duration:0.6, easeLinearity:0.4 });
     }
 
@@ -3182,7 +3205,7 @@ function renderElevationProfile(data){
   };
 }
 
-async function activateHazardRoute(idx){
+async function activateHazardRoute(idx, token){
   const cand = routeCandidates[idx];
   if (!cand) return;
   activeRouteIdx = idx;
@@ -3193,6 +3216,7 @@ async function activateHazardRoute(idx){
   document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
 
   const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
+  if (token !== undefined && token !== routeRequestToken) return; // 新しいルート計算に追い越されていたら破棄
   cand.pointFlags = pointFlags; cand.foundTypes = foundTypes;
 
   if (routeLayer) map.removeLayer(routeLayer);
@@ -3493,6 +3517,8 @@ function startNavigation(){
   if (rightControls) rightControls.style.display = 'none';
   const miniContainer = document.getElementById('navMiniMapContainer');
   if (miniContainer) miniContainer.classList.add('active');
+  const navHeadBtn = document.getElementById('navHeadingToggleBtn');
+  if (navHeadBtn) navHeadBtn.classList.add('nav-visible');
   ensureNavMiniMap();
   setTimeout(() => { if (navMiniMap) navMiniMap.invalidateSize(); updateNavMiniMap(); }, 60);
 
@@ -3545,6 +3571,8 @@ function endNavigation(){
   if (rightControls) rightControls.style.display = '';
   const miniContainer = document.getElementById('navMiniMapContainer');
   if (miniContainer) miniContainer.classList.remove('active');
+  const navHeadBtn2 = document.getElementById('navHeadingToggleBtn');
+  if (navHeadBtn2) navHeadBtn2.classList.remove('nav-visible');
   syncHeaderOffsets();
 
   updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
@@ -3727,6 +3755,7 @@ function onRouteTapped(tappedIdx){
 async function drawRoute(){
   if (!currentLocation || !destination) return;
   clearRouteLayers();
+  const myToken = routeRequestToken; // clearRouteLayers()が採番した最新トークンを使う
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルートを計算中...</span>';
@@ -3739,6 +3768,7 @@ async function drawRoute(){
   try {
     const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson&alternatives=true&steps=true`)
       .then(r => r.json()).catch(() => null);
+    if (myToken !== routeRequestToken) return; // その間に新しいルート計算が始まっていたら破棄
 
     const routes = footRes?.routes;
     if (!routes?.length){
@@ -3767,10 +3797,10 @@ async function drawRoute(){
     if (greenCandIdx !== -1) drawGreenRoute(greenCandIdx);
 
     const hazardCandIdx = routeCandidates.findIndex(c => c.role === 'hazard');
-    await activateHazardRoute(hazardCandIdx);
+    await activateHazardRoute(hazardCandIdx, myToken);
 
   } catch {
-    resetRouteStatusUI('<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>');
+    if (myToken === routeRequestToken) resetRouteStatusUI('<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>');
   }
 }
 
