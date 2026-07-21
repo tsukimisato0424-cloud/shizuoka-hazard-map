@@ -40,6 +40,13 @@ html, body{
   touch-action:pan-x pan-y; overscroll-behavior:none;
   position:fixed; width:100%; overflow:hidden;
 }
+/* 100%/100vhはアドレスバー等が表示された状態の実際に見える高さではなく
+   「最大想定の高さ」で計算されてしまうことがあり、ステータスパネルやワイプの
+   bottom/top指定が実画面の下端からズレて浮いて見える原因になっていた。
+   dvh（実際に見えているビューポート高さ）が使える環境ではそちらを優先する。 */
+@supports (height: 100dvh){
+  html, body{ height:100dvh; }
+}
 body::before, body::after{
   content:""; position:fixed; left:0; right:0; background:var(--brand); z-index:100000; pointer-events:none;
 }
@@ -444,46 +451,71 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .panel-face-front{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
 .panel-face-back{
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:16px; box-sizing:border-box; text-align:center;
+  display:flex; flex-direction:row; align-items:stretch; justify-content:center;
+  padding:14px; box-sizing:border-box; gap:10px; overflow-y:auto;
   opacity:0; transform:scaleX(0); pointer-events:none; z-index:1;
 }
 .panel-flip-inner.flipped .panel-face-front{ opacity:0; transform:scaleX(0); pointer-events:none; z-index:1; }
 .panel-flip-inner.flipped .panel-face-back{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
-#navEndBtn{
-  position:absolute!important; top:8px!important; left:8px!important; right:auto!important;
+
+/* 左(ナビ案内・比率3) / 右(操作パネル・比率1) の2分割レイアウト */
+.nav-back-left{
+  flex:3 1 0; min-width:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; text-align:center; gap:2px;
 }
-#navMuteBtn{
-  position:absolute!important; top:8px!important; right:8px!important;
+.nav-back-right{
+  flex:1 1 0; min-width:58px; max-width:82px; flex-shrink:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  border-left:1px solid rgba(255,255,255,.18); padding-left:10px;
+}
+.nav-side-btn{
+  width:100%; max-width:56px; aspect-ratio:1/1; border-radius:14px; cursor:pointer;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  color:#2c6690; flex-shrink:0;
+}
+.nav-side-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
+.nav-side-btn .material-icons-round{ font-size:20px; color:#2c6690; }
+.nav-side-btn-label{ font-size:9px; font-weight:800; }
+.nav-side-btn-danger{
+  background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
+}
+.nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
+
+/* パネル側の方向アイコンと、地図上の案内地点マーカーの点滅を揃えるための
+   共通アニメーション。ステップが進むたびにJSで両方を同時にリスタートすることで
+   位相を一致させ、「この標識が示す角」であることが視覚的にリンクして伝わるようにする。 */
+@keyframes navManeuverPulse{
+  0%, 100%{ transform:scale(1); box-shadow:0 6px 16px rgba(0,10,30,.4), 0 1px 0 rgba(255,255,255,.3) inset, 0 0 0 0 rgba(0,212,255,.55); }
+  50%{ transform:scale(1.12); box-shadow:0 6px 20px rgba(0,10,30,.45), 0 1px 0 rgba(255,255,255,.3) inset, 0 0 22px 7px rgba(0,212,255,.7); }
 }
 .nav-maneuver-icon{
-  width:64px; height:64px; border-radius:50%;
+  width:60px; height:60px; border-radius:50%;
   background:linear-gradient(160deg, rgba(120,180,255,.35) 0%, rgba(20,60,140,.35) 100%);
   border:2px solid rgba(255,255,255,.4);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 6px 16px rgba(0,10,30,.35), 0 1px 0 rgba(255,255,255,.3) inset;
-  margin-bottom:6px; flex-shrink:0;
-  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  margin-bottom:4px; flex-shrink:0;
+  animation:navManeuverPulse 1.3s ease-in-out infinite;
 }
-.nav-maneuver-icon .material-icons-round{ font-size:34px; color:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
+.nav-maneuver-icon .material-icons-round{ font-size:32px; color:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
 #navDistanceToStep{
-  font-size:30px!important; font-weight:900!important; color:#fff!important;
+  font-size:27px!important; font-weight:900!important; color:#fff!important;
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000; line-height:1.1;
 }
 #navInstructionText{
-  font-size:16px!important; font-weight:700!important; margin-top:2px; color:#eaf2ff;
-  max-width:90%; line-height:1.35;
+  font-size:15px!important; font-weight:700!important; margin-top:2px; color:#eaf2ff;
+  max-width:96%; line-height:1.3;
 }
 .nav-sub-row{
-  display:flex; align-items:center; gap:14px; margin-top:14px;
-  padding-top:10px; border-top:1px solid rgba(255,255,255,.18);
-  font-size:14px; color:#c3cfe8;
+  display:flex; align-items:center; gap:12px; margin-top:10px;
+  padding-top:8px; border-top:1px solid rgba(255,255,255,.18);
+  font-size:13px; color:#c3cfe8; flex-wrap:wrap; justify-content:center;
 }
 .nav-sub-row b{ color:#fff; }
 .nav-progress-bar{
-  width:82%; max-width:230px; height:10px; margin:8px 0 2px;
+  width:88%; max-width:230px; height:10px; margin:6px 0 2px;
   border-radius:6px; background:rgba(255,255,255,.16);
-  border:1px solid rgba(255,255,255,.28); overflow:hidden;
+  border:1px solid rgba(255,255,255,.28); overflow:hidden; flex-shrink:0;
 }
 .nav-progress-fill{
   height:100%; width:0%; border-radius:6px;
@@ -491,16 +523,18 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   box-shadow:0 0 8px 1px rgba(0,212,255,.6);
   transition:width .4s ease;
 }
-.nav-zoom-row{ display:flex; gap:12px; margin-top:12px; }
-.nav-cancel-btn{
-  margin-top:14px; width:100%; max-width:260px; padding:10px 16px;
-  border-radius:14px; border:1px solid rgba(255,255,255,.35);
-  background:rgba(255,255,255,.12); color:#fff; font-weight:800; font-size:14px;
-  display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;
-  backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+
+/* 地図上の「案内地点」標識マーカー。パネル側のアイコンと同じ形・同じ点滅で表示し、
+   「この角を曲がるための標識」であることが一目でわかるようにする */
+.nav-map-maneuver-icon-wrap{ background:transparent!important; border:none!important; }
+.nav-map-maneuver-icon{
+  width:52px; height:52px; border-radius:50%;
+  background:linear-gradient(160deg, rgba(120,180,255,.55) 0%, rgba(20,60,140,.55) 100%);
+  border:3px solid #fff;
+  display:flex; align-items:center; justify-content:center;
+  animation:navManeuverPulse 1.3s ease-in-out infinite;
 }
-.nav-cancel-btn:active{ background:rgba(255,255,255,.24); }
-.nav-cancel-btn .material-icons-round{ font-size:17px; }
+.nav-map-maneuver-icon .material-icons-round{ font-size:26px; color:#fff; filter:drop-shadow(0 1px 2px rgba(0,0,0,.4)); }
 .nav-mini-map-container{
   position:absolute; top:calc(10px + env(safe-area-inset-top,0px));
   right:calc(10px + env(safe-area-inset-right,0px));
@@ -624,7 +658,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .mesh-detail-dot{ width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
 .terrain-mesh-controls{ display:none !important; }
 #statusPanel[data-size="maximized"] .terrain-mesh-controls{ display:flex !important; animation:legendFadeIn .35s ease; }
-#toggleStatusBtn, #maximizeStatusBtn, #navEndBtn, #navMuteBtn{
+#toggleStatusBtn, #maximizeStatusBtn{
   position:absolute!important; z-index:2000!important; overflow:hidden;
   width:34px; height:34px; border-radius:50%; padding:0!important;
   background:var(--bubble-bg)!important; border:var(--bubble-border)!important; box-shadow:var(--bubble-shadow)!important;
@@ -633,10 +667,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #toggleStatusBtn{ top:8px!important; right:8px!important; }
 #maximizeStatusBtn{ top:8px!important; right:48px!important; }
-#toggleStatusBtn:active, #maximizeStatusBtn:active, #navEndBtn:active, #navMuteBtn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active)!important; }
+#toggleStatusBtn:active, #maximizeStatusBtn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active)!important; }
 #toggleStatusBtn .material-icons-round{ font-size:20px; color:#2c6690; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #maximizeStatusBtn .material-icons-round{ font-size:17px; color:#2c6690; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#navEndBtn .material-icons-round, #navMuteBtn .material-icons-round{ font-size:18px; color:#2c6690; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 @keyframes maximizeBtnHeartbeat{
   0%, 100%{ transform:scale(1); box-shadow:var(--bubble-shadow); filter:brightness(1) saturate(1); }
   25%{ transform:scale(1.2); box-shadow:0 0 18px 6px rgba(120,190,255,.85), var(--bubble-shadow); filter:brightness(1.45) saturate(1.3); }
@@ -1217,27 +1250,30 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </div>
 </div>
 <div id="panelBack" class="panel-face panel-face-back">
-  <button id="navEndBtn" onclick="endNavigation()" title="ナビを終了">
-    <span class="material-icons-round">close</span>
-  </button>
-  <button id="navMuteBtn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
-    <span class="material-icons-round" id="navMuteIcon">volume_up</span>
-  </button>
-  <div class="nav-maneuver-icon" id="navManeuverIcon"><span class="material-icons-round">straight</span></div>
-  <div id="navDistanceToStep">-- m</div>
-  <div class="nav-progress-bar"><div class="nav-progress-fill" id="navProgressFill"></div></div>
-  <div id="navInstructionText">ルートを計算しています…</div>
-  <div class="nav-sub-row">
-    <span>残り <b id="navRemainingDist">--</b></span>
-    <span>到着目安 <b id="navRemainingTime">--</b></span>
+  <div class="nav-back-left">
+    <div class="nav-maneuver-icon" id="navManeuverIcon"><span class="material-icons-round">straight</span></div>
+    <div id="navDistanceToStep">-- m</div>
+    <div class="nav-progress-bar"><div class="nav-progress-fill" id="navProgressFill"></div></div>
+    <div id="navInstructionText">ルートを計算しています…</div>
+    <div class="nav-sub-row">
+      <span>残り <b id="navRemainingDist">--</b></span>
+      <span>到着目安 <b id="navRemainingTime">--</b></span>
+    </div>
   </div>
-  <div class="nav-zoom-row">
-    <button type="button" class="mesh-zoom-btn" onclick="map.zoomIn()" title="拡大"><span class="material-icons-round">add</span></button>
-    <button type="button" class="mesh-zoom-btn" onclick="map.zoomOut()" title="縮小"><span class="material-icons-round">remove</span></button>
+  <div class="nav-back-right">
+    <button id="navCancelBtn" class="nav-side-btn nav-side-btn-danger" onclick="endNavigation()" title="案内を中止してパネルに戻る">
+      <span class="material-icons-round">close</span><span class="nav-side-btn-label">中止</span>
+    </button>
+    <button type="button" class="nav-side-btn" onclick="map.zoomIn()" title="拡大">
+      <span class="material-icons-round">add</span>
+    </button>
+    <button type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
+      <span class="material-icons-round">remove</span>
+    </button>
+    <button id="navMuteBtn" class="nav-side-btn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
+      <span class="material-icons-round" id="navMuteIcon">volume_up</span>
+    </button>
   </div>
-  <button id="navCancelBtn" class="nav-cancel-btn" onclick="endNavigation()">
-    <span class="material-icons-round">arrow_back</span>案内を中止してパネルに戻る
-  </button>
 </div>
 </div>
 </div>
@@ -3210,9 +3246,9 @@ function updateNavMiniMap(){
   if (currentLocation) bounds.push(currentLocation);
   if (destination) bounds.push(destination);
   if (bounds.length === 2){
-    navMiniMap.fitBounds(L.latLngBounds(bounds), { padding:[20, 20] });
+    navMiniMap.fitBounds(L.latLngBounds(bounds), { padding:[20, 20], animate:false });
   } else if (bounds.length === 1){
-    navMiniMap.setView(bounds[0], 16);
+    navMiniMap.setView(bounds[0], 16, { animate:false });
   }
 }
 
@@ -3306,6 +3342,45 @@ function updateNavRemaining(traveledDist){
   if (timeEl) timeEl.innerText = `約${Math.max(1, Math.round(remainingTime / 60))}分`;
 }
 
+let navManeuverMapMarker = null;
+
+function createNavManeuverMapIcon(iconName){
+  const html = `<div class="nav-map-maneuver-icon"><span class="material-icons-round">${iconName}</span></div>`;
+  return L.divIcon({ className:'nav-map-maneuver-icon-wrap', html, iconSize:[52, 52], iconAnchor:[26, 26] });
+}
+
+// アニメーションを一度リセットしてから再生し直すことで、パネル側と地図側の
+// 点滅アニメーションの位相（タイミング）を揃える
+function restartPulseAnimation(el){
+  if (!el) return;
+  el.style.animation = 'none';
+  void el.offsetWidth; // 強制リフローでリセットを確定させる
+  el.style.animation = '';
+}
+
+// 案内すべき分岐点（次の曲がり角）に、パネルと同じ標識アイコンを地図上にも表示する
+function updateNavManeuverMapMarker(){
+  const step = navActive ? getUpcomingStep() : null;
+  const loc = step && step.maneuver && step.maneuver.location;
+  if (!loc){
+    if (navManeuverMapMarker){ map.removeLayer(navManeuverMapMarker); navManeuverMapMarker = null; }
+    return;
+  }
+  const latlng = L.latLng(loc[1], loc[0]);
+  const iconName = getManeuverIconName(step);
+  if (navManeuverMapMarker){
+    navManeuverMapMarker.setLatLng(latlng);
+    navManeuverMapMarker.setIcon(createNavManeuverMapIcon(iconName));
+  } else {
+    navManeuverMapMarker = L.marker(latlng, {
+      icon: createNavManeuverMapIcon(iconName), interactive:false, zIndexOffset: 850, keyboard:false
+    }).addTo(map);
+  }
+  const mapIconEl = navManeuverMapMarker.getElement() && navManeuverMapMarker.getElement().querySelector('.nav-map-maneuver-icon');
+  restartPulseAnimation(document.getElementById('navManeuverIcon'));
+  restartPulseAnimation(mapIconEl);
+}
+
 function updateNavDisplay(){
   const step = getUpcomingStep();
   if (!step) return;
@@ -3313,11 +3388,7 @@ function updateNavDisplay(){
   const textEl = document.getElementById('navInstructionText');
   if (iconEl) iconEl.innerText = getManeuverIconName(step);
   if (textEl) textEl.innerText = buildInstructionText(step);
-  const iconWrap = document.getElementById('navManeuverIcon');
-  if (iconWrap){
-    iconWrap.style.transform = 'scale(1.25)';
-    setTimeout(() => { iconWrap.style.transform = 'scale(1)'; }, 50);
-  }
+  updateNavManeuverMapMarker();
   updateNavRemaining();
 }
 
@@ -3372,11 +3443,11 @@ function startNavigation(){
   ensureNavMiniMap();
   setTimeout(() => { if (navMiniMap) navMiniMap.invalidateSize(); updateNavMiniMap(); }, 60);
 
+  // ナビ表示は情報量が多いため、パネルは最大化サイズ相当の高さで固定する
+  // （最大化ボタン自体は表面にあり裏面では隠れるが、高さの数値だけ流用する）
   const panel = document.getElementById('statusPanel');
   if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
-  panel.setAttribute('data-size', 'normal');
-  const maxIcon = document.getElementById('maximizeIcon');
-  if (maxIcon) maxIcon.innerText = 'open_in_full';
+  panel.setAttribute('data-size', 'maximized');
 
   const flipInner = document.getElementById('panelFlipInner');
   if (flipInner) flipInner.classList.add('flipped');
@@ -3404,7 +3475,13 @@ function endNavigation(){
   }
   if (headingUpModeActive && !navPrevHeadingUpState) setHeadingUpMode(false);
 
+  if (navManeuverMapMarker){ map.removeLayer(navManeuverMapMarker); navManeuverMapMarker = null; }
   restoreNonEssentialRouteLayersAfterNav();
+
+  const panel = document.getElementById('statusPanel');
+  panel.setAttribute('data-size', 'normal');
+  const maxIcon = document.getElementById('maximizeIcon');
+  if (maxIcon) maxIcon.innerText = 'open_in_full';
 
   const searchBar = document.getElementById('searchContainer');
   if (searchBar) searchBar.style.display = '';
@@ -4813,7 +4890,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, #navEndBtn, #navMuteBtn, .nav-cancel-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, .nav-side-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
@@ -4871,6 +4948,12 @@ function syncRightControlAlignment(){
   rightControls.style.right = Math.max(0, desiredRight) + 'px';
 }
 window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); });
+if (window.visualViewport){
+  window.visualViewport.addEventListener('resize', () => {
+    map.invalidateSize();
+    if (navMiniMap) navMiniMap.invalidateSize();
+  });
+}
 window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); }, 200));
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
