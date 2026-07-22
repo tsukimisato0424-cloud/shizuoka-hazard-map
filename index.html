@@ -109,9 +109,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 #headingToggleBtn.active .north-indicator, #navHeadingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
 #navHeadingToggleBtn{
-  position:fixed; width:44px; height:44px;
+  position:fixed;
   top:calc(10px + env(safe-area-inset-top,0px) + 154px + 10px);
-  right:calc(10px + env(safe-area-inset-right,0px) + 5px);
+  right:calc(10px + env(safe-area-inset-right,0px));
   z-index:1000; display:none;
 }
 #navHeadingToggleBtn.nav-visible{ display:flex; }
@@ -2490,7 +2490,7 @@ function startContinuousTracking(){
       map.panTo(newLoc, { animate:true, duration:0.6, easeLinearity:0.4 });
     }
 
-    if (navActive){ updateNavigationProgress(newLoc, pos.coords.accuracy); updateNavMiniMap(); }
+    if (navActive){ updateNavigationProgress(newLoc, pos.coords.accuracy); updateNavWalkedTrail(newLoc); updateNavMiniMap(); }
   }, error => {
     if (error.code === error.PERMISSION_DENIED){
       document.getElementById('locationHelpOverlay').style.display = 'flex';
@@ -3281,6 +3281,9 @@ let navRouteCum = null;   // navRoutePtsに対応する累積距離(m)
 let navMuted = false;
 let navPrevHeadingUpState = false; // ナビ開始前のヘッドアップ状態（終了時に復元）
 let navStartMarker = null;
+let navWalkedTrail = [];      // ナビ中に実際に歩いた座標の履歴
+let navWalkedTrailLine = null;
+let navWalkedTrailLineMini = null;
 let navHiddenGreenLayer = false;    // ナビ中に緑ルートを隠したかどうか
 let navHiddenRouteLabels = [];      // ナビ中に隠したルートラベルマーカー
 let navRerouting = false;
@@ -3308,15 +3311,39 @@ function ensureNavMiniMap(){
 
 // ナビ中の概況ミニマップ（ワイプ）。メイン地図はヘッドアップで回転するため、
 // 常に北が上のまま現在地とゴールの位置関係を把握できるようにする。
+// 歩いた軌跡（パンくずライン）をメイン地図とワイプの両方に表示する。
+// 案内経路そのものではなく実際のGPS軌跡を描くので、ルートから外れて歩いた場合も
+// 「実際にどこを歩いたか」が視覚的にわかる。
+function updateNavWalkedTrail(latlng){
+  navWalkedTrail.push(latlng);
+  if (navWalkedTrailLine) map.removeLayer(navWalkedTrailLine);
+  if (navWalkedTrail.length > 1){
+    navWalkedTrailLine = L.polyline(navWalkedTrail, {
+      color:'#9aa5b8', weight:5, opacity:0.85, lineCap:'round', lineJoin:'round', dashArray:'1 9'
+    }).addTo(map);
+    bringHazardRouteToFront();
+  }
+}
+
+function clearNavWalkedTrail(){
+  navWalkedTrail = [];
+  if (navWalkedTrailLine){ map.removeLayer(navWalkedTrailLine); navWalkedTrailLine = null; }
+  if (navWalkedTrailLineMini){ navWalkedTrailLineMini = null; }
+}
+
 function updateNavMiniMap(){
   if (!navActive || !navMiniMap) return;
   if (navMiniMapCurrentMarker){ navMiniMap.removeLayer(navMiniMapCurrentMarker); navMiniMapCurrentMarker = null; }
   if (navMiniMapDestMarker){ navMiniMap.removeLayer(navMiniMapDestMarker); navMiniMapDestMarker = null; }
   if (navMiniMapRouteLine){ navMiniMap.removeLayer(navMiniMapRouteLine); navMiniMapRouteLine = null; }
+  if (navWalkedTrailLineMini){ navMiniMap.removeLayer(navWalkedTrailLineMini); navWalkedTrailLineMini = null; }
 
   if (activeNavRouteCoords && activeNavRouteCoords.length > 1){
     const latlngs = activeNavRouteCoords.map(c => [c[1], c[0]]);
     navMiniMapRouteLine = L.polyline(latlngs, { color:'#1a73e8', weight:3, opacity:0.85 }).addTo(navMiniMap);
+  }
+  if (navWalkedTrail.length > 1){
+    navWalkedTrailLineMini = L.polyline(navWalkedTrail, { color:'#9aa5b8', weight:3, opacity:0.9 }).addTo(navMiniMap);
   }
   if (currentLocation){
     navMiniMapCurrentMarker = L.circleMarker(currentLocation, {
@@ -3513,6 +3540,8 @@ function startNavigation(){
   navTotalDist = built.total;
   navRoutePts = built.pts;
   navRouteCum = built.cum2;
+  clearNavWalkedTrail();
+  if (currentLocation) navWalkedTrail.push(currentLocation);
 
   updateNavStartMarker(); // ナビ中はマップ上の「ナビ開始」バッジを消す
   hideNonEssentialRouteLayersForNav();
@@ -3578,6 +3607,7 @@ function endNavigation(){
   if (headingUpModeActive && !navPrevHeadingUpState) setHeadingUpMode(false);
 
   if (navManeuverMapMarker){ map.removeLayer(navManeuverMapMarker); navManeuverMapMarker = null; }
+  clearNavWalkedTrail();
   restoreNonEssentialRouteLayersAfterNav();
 
   const panel = document.getElementById('statusPanel');
@@ -3600,7 +3630,7 @@ function endNavigation(){
 
   // ルート検索直後と同じように、現在地とゴールが1画面に収まるようズームを戻す
   if (currentLocation && destination){
-    map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding:[80, 160] });
+    map.fitBounds(L.latLngBounds([currentLocation, destination]), getRouteFitBoundsOptions());
   }
 }
 
@@ -3830,6 +3860,21 @@ async function drawRoute(){
   }
 }
 
+// 現在地/ゴールを収める際、機種による画面サイズ差を吸収するため、実際に
+// 表示されているハザードパネル（検索バー）とステータスパネルの高さを実測して
+// パディングに反映する（それらに隠れない範囲の中央に表示されるようにする）
+function getRouteFitBoundsOptions(){
+  const searchBar = document.getElementById('searchContainer');
+  const panel = document.getElementById('statusPanel');
+  const searchVisible = searchBar && getComputedStyle(searchBar).display !== 'none';
+  const topPad = (searchVisible ? searchBar.getBoundingClientRect().height : 0) + 30;
+  const bottomPad = (panel ? panel.getBoundingClientRect().height : 0) + 40;
+  return {
+    paddingTopLeft: [40, topPad],
+    paddingBottomRight: [40, bottomPad]
+  };
+}
+
 function selectLocation(lat, lng){
   destination = L.latLng(lat, lng);
 
@@ -3838,7 +3883,7 @@ function selectLocation(lat, lng){
 
   if (currentLocation){
     drawRoute();
-    map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding: [80, 160] });
+    map.fitBounds(L.latLngBounds([currentLocation, destination]), getRouteFitBoundsOptions());
   } else {
     map.setView(destination, 15);
   }
@@ -4822,7 +4867,7 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   activeNavRouteCoords = coords;
   updateNavAvailability();
 
-  map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), { padding:[80, 160] });
+  map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), getRouteFitBoundsOptions());
   switchTab(1);
 
   emergencyBtn.classList.remove('searching');
