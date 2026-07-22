@@ -587,6 +587,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .panel-flip-inner.flipped .tab-container{ opacity:0; pointer-events:none; }
 .nav-start-icon-wrap{ background:transparent!important; border:none!important; }
+.nav-start-badge-row{ display:flex; align-items:center; gap:8px; }
 .nav-start-badge{
   display:flex; align-items:center; gap:6px; justify-content:center;
   padding:8px 14px; border-radius:20px; cursor:pointer; white-space:nowrap;
@@ -598,6 +599,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   touch-action:manipulation;
 }
 .nav-start-badge .material-icons-round{ font-size:18px; }
+.nav-clear-badge{
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  width:34px; height:34px; border-radius:50%; cursor:pointer;
+  font-weight:900; font-size:16px; color:#fff;
+  background:linear-gradient(135deg, #ff6659, #c62828);
+  border:2px solid rgba(255,255,255,.65);
+  box-shadow:0 6px 16px rgba(0,20,60,.5), 0 0 0 1px rgba(255,255,255,.25) inset;
+  animation: navStartPulse 1.7s ease-in-out infinite;
+  touch-action:manipulation;
+}
 @keyframes navStartPulse{
   0%,100%{ transform:scale(1); box-shadow:0 6px 16px rgba(0,20,60,.5); }
   50%{ transform:scale(1.07); box-shadow:0 6px 22px rgba(26,115,232,.8), 0 0 20px 5px rgba(26,115,232,.4); }
@@ -3325,10 +3336,47 @@ function updateNavWalkedTrail(latlng){
   }
 }
 
+let navWalkedRouteOverlay = null;
+
+// 経路の折れ線のうち、進行距離0〜traveledDistの区間の座標列を取り出す
+// （区間の途中で終わる場合は、その地点をちょうど補間して終端にする）
+function getRoutePointsUpTo(traveledDist){
+  if (!navRoutePts || !navRouteCum || navRoutePts.length < 2) return [];
+  const pts = [];
+  for (let i = 0; i < navRoutePts.length; i++){
+    if (navRouteCum[i] <= traveledDist){
+      pts.push(navRoutePts[i]);
+    } else {
+      if (i > 0){
+        const prevDist = navRouteCum[i - 1], curDist = navRouteCum[i];
+        const t = curDist > prevDist ? (traveledDist - prevDist) / (curDist - prevDist) : 0;
+        const a = navRoutePts[i - 1], b = navRoutePts[i];
+        pts.push(L.latLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t));
+      }
+      break;
+    }
+  }
+  return pts;
+}
+
+// 案内経路の線そのものを、実際に歩いた区間だけ半透明の白でなぞって
+// 「透過して薄くなっている＝歩き終えた区間」であることが経路線上でもわかるようにする
+function updateNavWalkedRouteOverlay(traveledDist){
+  if (navWalkedRouteOverlay){ map.removeLayer(navWalkedRouteOverlay); navWalkedRouteOverlay = null; }
+  const pts = getRoutePointsUpTo(traveledDist);
+  if (pts.length > 1){
+    navWalkedRouteOverlay = L.polyline(pts, {
+      color:'#ffffff', weight:9, opacity:0.5, lineCap:'round', lineJoin:'round'
+    }).addTo(map);
+    navWalkedRouteOverlay.bringToFront();
+  }
+}
+
 function clearNavWalkedTrail(){
   navWalkedTrail = [];
   if (navWalkedTrailLine){ map.removeLayer(navWalkedTrailLine); navWalkedTrailLine = null; }
   if (navWalkedTrailLineMini){ navWalkedTrailLineMini = null; }
+  if (navWalkedRouteOverlay){ map.removeLayer(navWalkedRouteOverlay); navWalkedRouteOverlay = null; }
 }
 
 function updateNavMiniMap(){
@@ -3407,18 +3455,38 @@ function formatNavDistance(m){
 }
 
 function createNavStartIcon(){
-  const html = `<div class="nav-start-badge">
-      <span class="material-icons-round">navigation</span>ナビ開始
+  const html = `<div class="nav-start-badge-row">
+      <div class="nav-start-badge">
+        <span class="material-icons-round">navigation</span>ナビ開始
+      </div>
+      <div class="nav-clear-badge" title="検索結果をクリア">C</div>
     </div>`;
-  return L.divIcon({ className:'nav-start-icon-wrap', html, iconSize:[112, 34], iconAnchor:[56, 78] });
+  return L.divIcon({ className:'nav-start-icon-wrap', html, iconSize:[156, 34], iconAnchor:[78, 78] });
 }
 
 function updateNavStartMarker(){
   if (navStartMarker){ map.removeLayer(navStartMarker); navStartMarker = null; }
   if (navActive || !destination || !activeNavRouteData) return;
-  navStartMarker = L.marker(destination, { icon: createNavStartIcon(), interactive:true, zIndexOffset: 950, keyboard:false })
-    .on('click', e => { L.DomEvent.stopPropagation(e); startNavigation(); })
-    .addTo(map);
+  navStartMarker = L.marker(destination, { icon: createNavStartIcon(), interactive:true, zIndexOffset: 950, keyboard:false }).addTo(map);
+  const el = navStartMarker.getElement();
+  if (el){
+    const startBtn = el.querySelector('.nav-start-badge');
+    const clearBtn = el.querySelector('.nav-clear-badge');
+    if (startBtn){
+      L.DomEvent.on(startBtn, 'click', e => { L.DomEvent.stopPropagation(e); startNavigation(); });
+    }
+    if (clearBtn){
+      L.DomEvent.on(clearBtn, 'click', e => {
+        L.DomEvent.stopPropagation(e);
+        if (emergencyModeActive){
+          deactivateEmergencyMode();
+        } else {
+          clearNormalRouteState();
+          resetRouteStatusUI('');
+        }
+      });
+    }
+  }
 }
 
 function updateNavAvailability(){
@@ -3710,6 +3778,8 @@ async function rerouteNavigation(){
     activeNavRouteData = newRoute;
     activeNavRouteCoords = coords;
 
+    if (navWalkedRouteOverlay){ map.removeLayer(navWalkedRouteOverlay); navWalkedRouteOverlay = null; }
+
     const built = buildNavStepTables(newRoute, coords);
     navSteps = built.steps;
     navStepIndex = 0;
@@ -3766,6 +3836,7 @@ function updateNavigationProgress(latlng, accuracy){
   if (fillEl) fillEl.style.width = (progressFrac * 100).toFixed(0) + '%';
 
   updateNavRemaining(proj.cumDist);
+  updateNavWalkedRouteOverlay(proj.cumDist);
 
   if (navStepIndex === navSteps.length - 1 && distToNext < NAV_ARRIVE_THRESHOLD_M){
     const textEl = document.getElementById('navInstructionText');
@@ -5046,7 +5117,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, .nav-side-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, .nav-clear-badge, .nav-side-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
