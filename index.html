@@ -3597,6 +3597,11 @@ function endNavigation(){
   syncHeaderOffsets();
 
   updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
+
+  // ルート検索直後と同じように、現在地とゴールが1画面に収まるようズームを戻す
+  if (currentLocation && destination){
+    map.fitBounds(L.latLngBounds([currentLocation, destination]), { padding:[80, 160] });
+  }
 }
 
 function toggleNavMute(){
@@ -4632,7 +4637,6 @@ async function executeHybridSearch(query){
       div.addEventListener('click', () => {
         deactivateEmergencyMode();
         selectLocation(item.lat, item.lon);
-        map.setView([item.lat, item.lon], 16);
         suggestionsBox.style.display = 'none';
         searchInput.value = '';
         searchInput.blur();
