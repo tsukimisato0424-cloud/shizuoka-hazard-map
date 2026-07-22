@@ -3925,6 +3925,15 @@ async function drawRoute(){
 
     const hazardCandIdx = routeCandidates.findIndex(c => c.role === 'hazard');
     await activateHazardRoute(hazardCandIdx, myToken);
+    if (myToken !== routeRequestToken) return;
+
+    // 実際のルート形状（ジグザグ含む）全体が収まるよう、始点・終点だけでなく
+    // 経路上の全座標を使ってfitBoundsし直す（迂回が大きいと直線距離基準では
+    // ルートの一部が画面外に出てしまうため）
+    const allRoutePts = routeCandidates.flatMap(c => c.coords.map(pt => [pt[1], pt[0]]));
+    if (allRoutePts.length){
+      map.fitBounds(L.latLngBounds(allRoutePts), getRouteFitBoundsOptions());
+    }
 
   } catch {
     if (myToken === routeRequestToken) resetRouteStatusUI('<span style="color:#dfe6f0;">ルート算出中にエラーが発生しました</span>');
@@ -3941,8 +3950,8 @@ function getRouteFitBoundsOptions(){
   const topPad = (searchVisible ? searchBar.getBoundingClientRect().height : 0) + 30;
   const bottomPad = (panel ? panel.getBoundingClientRect().height : 0) + 40;
   return {
-    paddingTopLeft: [40, topPad],
-    paddingBottomRight: [40, bottomPad]
+    paddingTopLeft: [70, topPad],
+    paddingBottomRight: [70, bottomPad]
   };
 }
 
@@ -4938,7 +4947,8 @@ function renderEmergencyResult(result, originLatLng, opts = {}){
   activeNavRouteCoords = coords;
   updateNavAvailability();
 
-  map.fitBounds(L.latLngBounds([originLatLng, candidate.latlng]), getRouteFitBoundsOptions());
+  const emergencyRoutePts = coords.map(pt => [pt[1], pt[0]]);
+  map.fitBounds(L.latLngBounds(emergencyRoutePts.length ? emergencyRoutePts : [originLatLng, candidate.latlng]), getRouteFitBoundsOptions());
   switchTab(1);
 
   emergencyBtn.classList.remove('searching');
