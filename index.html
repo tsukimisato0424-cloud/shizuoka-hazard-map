@@ -473,12 +473,32 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .panel-face-front{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
 .panel-face-back{
+  position:relative;
   display:flex; flex-direction:row; align-items:stretch; justify-content:center;
-  padding:8px 12px; box-sizing:border-box; gap:8px; overflow:hidden;
+  padding:20px 12px 6px; box-sizing:border-box; gap:8px; overflow:hidden;
   opacity:0; transform:scaleX(0); pointer-events:none; z-index:1;
 }
 .panel-flip-inner.flipped .panel-face-front{ opacity:0; transform:scaleX(0); pointer-events:none; z-index:1; }
 .panel-flip-inner.flipped .panel-face-back{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
+
+/* 通り名・目印などのナビ補足情報を、パネル上部に横スクロールのテロップで流す */
+.nav-info-ticker{
+  position:absolute; top:0; left:0; right:0; height:18px; z-index:2;
+  display:none; align-items:center; gap:5px; padding:0 10px;
+  background:linear-gradient(90deg, rgba(10,20,40,.55), rgba(10,20,40,.28));
+  border-bottom:1px solid rgba(255,255,255,.14);
+}
+.nav-info-ticker-icon{ font-size:12px!important; color:#8ec2ff; flex-shrink:0; }
+.nav-info-ticker-viewport{ flex:1; min-width:0; overflow:hidden; height:100%; position:relative; }
+.nav-info-ticker-track{
+  position:absolute; white-space:nowrap; font-size:10.5px; font-weight:700;
+  color:#c9d8f2; letter-spacing:.2px; top:50%; transform:translateY(-50%);
+  animation:navTickerScroll 9s linear infinite;
+}
+@keyframes navTickerScroll{
+  0%{ left:100%; }
+  100%{ left:-100%; }
+}
 
 /* 左(ナビ案内・比率3) / 右(操作パネル・比率1) の2分割レイアウト。
    低いパネル高さに収まるよう、アイコンと距離は横並び、指示文は1行省略にする。 */
@@ -1305,6 +1325,12 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </div>
 </div>
 <div id="panelBack" class="panel-face panel-face-back">
+  <div class="nav-info-ticker" id="navInfoTicker">
+    <span class="material-icons-round nav-info-ticker-icon">signpost</span>
+    <div class="nav-info-ticker-viewport">
+      <div class="nav-info-ticker-track" id="navInfoTickerTrack"></div>
+    </div>
+  </div>
   <div class="nav-back-left">
     <div class="nav-back-top-row">
       <div class="nav-maneuver-icon" id="navManeuverIcon"><span class="material-icons-round">straight</span></div>
@@ -2110,14 +2136,16 @@ function switchTab(tabNumber){
   refreshScrollHints();
 }
 
-function createPinIcon(color, letter){
+function createPinIcon(color, letter, scale){
+  const s = scale || 1;
+  const w = Math.round(36 * s), h = Math.round(48 * s);
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
+    <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 36 48">
       <path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30C36 8.06 27.94 0 18 0z" fill="${color}"/>
       <circle cx="18" cy="17" r="10" fill="#ffffff"/>
       ${letter ? `<text x="18" y="22" font-size="13" font-weight="bold" text-anchor="middle" fill="${color}" font-family="Arial, sans-serif">${letter}</text>` : ''}
     </svg>`;
-  return L.divIcon({ className:'custom-pin-icon', html:svg, iconSize:[36,48], iconAnchor:[18,46] });
+  return L.divIcon({ className:'custom-pin-icon', html:svg, iconSize:[w,h], iconAnchor:[Math.round(w/2), Math.round(h*0.958)] });
 }
 
 function createCurrentLocationIcon(){
@@ -3399,7 +3427,7 @@ function updateNavMiniMap(){
     }).addTo(navMiniMap);
   }
   if (destination){
-    navMiniMapDestMarker = L.marker(destination, { icon: createPinIcon('#e53935', 'G') }).addTo(navMiniMap);
+    navMiniMapDestMarker = L.marker(destination, { icon: createPinIcon('#e53935', 'G', 0.62) }).addTo(navMiniMap);
   }
 
   const bounds = [];
@@ -3569,7 +3597,24 @@ function updateNavDisplay(){
   if (iconEl) iconEl.innerText = getManeuverIconName(step);
   if (textEl) textEl.innerText = buildInstructionText(step);
   updateNavManeuverMapMarker();
+  updateNavInfoTicker(step);
   updateNavRemaining();
+}
+
+// 通り名や目印など、経路の補足情報があればパネル上部にテロップ表示する。
+// 情報がなければテロップ自体を隠す。
+function updateNavInfoTicker(step){
+  const wrap = document.getElementById('navInfoTicker');
+  const track = document.getElementById('navInfoTickerTrack');
+  if (!wrap || !track) return;
+  const name = (step && step.name) ? step.name.trim() : '';
+  if (!name){
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  track.textContent = `${name}　—　${name}`;
+  restartPulseAnimation(track);
 }
 
 // ナビ中は緑（代替）ルートと、経路切り替え用のラベルバッジ類を非表示にする
@@ -3947,7 +3992,10 @@ function getRouteFitBoundsOptions(){
   const searchBar = document.getElementById('searchContainer');
   const panel = document.getElementById('statusPanel');
   const searchVisible = searchBar && getComputedStyle(searchBar).display !== 'none';
-  const topPad = (searchVisible ? searchBar.getBoundingClientRect().height : 0) + 30;
+  // 「ナビ開始」バッジはゴールのピンよりさらに上(約110px)に浮かぶため、
+  // ピン自体がハザードパネルの下に収まっていてもバッジだけがかぶることが
+  // あった。その分の余白も見込んでおく。
+  const topPad = (searchVisible ? searchBar.getBoundingClientRect().height : 0) + 30 + 110;
   const bottomPad = (panel ? panel.getBoundingClientRect().height : 0) + 40;
   return {
     paddingTopLeft: [70, topPad],
