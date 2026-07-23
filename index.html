@@ -526,31 +526,35 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 .nav-back-top-row{ display:flex; align-items:center; justify-content:center; gap:10px; }
 .nav-back-right{
-  flex:1 1 0; min-width:92px; max-width:116px; flex-shrink:0;
-  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; gap:4px;
+  flex:1 1 0; min-width:96px; max-width:122px; flex-shrink:0;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; gap:6px;
   align-content:center; justify-items:stretch;
-  border-left:1px solid rgba(255,255,255,.18); padding-left:8px;
+  margin-left:4px; padding:8px 8px 8px 12px;
+  border-left:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
+  border-radius:14px;
 }
 .nav-side-btn{
-  width:100%; max-width:48px; aspect-ratio:1/1; border-radius:12px; cursor:pointer;
+  width:100%; max-width:50px; aspect-ratio:1/1; border-radius:13px; cursor:pointer;
   background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
-  color:#2c6690; margin:0 auto;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  color:#2c6690; margin:0 auto; transition:transform .12s ease, box-shadow .12s ease;
 }
 .nav-side-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
-.nav-side-btn .material-icons-round{ font-size:16px; color:#2c6690; }
-.nav-side-btn-label{ font-size:7px; font-weight:800; }
+.nav-side-btn .material-icons-round{ font-size:17px; color:#2c6690; }
+.nav-side-btn-label{ font-size:7.5px; font-weight:800; letter-spacing:.2px; }
 .nav-side-btn-danger{
   background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
 }
 .nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
 .nav-side-btn-wide{
-  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:22px;
-  flex-direction:row; gap:4px;
-  background:linear-gradient(160deg, #34c98a, #1e8449); border-color:rgba(255,255,255,.55);
+  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:40px;
+  flex-direction:row; gap:6px; border-radius:13px;
+  background:linear-gradient(160deg, #3ad999, #1e8449); border-color:rgba(255,255,255,.55);
+  box-shadow:0 5px 12px rgba(20,90,55,.4), 0 1px 0 rgba(255,255,255,.35) inset, 0 -3px 6px rgba(0,0,0,.15) inset;
 }
-.nav-side-btn-wide .material-icons-round{ font-size:14px; color:#fff; }
-.nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:8px; }
+.nav-side-btn-wide .material-icons-round{ font-size:18px; color:#fff; }
+.nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:10.5px; letter-spacing:.3px; }
 .nav-side-btn-wide:disabled{ opacity:.5; pointer-events:none; }
 
 /* パネル側の方向アイコンと、地図上の案内地点マーカーの点滅を揃えるための
@@ -810,9 +814,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   #statusPanel[data-size="maximized"]{ height:300px; }
 }
 /* ナビ表示は情報量が少ないので、最大化サイズより低い専用の高さに固定する */
-#statusPanel.nav-mode{ height:172px!important; }
+#statusPanel.nav-mode{ height:190px!important; }
 @media (max-height: 700px){
-  #statusPanel.nav-mode{ height:150px!important; }
+  #statusPanel.nav-mode{ height:166px!important; }
 }
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
