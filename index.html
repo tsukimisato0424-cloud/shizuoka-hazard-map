@@ -106,10 +106,16 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .round-btn:disabled{ opacity:.35; pointer-events:none; }
 .round-btn .material-icons-round{ position:relative; z-index:1; font-size:26px; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
 #headingToggleBtn, #navHeadingToggleBtn{ position:relative; }
-#headingToggleBtn .north-indicator, #navHeadingToggleBtn .north-indicator{
+#headingToggleBtn .north-indicator{
   position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
   width:24px; height:24px; border-radius:50%; font-size:12px; font-weight:900;
   color:#e53935; background:#ffffff; box-shadow:0 0 0 2px rgba(70,130,180,.25) inset;
+  transform:rotate(0deg); transition:transform .25s linear;
+}
+#navHeadingToggleBtn .north-indicator{
+  position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
+  width:17px; height:17px; border-radius:50%; font-size:9px; font-weight:900;
+  color:#e53935; background:#ffffff; box-shadow:0 0 0 1.5px rgba(70,130,180,.25) inset;
   transform:rotate(0deg); transition:transform .25s linear;
 }
 #headingToggleBtn.active, #navHeadingToggleBtn.active{
@@ -117,13 +123,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   box-shadow:0 0 18px 4px rgba(47,128,237,.75), 0 4px 10px rgba(0,0,0,.25);
 }
 #headingToggleBtn.active .north-indicator, #navHeadingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
-#navHeadingToggleBtn{
-  position:fixed;
-  top:calc(10px + env(safe-area-inset-top,0px) + 154px + 10px);
-  right:calc(10px + env(safe-area-inset-right,0px));
-  z-index:1000; display:none;
-}
-#navHeadingToggleBtn.nav-visible{ display:flex; }
 /* ============================================================
    ◆ 検索バー・ハザードボタン列（画面上部）
    ============================================================ */
@@ -527,34 +526,44 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-back-top-row{ display:flex; align-items:center; justify-content:center; gap:10px; }
 .nav-back-right{
   flex:1 1 0; min-width:96px; max-width:122px; flex-shrink:0;
-  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; grid-auto-rows:auto; gap:6px;
-  align-content:center; justify-items:stretch;
-  margin-left:4px; padding:8px 8px 8px 12px;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; grid-auto-rows:auto; gap:5px;
+  align-content:center; justify-items:stretch; overflow-y:auto;
+  margin-left:4px; padding:6px 6px 6px 10px;
   border-left:1px solid rgba(255,255,255,.18);
   background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
   border-radius:14px;
 }
 .nav-side-btn{
-  width:100%; max-width:50px; aspect-ratio:1/1; border-radius:13px; cursor:pointer;
+  width:100%; max-width:46px; aspect-ratio:1/1; border-radius:12px; cursor:pointer;
   background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
   color:#2c6690; margin:0 auto; transition:transform .12s ease, box-shadow .12s ease;
 }
 .nav-side-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
-.nav-side-btn .material-icons-round{ font-size:17px; color:#2c6690; }
-.nav-side-btn-label{ font-size:7.5px; font-weight:800; letter-spacing:.2px; }
+.nav-side-btn .material-icons-round{ font-size:16px; color:#2c6690; }
+.nav-side-btn-label{ font-size:7px; font-weight:800; letter-spacing:.2px; }
 .nav-side-btn-danger{
   background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
 }
 .nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
+/* 拡大/縮小を1マスにまとめた上下2分割ステッパー（ヘディング切替のために
+   スクエアボタンを1枠減らす必要があったための省スペース化） */
+.nav-zoom-stepper{ padding:0; overflow:hidden; }
+.nav-zoom-stepper button{
+  flex:1; width:100%; border:none; background:transparent; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; color:#2c6690;
+}
+.nav-zoom-stepper button:first-child{ border-bottom:1px solid rgba(44,102,144,.25); }
+.nav-zoom-stepper button:active{ background:rgba(44,102,144,.14); }
+.nav-zoom-stepper .material-icons-round{ font-size:14px; color:#2c6690; }
 .nav-side-btn-wide{
-  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:40px;
-  flex-direction:row; gap:6px; border-radius:13px;
+  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:34px;
+  flex-direction:row; gap:6px; border-radius:12px;
   background:linear-gradient(160deg, #3ad999, #1e8449); border-color:rgba(255,255,255,.55);
   box-shadow:0 5px 12px rgba(20,90,55,.4), 0 1px 0 rgba(255,255,255,.35) inset, 0 -3px 6px rgba(0,0,0,.15) inset;
 }
-.nav-side-btn-wide .material-icons-round{ font-size:18px; color:#fff; }
-.nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:10.5px; letter-spacing:.3px; }
+.nav-side-btn-wide .material-icons-round{ font-size:16px; color:#fff; }
+.nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:10px; letter-spacing:.3px; }
 .nav-side-btn-wide:disabled{ opacity:.5; pointer-events:none; }
 
 /* パネル側の方向アイコンと、地図上の案内地点マーカーの点滅を揃えるための
@@ -1278,10 +1287,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </button>
 </div>
 
-<button id="navHeadingToggleBtn" class="round-btn" type="button" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
-  <span class="north-indicator" id="navNorthIndicator">N</span>
-</button>
-
 <div id="rightControlContainer">
   <button id="rightControlToggle" class="round-btn control-toggle-btn" type="button" aria-label="ツール表示切替" title="ツール表示切替">
     <span class="material-icons-round">apps</span>
@@ -1477,14 +1482,15 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <button id="navCancelBtn" class="nav-side-btn nav-side-btn-danger" onclick="endNavigation()" title="案内を中止してパネルに戻る">
       <span class="material-icons-round">close</span><span class="nav-side-btn-label">中止</span>
     </button>
-    <button type="button" class="nav-side-btn" onclick="map.zoomIn()" title="拡大">
-      <span class="material-icons-round">add</span><span class="nav-side-btn-label">拡大</span>
-    </button>
+    <div class="nav-side-btn nav-zoom-stepper" title="ズーム">
+      <button type="button" onclick="map.zoomIn()" title="拡大"><span class="material-icons-round">add</span></button>
+      <button type="button" onclick="map.zoomOut()" title="縮小"><span class="material-icons-round">remove</span></button>
+    </div>
     <button id="navMuteBtn" class="nav-side-btn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
       <span class="material-icons-round" id="navMuteIcon">volume_up</span><span class="nav-side-btn-label">音声</span>
     </button>
-    <button type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
-      <span class="material-icons-round">remove</span><span class="nav-side-btn-label">縮小</span>
+    <button id="navHeadingToggleBtn" type="button" class="nav-side-btn" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
+      <span class="north-indicator" id="navNorthIndicator">N</span><span class="nav-side-btn-label">向き</span>
     </button>
     <button id="navShelterBtn" class="nav-side-btn nav-side-btn-wide" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
       <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">最寄り避難所</span>
@@ -3896,8 +3902,6 @@ function startNavigation(){
   if (rightControls) rightControls.style.display = 'none';
   const miniContainer = document.getElementById('navMiniMapContainer');
   if (miniContainer) miniContainer.classList.add('active');
-  const navHeadBtn = document.getElementById('navHeadingToggleBtn');
-  if (navHeadBtn) navHeadBtn.classList.add('nav-visible');
   ensureNavMiniMap();
   setTimeout(() => { if (navMiniMap) navMiniMap.invalidateSize(); updateNavMiniMap(); }, 60);
 
@@ -3972,8 +3976,6 @@ function endNavigation(){
   document.body.classList.remove('nav-split-mode');
   const splitBtn = document.getElementById('navSplitToggleBtn');
   if (splitBtn) splitBtn.classList.remove('active');
-  const navHeadBtn2 = document.getElementById('navHeadingToggleBtn');
-  if (navHeadBtn2) navHeadBtn2.classList.remove('nav-visible');
   syncHeaderOffsets();
 
   updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
