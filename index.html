@@ -527,7 +527,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-back-top-row{ display:flex; align-items:center; justify-content:center; gap:10px; }
 .nav-back-right{
   flex:1 1 0; min-width:92px; max-width:116px; flex-shrink:0;
-  display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:5px;
+  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; gap:4px;
   align-content:center; justify-items:stretch;
   border-left:1px solid rgba(255,255,255,.18); padding-left:8px;
 }
@@ -544,6 +544,14 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
 }
 .nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
+.nav-side-btn-wide{
+  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:22px;
+  flex-direction:row; gap:4px;
+  background:linear-gradient(160deg, #34c98a, #1e8449); border-color:rgba(255,255,255,.55);
+}
+.nav-side-btn-wide .material-icons-round{ font-size:14px; color:#fff; }
+.nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:8px; }
+.nav-side-btn-wide:disabled{ opacity:.5; pointer-events:none; }
 
 /* パネル側の方向アイコンと、地図上の案内地点マーカーの点滅を揃えるための
    共通アニメーション。ステップが進むたびにJSで両方を同時にリスタートすることで
@@ -622,6 +630,40 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:rgba(10,24,48,.72); color:#fff; font-size:11px; font-weight:900;
   padding:2px 6px; border-radius:8px; pointer-events:none;
 }
+/* ナビ中の「最寄りの避難所」提案カード（ミニマップ＋ここに行くボタン） */
+.nav-shelter-suggest-card{
+  position:fixed; top:calc(10px + env(safe-area-inset-top,0px));
+  left:calc(10px + env(safe-area-inset-left,0px));
+  width:150px; z-index:1050; display:none; box-sizing:border-box;
+  background:linear-gradient(135deg, rgba(30,60,114,.94), rgba(40,50,80,.96));
+  border:2px solid rgba(255,255,255,.5); border-radius:16px;
+  padding:8px; box-shadow:0 10px 24px rgba(0,10,30,.5);
+  color:#fff;
+}
+.nav-shelter-suggest-card.active{ display:block; }
+.nav-shelter-close-btn{
+  position:absolute; top:-9px; right:-9px; width:26px; height:26px; border-radius:50%;
+  background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
+  display:flex; align-items:center; justify-content:center; cursor:pointer; color:#2c6690; z-index:2;
+}
+.nav-shelter-close-btn .material-icons-round{ font-size:14px; color:#2c6690; }
+.nav-shelter-suggest-title{
+  font-size:11px; font-weight:800; margin-bottom:5px; text-align:center; color:#eaf2ff;
+}
+.nav-shelter-mini-map{
+  width:100%; height:96px; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,.35);
+}
+.nav-shelter-suggest-name{
+  font-size:11px; font-weight:700; margin:6px 0 2px; text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#eaf2ff;
+}
+.nav-shelter-go-btn{
+  width:100%; margin-top:4px; padding:7px; border-radius:10px; border:none; cursor:pointer;
+  background:linear-gradient(135deg, #27ae60, #1e8449); color:#fff; font-weight:800; font-size:12px;
+  display:flex; align-items:center; justify-content:center; gap:4px;
+}
+.nav-shelter-go-btn .material-icons-round{ font-size:15px; }
+.nav-shelter-go-btn:active{ filter:brightness(.92); }
 .tab-container{ position:absolute; top:-46px; left:16px; display:flex; gap:4px; max-width:calc(100% - 32px); }
 .panel-flip-inner.flipped .tab-container{ opacity:0; pointer-events:none; }
 .nav-start-icon-wrap{ background:transparent!important; border:none!important; }
@@ -768,9 +810,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   #statusPanel[data-size="maximized"]{ height:300px; }
 }
 /* ナビ表示は情報量が少ないので、最大化サイズより低い専用の高さに固定する */
-#statusPanel.nav-mode{ height:150px!important; }
+#statusPanel.nav-mode{ height:172px!important; }
 @media (max-height: 700px){
-  #statusPanel.nav-mode{ height:132px!important; }
+  #statusPanel.nav-mode{ height:150px!important; }
 }
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
@@ -1179,6 +1221,18 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="navMiniMap"></div>
 </div>
 
+<div id="navShelterSuggestCard" class="nav-shelter-suggest-card">
+  <button id="navShelterCloseBtn" class="nav-shelter-close-btn" onclick="closeNavShelterSuggestion()" title="閉じる">
+    <span class="material-icons-round">close</span>
+  </button>
+  <div class="nav-shelter-suggest-title">最寄りの避難所</div>
+  <div id="navShelterMiniMap" class="nav-shelter-mini-map"></div>
+  <div id="navShelterSuggestName" class="nav-shelter-suggest-name">--</div>
+  <button id="navShelterGoBtn" class="nav-shelter-go-btn" onclick="confirmNavShelterReroute()">
+    <span class="material-icons-round">directions_run</span>ここに行く
+  </button>
+</div>
+
 <button id="navHeadingToggleBtn" class="round-btn" type="button" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
   <span class="north-indicator" id="navNorthIndicator">N</span>
 </button>
@@ -1386,6 +1440,9 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     </button>
     <button type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
       <span class="material-icons-round">remove</span><span class="nav-side-btn-label">縮小</span>
+    </button>
+    <button id="navShelterBtn" class="nav-side-btn nav-side-btn-wide" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
+      <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">最寄り避難所</span>
     </button>
   </div>
 </div>
@@ -3786,6 +3843,7 @@ function endNavigation(){
   if (navManeuverMapMarker){ map.removeLayer(navManeuverMapMarker); navManeuverMapMarker = null; }
   clearNavWalkedTrail();
   restoreNonEssentialRouteLayersAfterNav();
+  closeNavShelterSuggestion();
 
   const panel = document.getElementById('statusPanel');
   panel.classList.remove('nav-mode');
@@ -3910,6 +3968,97 @@ async function rerouteNavigation(){
   finally {
     navRerouting = false;
   }
+}
+
+/* ============================================================
+   ◆ ナビ中の「最寄りの避難所」提案（ナビは継続したまま、ゴールだけ切替）
+   ============================================================ */
+let navShelterMiniMap = null;
+let navShelterSuggestCandidate = null;
+let navShelterMarker = null;
+let navShelterCurrentMarker = null;
+
+function ensureNavShelterMiniMap(){
+  if (navShelterMiniMap) return navShelterMiniMap;
+  navShelterMiniMap = L.map('navShelterMiniMap', {
+    zoomControl:false, attributionControl:false, dragging:false,
+    touchZoom:false, scrollWheelZoom:false, doubleClickZoom:false,
+    boxZoom:false, keyboard:false, tap:false, inertia:false
+  });
+  L.tileLayer(`${GSI}/pale/{z}/{x}/{y}.png`, { attribution:'' }).addTo(navShelterMiniMap);
+  return navShelterMiniMap;
+}
+
+// 現在地から直線距離で最も近い避難所を1件だけ探して提案する
+// （危険区域の回避などは行わない、あくまで「一番近い候補」のシンプルな提案）
+async function findNearestShelterDuringNav(){
+  if (!navActive || !currentLocation) return;
+  const btn = document.getElementById('navShelterBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const features = await loadShelterData();
+    if (!features.length) return;
+    let best = null, bestDist = Infinity;
+    features.forEach(f => {
+      const [lng, lat] = f.geometry.coordinates;
+      const latlng = L.latLng(lat, lng);
+      const d = currentLocation.distanceTo(latlng);
+      if (d < bestDist){ bestDist = d; best = { feature: f, latlng }; }
+    });
+    if (!best) return;
+    navShelterSuggestCandidate = best;
+    showNavShelterSuggestion(best);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function showNavShelterSuggestion(candidate){
+  const card = document.getElementById('navShelterSuggestCard');
+  const nameEl = document.getElementById('navShelterSuggestName');
+  if (!card) return;
+  const props = candidate.feature.properties || {};
+  const name = props['施設・場所名'] || '名称不明の避難所';
+  if (nameEl) nameEl.textContent = name;
+  card.classList.add('active');
+
+  const mmap = ensureNavShelterMiniMap();
+  if (navShelterMarker){ mmap.removeLayer(navShelterMarker); navShelterMarker = null; }
+  if (navShelterCurrentMarker){ mmap.removeLayer(navShelterCurrentMarker); navShelterCurrentMarker = null; }
+  navShelterMarker = L.marker(candidate.latlng, { icon: createPinIcon('#27ae60', '', 0.62) }).addTo(mmap);
+  if (currentLocation){
+    navShelterCurrentMarker = L.circleMarker(currentLocation, {
+      radius:5, color:'#fff', weight:2, fillColor:'#1a73e8', fillOpacity:1
+    }).addTo(mmap);
+  }
+  setTimeout(() => {
+    mmap.invalidateSize();
+    if (currentLocation){
+      mmap.fitBounds(L.latLngBounds([currentLocation, candidate.latlng]), { padding:[14, 14], animate:false });
+    } else {
+      mmap.setView(candidate.latlng, 16, { animate:false });
+    }
+  }, 30);
+}
+
+function closeNavShelterSuggestion(){
+  const card = document.getElementById('navShelterSuggestCard');
+  if (card) card.classList.remove('active');
+  navShelterSuggestCandidate = null;
+}
+
+// 提案カードの「ここに行く」：ナビを止めずにゴールだけ切り替えて即座にリルートする
+async function confirmNavShelterReroute(){
+  if (!navShelterSuggestCandidate || !navActive) return;
+  const candidate = navShelterSuggestCandidate;
+  closeNavShelterSuggestion();
+
+  destination = candidate.latlng;
+  if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
+  destMarker = L.marker(destination, { icon: destinationIcon }).addTo(map);
+
+  navLastRerouteTime = 0; // ユーザーの明示操作なので、クールダウンを待たず即リルートする
+  await rerouteNavigation();
 }
 
 function updateNavigationProgress(latlng, accuracy){
@@ -5248,7 +5397,7 @@ function spawnRipple(target, clientX, clientY){
   span.addEventListener('animationend', () => span.remove());
 }
 
-const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, .nav-clear-badge, .nav-side-btn';
+const RIPPLE_SELECTOR = '.round-btn, .hazard-btn, .emergency-round-btn, .map-type-item, .suggestion-item, .tab-btn, .route-label-badge, .emergency-alt-item, .auth-btn, .search-icon-btn, #legendAccordion summary, #mapTypeContainer summary, #toggleStatusBtn, #maximizeStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn, .mesh-zoom-btn, .mesh-dpad-btn, .nav-start-badge, .nav-clear-badge, .nav-side-btn, .nav-shelter-go-btn, .nav-shelter-close-btn';
 
 document.addEventListener('pointerdown', e => {
   const target = e.target.closest(RIPPLE_SELECTOR);
