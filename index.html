@@ -517,47 +517,37 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ left:-100%; }
 }
 
-/* 左(ナビ案内・比率3) / 右(操作パネル・比率1) の2分割レイアウト。
+/* 左(ナビ案内) / 右(操作パネル・3列)の2分割レイアウト。
    低いパネル高さに収まるよう、アイコンと距離は横並び、指示文は1行省略にする。 */
 .nav-back-left{
-  flex:3 1 0; min-width:0; display:flex; flex-direction:column;
+  flex:2 1 0; min-width:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center; gap:1px;
 }
 .nav-back-top-row{ display:flex; align-items:center; justify-content:center; gap:10px; }
 .nav-back-right{
-  flex:1 1 0; min-width:96px; max-width:122px; flex-shrink:0;
-  display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr auto; grid-auto-rows:auto; gap:5px;
+  flex:1.7 1 0; min-width:150px; max-width:210px; flex-shrink:0;
+  display:grid; grid-template-columns:1fr 1fr 1fr; grid-auto-rows:auto; gap:7px;
   align-content:center; justify-items:stretch; overflow-y:auto;
-  margin-left:4px; padding:6px 6px 6px 10px;
+  margin-left:6px; padding:8px 10px;
   border-left:1px solid rgba(255,255,255,.18);
   background:linear-gradient(160deg, rgba(255,255,255,.05), rgba(0,0,0,.08));
   border-radius:14px;
 }
 .nav-side-btn{
-  width:100%; max-width:46px; aspect-ratio:1/1; border-radius:12px; cursor:pointer;
+  width:100%; max-width:54px; aspect-ratio:1/1; border-radius:12px; cursor:pointer;
   background:var(--bubble-bg); border:var(--bubble-border); box-shadow:var(--bubble-shadow);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
   color:#2c6690; margin:0 auto; transition:transform .12s ease, box-shadow .12s ease;
 }
 .nav-side-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
-.nav-side-btn .material-icons-round{ font-size:16px; color:#2c6690; }
-.nav-side-btn-label{ font-size:7px; font-weight:800; letter-spacing:.2px; }
+.nav-side-btn .material-icons-round{ font-size:18px; color:#2c6690; }
+.nav-side-btn-label{ font-size:8px; font-weight:800; letter-spacing:.2px; }
 .nav-side-btn-danger{
   background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
 }
 .nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
-/* 拡大/縮小を1マスにまとめた上下2分割ステッパー（ヘディング切替のために
-   スクエアボタンを1枠減らす必要があったための省スペース化） */
-.nav-zoom-stepper{ padding:0; overflow:hidden; }
-.nav-zoom-stepper button{
-  flex:1; width:100%; border:none; background:transparent; cursor:pointer;
-  display:flex; align-items:center; justify-content:center; color:#2c6690;
-}
-.nav-zoom-stepper button:first-child{ border-bottom:1px solid rgba(44,102,144,.25); }
-.nav-zoom-stepper button:active{ background:rgba(44,102,144,.14); }
-.nav-zoom-stepper .material-icons-round{ font-size:14px; color:#2c6690; }
 .nav-side-btn-wide{
-  grid-column:span 2; width:100%; max-width:none; aspect-ratio:auto; height:34px;
+  grid-column:span 3; width:100%; max-width:none; aspect-ratio:auto; height:34px;
   flex-direction:row; gap:6px; border-radius:12px;
   background:linear-gradient(160deg, #3ad999, #1e8449); border-color:rgba(255,255,255,.55);
   box-shadow:0 5px 12px rgba(20,90,55,.4), 0 1px 0 rgba(255,255,255,.35) inset, 0 -3px 6px rgba(0,0,0,.15) inset;
@@ -661,23 +651,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-split-toggle-btn.active .material-icons-round,
 .nav-split-toggle-btn.active .nav-side-btn-label{ color:#fff; }
 
-/* 横画面・2画面モード：ナビパネルを画面右側の縦帯に変更し、地図側を広く使う。
-   任意でオン/オフできる機能なので、body.nav-split-modeが付いている間だけ
-   有効になり、それ以外（縦画面・オフ時）は既存レイアウトに一切影響しない。 */
+/* 横画面・2画面モード：左半分＝広域の全景地図（ワイプを半画面に拡大表示）、
+   右半分＝通常縮尺のナビ地図（メインの地図はそのまま）。ナビパネルは右半分の
+   下部にドッキングさせる。任意でオン/オフできる機能なので、body.nav-split-modeが
+   付いている間だけ有効になり、それ以外（縦画面・オフ時）は既存レイアウトに
+   一切影響しない。 */
 @media (orientation: landscape){
+  body.nav-split-mode #navMiniMapContainer{
+    top:0!important; left:0!important; right:auto!important; bottom:0!important;
+    width:calc(50vw - 1px)!important; height:100%!important;
+    border-radius:0 20px 20px 0!important; border-width:0 2px 0 0!important;
+  }
+  body.nav-split-mode .nav-mini-map-resize-handle{ display:none; } /* 2画面中はサイズ固定（ドラッグリサイズ無効） */
+  body.nav-split-mode #navShelterSuggestCard{
+    left:calc(50vw + 10px + env(safe-area-inset-left,0px))!important;
+  }
   body.nav-split-mode #statusPanel.nav-mode{
-    left:auto!important; right:calc(10px + env(safe-area-inset-right,0px))!important;
-    top:calc(10px + env(safe-area-inset-top,0px))!important;
-    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
-    width:38%!important; max-width:340px; height:auto!important; border-radius:22px!important;
-  }
-  body.nav-split-mode #statusPanel.nav-mode .panel-face-back{
-    flex-direction:column; padding-top:26px; overflow-y:auto;
-  }
-  body.nav-split-mode #statusPanel.nav-mode .nav-back-left{ flex:none; width:100%; }
-  body.nav-split-mode #statusPanel.nav-mode .nav-back-right{
-    border-left:none; border-top:1px solid rgba(255,255,255,.18);
-    margin-left:0; margin-top:10px; width:100%; max-width:none;
+    left:calc(50vw + 10px + env(safe-area-inset-left,0px))!important;
+    right:calc(10px + env(safe-area-inset-right,0px))!important;
   }
 }
 /* ナビ中の「最寄りの避難所」提案カード（ミニマップ＋ここに行くボタン） */
@@ -863,7 +854,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 /* ナビ表示は情報量が少ないので、最大化サイズより低い専用の高さに固定する */
 #statusPanel.nav-mode{ height:190px!important; }
 @media (max-height: 700px){
-  #statusPanel.nav-mode{ height:166px!important; }
+  #statusPanel.nav-mode{ height:178px!important; }
 }
 #statusPanel[data-state="minimized"]{ height:44px!important; overflow:visible!important; }
 #statusPanel[data-state="minimized"] .tab-content{ display:none!important; }
@@ -1482,18 +1473,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <button id="navCancelBtn" class="nav-side-btn nav-side-btn-danger" onclick="endNavigation()" title="案内を中止してパネルに戻る">
       <span class="material-icons-round">close</span><span class="nav-side-btn-label">中止</span>
     </button>
-    <div class="nav-side-btn nav-zoom-stepper" title="ズーム">
-      <button type="button" onclick="map.zoomIn()" title="拡大"><span class="material-icons-round">add</span></button>
-      <button type="button" onclick="map.zoomOut()" title="縮小"><span class="material-icons-round">remove</span></button>
-    </div>
+    <button type="button" class="nav-side-btn" onclick="map.zoomIn()" title="拡大">
+      <span class="material-icons-round">add</span><span class="nav-side-btn-label">拡大</span>
+    </button>
+    <button type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
+      <span class="material-icons-round">remove</span><span class="nav-side-btn-label">縮小</span>
+    </button>
     <button id="navMuteBtn" class="nav-side-btn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
       <span class="material-icons-round" id="navMuteIcon">volume_up</span><span class="nav-side-btn-label">音声</span>
     </button>
     <button id="navHeadingToggleBtn" type="button" class="nav-side-btn" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
       <span class="north-indicator" id="navNorthIndicator">N</span><span class="nav-side-btn-label">向き</span>
     </button>
-    <button id="navShelterBtn" class="nav-side-btn nav-side-btn-wide" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
-      <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">最寄り避難所</span>
+    <button id="navShelterBtn" class="nav-side-btn" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
+      <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">避難所</span>
     </button>
     <button id="navSplitToggleBtn" type="button" class="nav-side-btn nav-side-btn-wide nav-split-toggle-btn" onclick="toggleNavSplitMode()" title="横画面2分割レイアウト">
       <span class="material-icons-round">view_sidebar</span><span class="nav-side-btn-label">2画面表示</span>
@@ -3579,7 +3572,10 @@ function toggleNavSplitMode(){
   const active = document.body.classList.toggle('nav-split-mode');
   const btn = document.getElementById('navSplitToggleBtn');
   if (btn) btn.classList.toggle('active', active);
-  setTimeout(() => { map.invalidateSize(); if (navMiniMap) navMiniMap.invalidateSize(); }, 350);
+  setTimeout(() => {
+    map.invalidateSize();
+    if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
+  }, 350);
 }
 
 // ナビ中の概況ミニマップ（ワイプ）。メイン地図はヘッドアップで回転するため、
