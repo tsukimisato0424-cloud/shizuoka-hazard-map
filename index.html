@@ -35,6 +35,10 @@
   --bubble-shadow-active: 0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset,
                           0 4px 8px rgba(90,150,190,.35) inset;
   --ink: #2c6690;
+  --nav-panel-width: 300px;
+}
+@media (max-width: 820px) and (orientation: landscape){
+  :root{ --nav-panel-width: 250px; }
 }
 /* ============================================================
    ◆ 基本レイアウト（html/body/地図コンテナ）
@@ -608,29 +612,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-mini-map-resize-handle .material-icons-round{ font-size:15px; color:#fff; transform:rotate(90deg); }
 .nav-mini-map-resize-handle.dragging{ background:rgba(26,115,232,.85); }
 
-.nav-split-toggle-btn{ display:none; }
-@media (orientation: landscape){
-  .nav-split-toggle-btn{ display:flex; }
-}
-.nav-split-toggle-btn.active{ background:linear-gradient(160deg, #2f80ed, #0d47a1); border-color:#fff; }
-.nav-split-toggle-btn.active .material-icons-round,
-.nav-split-toggle-btn.active .nav-side-btn-label{ color:#fff; }
-
-@media (orientation: landscape){
-  body.nav-split-mode #navMiniMapContainer{
-    top:0!important; left:0!important; right:auto!important; bottom:0!important;
-    width:calc(50vw - 1px)!important; height:100%!important;
-    border-radius:0 20px 20px 0!important; border-width:0 2px 0 0!important;
-  }
-  body.nav-split-mode .nav-mini-map-resize-handle{ display:none; }
-  body.nav-split-mode #navShelterSuggestCard{
-    left:calc(50vw + 10px + env(safe-area-inset-left,0px))!important;
-  }
-  body.nav-split-mode #statusPanel.nav-mode{
-    left:calc(50vw + 10px + env(safe-area-inset-left,0px))!important;
-    right:calc(10px + env(safe-area-inset-right,0px))!important;
-  }
-}
 .nav-shelter-suggest-card{
   position:fixed; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px));
@@ -1141,15 +1122,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 @media (orientation: landscape){
   body.nav-split-mode #navHeadingFloatBtn.visible{
     top:calc(10px + env(safe-area-inset-top,0px))!important;
-    right:calc(10px + env(safe-area-inset-right,0px))!important;
+    left:calc(10px + env(safe-area-inset-left,0px))!important;
+    right:auto!important;
   }
 }
 /* ============================================================
-   ◆ 横画面2画面表示：比率可変スプリッター
+   ◆ 横画面ナビ：右端固定パネル＋左側2画面（本図/概況図）
    ============================================================ */
 .nav-split-divider{
   display:none; position:fixed; top:0; bottom:0;
-  left:calc(var(--nav-split-pct, 50) * 1%); margin-left:-16px;
+  left:calc(var(--nav-maps-available, 60vw) * var(--nav-split-pct, 55) / 100);
+  margin-left:-16px;
   width:32px; z-index:1400; cursor:ew-resize; touch-action:none;
   align-items:center; justify-content:center;
 }
@@ -1160,16 +1143,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   box-shadow:0 4px 12px rgba(0,0,0,.35);
 }
 @media (orientation: landscape){
+  body.nav-split-mode{
+    --nav-maps-available: calc(100vw - var(--nav-panel-width) - 30px);
+  }
   body.nav-split-mode .nav-split-divider{ display:flex; }
   body.nav-split-mode #navMiniMapContainer{
-    width:calc(var(--nav-split-pct, 50) * 1vw - 1px)!important;
+    top:calc(10px + env(safe-area-inset-top,0px))!important;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    left:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100 + 10px + env(safe-area-inset-left,0px))!important;
+    right:auto!important;
+    width:calc(var(--nav-maps-available) * (100 - var(--nav-split-pct, 55)) / 100 - 10px)!important;
+    height:auto!important;
+    border-radius:20px!important; border-width:2px!important;
   }
-  body.nav-split-mode #navShelterSuggestCard{
-    left:calc(var(--nav-split-pct, 50) * 1vw + 10px + env(safe-area-inset-left,0px))!important;
-  }
+  body.nav-split-mode .nav-mini-map-resize-handle{ display:none; }
   body.nav-split-mode #statusPanel.nav-mode{
-    left:calc(var(--nav-split-pct, 50) * 1vw + 10px + env(safe-area-inset-left,0px))!important;
+    left:auto!important;
     right:calc(10px + env(safe-area-inset-right,0px))!important;
+    width:var(--nav-panel-width)!important;
     top:calc(10px + env(safe-area-inset-top,0px))!important;
     bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
     height:auto!important;
@@ -1183,7 +1174,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
     border-left:none; border-top:1px solid rgba(255,255,255,.18);
   }
-  body.nav-split-mode .nav-split-toggle-btn{ display:none; }
 }
 /* ============================================================
    ◆ レスポンシブ対応（画面幅・高さが小さい機種向けの調整）
@@ -1513,9 +1503,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     </button>
     <button id="navShelterBtn" class="nav-side-btn" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
       <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">避難所</span>
-    </button>
-    <button id="navSplitToggleBtn" type="button" class="nav-side-btn nav-side-btn-wide nav-split-toggle-btn" onclick="toggleNavSplitMode()" title="横画面2分割レイアウト">
-      <span class="material-icons-round">view_sidebar</span><span class="nav-side-btn-label">2画面表示</span>
     </button>
   </div>
 </div>
@@ -2637,15 +2624,31 @@ if (navMiniHeadingFloatBtn){
    横画面2画面表示時（右上・右ペイン側）とで切り替える */
 function positionNavHeadingFloatButtons(){
   const btn = document.getElementById('navHeadingFloatBtn');
-  if (!btn) return;
+  const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
   const isSplit = document.body.classList.contains('nav-split-mode');
   if (isSplit){
-    btn.style.top = '';
+    if (btn){
+      btn.style.left = 'calc(10px + env(safe-area-inset-left,0px))';
+      btn.style.right = 'auto';
+      btn.style.top = 'calc(10px + env(safe-area-inset-top,0px))';
+    }
+    if (miniBtn){
+      const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
+      const available = window.innerWidth - panelWidthPx - 30;
+      const pctVal = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-split-pct')) || 55;
+      const leftPx = (available * pctVal / 100) + 20;
+      miniBtn.style.left = leftPx + 'px';
+      miniBtn.style.top = 'calc(10px + env(safe-area-inset-top,0px))';
+    }
   } else {
-    const miniContainer = document.getElementById('navMiniMapContainer');
-    const rect = miniContainer ? miniContainer.getBoundingClientRect() : null;
-    const top = rect && rect.height ? (rect.bottom + 10) : (10 + (document.documentElement.style.getPropertyValue('--real-vh') ? 0 : 0) + 170);
-    btn.style.top = top + 'px';
+    if (btn){
+      btn.style.left = '';
+      btn.style.right = 'calc(10px + env(safe-area-inset-right,0px))';
+      const miniContainer = document.getElementById('navMiniMapContainer');
+      const rect = miniContainer ? miniContainer.getBoundingClientRect() : null;
+      const top = rect && rect.height ? (rect.bottom + 10) : (10 + (document.documentElement.style.getPropertyValue('--real-vh') ? 0 : 0) + 170);
+      btn.style.top = top + 'px';
+    }
   }
 }
 
@@ -3524,24 +3527,34 @@ function initNavMiniMapResize(){
   handle.addEventListener('pointercancel', onPointerUp);
 }
 
-function toggleNavSplitMode(){
-  const active = document.body.classList.toggle('nav-split-mode');
-  const btn = document.getElementById('navSplitToggleBtn');
-  if (btn) btn.classList.toggle('active', active);
-  document.documentElement.style.setProperty('--nav-split-pct', '50');
-  if (active){
-    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
-    if (miniBtn) miniBtn.classList.add('visible');
-  } else {
-    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
-    if (miniBtn) miniBtn.classList.remove('visible');
-    setMiniHeadingUpMode(false);
+function isLandscapeOrientation(){
+  return window.matchMedia('(orientation: landscape)').matches;
+}
+
+function updateNavLandscapeLayout(){
+  if (!navActive) return;
+  const shouldSplit = isLandscapeOrientation();
+  const body = document.body;
+  const isSplit = body.classList.contains('nav-split-mode');
+  if (shouldSplit !== isSplit){
+    body.classList.toggle('nav-split-mode', shouldSplit);
+    if (shouldSplit){
+      if (!document.documentElement.style.getPropertyValue('--nav-split-pct')){
+        document.documentElement.style.setProperty('--nav-split-pct', '55');
+      }
+      const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+      if (miniBtn) miniBtn.classList.add('visible');
+    } else {
+      const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+      if (miniBtn) miniBtn.classList.remove('visible');
+      setMiniHeadingUpMode(false);
+    }
+    setTimeout(() => {
+      map.invalidateSize();
+      if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
+    }, 350);
   }
   positionNavHeadingFloatButtons();
-  setTimeout(() => {
-    map.invalidateSize();
-    if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
-  }, 350);
 }
 
 function updateNavWalkedTrail(latlng){
@@ -3868,11 +3881,7 @@ function startNavigation(){
 
   const navHeadingBtn = document.getElementById('navHeadingFloatBtn');
   if (navHeadingBtn) navHeadingBtn.classList.add('visible');
-  if (document.body.classList.contains('nav-split-mode')){
-    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
-    if (miniBtn) miniBtn.classList.add('visible');
-  }
-  positionNavHeadingFloatButtons();
+  updateNavLandscapeLayout();
 
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
@@ -3915,8 +3924,6 @@ function endNavigation(){
     miniContainer.style.height = '';
   }
   document.body.classList.remove('nav-split-mode');
-  const splitBtn = document.getElementById('navSplitToggleBtn');
-  if (splitBtn) splitBtn.classList.remove('active');
 
   const navHeadingBtn = document.getElementById('navHeadingFloatBtn');
   if (navHeadingBtn) navHeadingBtn.classList.remove('visible');
@@ -5435,14 +5442,14 @@ function syncRightControlAlignment(){
   const desiredRight = window.innerWidth - (emergencyCenterX + toggleWidth / 2);
   rightControls.style.right = Math.max(0, desiredRight) + 'px';
 }
-window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); positionNavHeadingFloatButtons(); });
+window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout(); });
 if (window.visualViewport){
   window.visualViewport.addEventListener('resize', () => {
     map.invalidateSize();
     if (navMiniMap) navMiniMap.invalidateSize();
   });
 }
-window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); positionNavHeadingFloatButtons(); }, 200));
+window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout(); }, 200));
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 attachScrollHint(document.getElementById('landformLegendContent'));
@@ -5510,10 +5517,18 @@ function initNavSplitDivider(){
   let dragging = false;
 
   function setPct(pct){
-    pct = Math.max(25, Math.min(75, pct));
+    const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
+    const available = window.innerWidth - panelWidthPx - 30;
+    const minMiniPx = 120;
+    const minMainPx = Math.max(120, available * 0.25);
+    let minPct = (minMainPx / available) * 100;
+    let maxPct = 100 - (minMiniPx / available) * 100;
+    if (maxPct < minPct){ minPct = 30; maxPct = 70; }
+    pct = Math.max(minPct, Math.min(maxPct, pct));
     document.documentElement.style.setProperty('--nav-split-pct', pct.toFixed(1));
     if (navMiniMap) navMiniMap.invalidateSize();
     map.invalidateSize();
+    positionNavHeadingFloatButtons();
   }
   function onDown(e){
     dragging = true;
@@ -5522,7 +5537,9 @@ function initNavSplitDivider(){
   }
   function onMove(e){
     if (!dragging) return;
-    const pct = (e.clientX / window.innerWidth) * 100;
+    const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
+    const available = window.innerWidth - panelWidthPx - 30;
+    const pct = (e.clientX / available) * 100;
     setPct(pct);
   }
   function onUp(e){
