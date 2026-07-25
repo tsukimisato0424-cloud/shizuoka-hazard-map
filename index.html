@@ -46,13 +46,6 @@ html, body{
   touch-action:pan-x pan-y; overscroll-behavior:none;
   position:fixed; top:0; left:0; width:100%; overflow:hidden;
 }
-/* 100%/100vhはアドレスバー等が表示された状態の実際に見える高さではなく
-   「最大想定の高さ」で計算されてしまうことがあり、ステータスパネルやワイプの
-   bottom/top指定が実画面の下端からズレて浮いて見える原因になっていた。
-   dvh（実際に見えているビューポート高さ）が使える環境ではそちらを優先しつつ、
-   さらにJS側でvisualViewportを継続監視して--real-vh/--real-vwに反映することで、
-   ドラッグ・ピンチ操作中にアドレスバーが出入りした場合も追従できるようにする
-   （dvhの再計算タイミングに依存しない、より確実な二重の対策）。 */
 @supports (height: 100dvh){
   html, body{ height:100dvh; }
 }
@@ -63,10 +56,6 @@ body::before, body::after{
 body::before{ top:0; height:env(safe-area-inset-top,0px); }
 body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #map{ height:100%; width:100%; position:fixed; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
-/* ヘッドアップ回転時、地図を拡大して四隅が切れないようにする。150%では
-   回転角によって対角線が足りず四隅が切れて背景色が見えることがあったため
-   200%に拡大。vh/vwはアドレスバー分の高さのズレの影響を受けるため、
-   dvh/dvw、さらにJS側の--real-vh/--real-vwが使える環境ではそちらを優先する。 */
 #map.heading-rotate-mode{ height:200vh; width:200vw; top:50%; left:50%; }
 @supports (height: 100dvh){
   #map.heading-rotate-mode{ height:200dvh; width:200dvw; }
@@ -105,24 +94,24 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .round-btn:active{ transform:translateY(2px); box-shadow:var(--bubble-shadow-active); }
 .round-btn:disabled{ opacity:.35; pointer-events:none; }
 .round-btn .material-icons-round{ position:relative; z-index:1; font-size:26px; filter:drop-shadow(0 1px 0 rgba(255,255,255,.6)); }
-#headingToggleBtn, #navHeadingToggleBtn{ position:relative; }
+#headingToggleBtn, #navHeadingFloatBtn, #navMiniHeadingFloatBtn{ position:relative; }
 #headingToggleBtn .north-indicator{
   position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
   width:24px; height:24px; border-radius:50%; font-size:12px; font-weight:900;
   color:#e53935; background:#ffffff; box-shadow:0 0 0 2px rgba(70,130,180,.25) inset;
   transform:rotate(0deg); transition:transform .25s linear;
 }
-#navHeadingToggleBtn .north-indicator{
+#navHeadingFloatBtn .north-indicator, #navMiniHeadingFloatBtn .north-indicator{
   position:relative; z-index:1; display:flex; align-items:center; justify-content:center;
-  width:17px; height:17px; border-radius:50%; font-size:9px; font-weight:900;
+  width:20px; height:20px; border-radius:50%; font-size:10px; font-weight:900;
   color:#e53935; background:#ffffff; box-shadow:0 0 0 1.5px rgba(70,130,180,.25) inset;
   transform:rotate(0deg); transition:transform .25s linear;
 }
-#headingToggleBtn.active, #navHeadingToggleBtn.active{
+#headingToggleBtn.active, #navHeadingFloatBtn.active, #navMiniHeadingFloatBtn.active{
   background:linear-gradient(135deg,#2f80ed,#0d47a1); border-color:#fff;
   box-shadow:0 0 18px 4px rgba(47,128,237,.75), 0 4px 10px rgba(0,0,0,.25);
 }
-#headingToggleBtn.active .north-indicator, #navHeadingToggleBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
+#headingToggleBtn.active .north-indicator, #navHeadingFloatBtn.active .north-indicator, #navMiniHeadingFloatBtn.active .north-indicator{ background:#0d1b2a; color:#ff6659; }
 /* ============================================================
    ◆ 検索バー・ハザードボタン列（画面上部）
    ============================================================ */
@@ -474,14 +463,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   content:""; position:absolute; inset:-1px; border-radius:25px; z-index:-1; pointer-events:none;
   background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,0));
 }
-/* =========================================================================
-   ステータスパネルの表裏切り替え（通常タブ群 ⇔ ターン・バイ・ターンのナビ表示）。
-   以前はrotateY(180deg)の3D flipで実装していたが、機種によっては
-   backface-visibilityが完全に効かず、表面のボタンやタブが裏面に透けて見えたり
-   パネル自体の位置がずれて見えることがあったため、opacity+scaleXによる
-   2Dのクロスフェードに変更。#statusPanel自体には一切transformを掛けないため、
-   最下段固定の位置は常に安定する。
-   ========================================================================= */
 .panel-flip-inner{ position:relative; width:100%; height:100%; }
 .panel-face{
   position:absolute; inset:0;
@@ -498,7 +479,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .panel-flip-inner.flipped .panel-face-front{ opacity:0; transform:scaleX(0); pointer-events:none; z-index:1; }
 .panel-flip-inner.flipped .panel-face-back{ opacity:1; transform:scaleX(1); pointer-events:auto; z-index:2; }
 
-/* 通り名・目印などのナビ補足情報を、パネル上部に横スクロールのテロップで流す */
 .nav-info-ticker{
   position:absolute; top:0; left:0; right:0; height:18px; z-index:2;
   display:none; align-items:center; gap:5px; padding:0 10px;
@@ -517,8 +497,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   100%{ left:-100%; }
 }
 
-/* 左(ナビ案内) / 右(操作パネル・3列)の2分割レイアウト。
-   低いパネル高さに収まるよう、アイコンと距離は横並び、指示文は1行省略にする。 */
 .nav-back-left{
   flex:2 1 0; min-width:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center; gap:1px;
@@ -556,9 +534,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-side-btn-wide .nav-side-btn-label{ color:#fff; font-size:10px; letter-spacing:.3px; }
 .nav-side-btn-wide:disabled{ opacity:.5; pointer-events:none; }
 
-/* パネル側の方向アイコンと、地図上の案内地点マーカーの点滅を揃えるための
-   共通アニメーション。ステップが進むたびにJSで両方を同時にリスタートすることで
-   位相を一致させ、「この標識が示す角」であることが視覚的にリンクして伝わるようにする。 */
 @keyframes navManeuverPulse{
   0%, 100%{ transform:scale(1); box-shadow:0 4px 10px rgba(0,10,30,.4), 0 1px 0 rgba(255,255,255,.3) inset, 0 0 0 0 rgba(0,212,255,.55); }
   50%{ transform:scale(1.1); box-shadow:0 4px 14px rgba(0,10,30,.45), 0 1px 0 rgba(255,255,255,.3) inset, 0 0 16px 5px rgba(0,212,255,.7); }
@@ -597,12 +572,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   transition:width .4s ease;
 }
 
-/* 地図上の「案内地点」標識マーカー。パネル側のアイコンと同じ形・同じ点滅で表示し、
-   「この角を曲がるための標識」であることが一目でわかるようにする。
-   外側の要素で地図の回転を打ち消す(--map-counter-rotation)ことで、ヘッドアップ中
-   マップ本体が回転してもこの標識アイコン自体は常に正立を保つ。
-   ※国土地理院タイルの地名等はラスター画像に焼き込まれているため、これは
-   打ち消せない（ベクトルタイルでない限り不可能）。 */
 .nav-map-maneuver-icon-wrap{ background:transparent!important; border:none!important; }
 .nav-map-maneuver-icon-outer{
   transform:rotate(var(--map-counter-rotation,0deg)); transition:transform .25s linear;
@@ -622,8 +591,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   width:154px; height:154px; z-index:1000; border-radius:18px; overflow:hidden;
   border:2px solid rgba(255,255,255,.55); box-shadow:0 10px 24px rgba(0,10,30,.5);
   display:none;
-  /* ミニマップ自体は常に北固定で回転しないため、メイン地図の回転打ち消し量を
-     継承させない（継承すると自作ピン等が誤って回転してしまう） */
   --map-counter-rotation: 0deg;
 }
 .nav-mini-map-container.active{ display:block; }
@@ -641,8 +608,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-mini-map-resize-handle .material-icons-round{ font-size:15px; color:#fff; transform:rotate(90deg); }
 .nav-mini-map-resize-handle.dragging{ background:rgba(26,115,232,.85); }
 
-/* 「2画面表示」ボタン：横画面の時だけ操作パネルに現れる（縦画面では
-   display:noneでグリッドの1マスも消費しない） */
 .nav-split-toggle-btn{ display:none; }
 @media (orientation: landscape){
   .nav-split-toggle-btn{ display:flex; }
@@ -651,18 +616,13 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .nav-split-toggle-btn.active .material-icons-round,
 .nav-split-toggle-btn.active .nav-side-btn-label{ color:#fff; }
 
-/* 横画面・2画面モード：左半分＝広域の全景地図（ワイプを半画面に拡大表示）、
-   右半分＝通常縮尺のナビ地図（メインの地図はそのまま）。ナビパネルは右半分の
-   下部にドッキングさせる。任意でオン/オフできる機能なので、body.nav-split-modeが
-   付いている間だけ有効になり、それ以外（縦画面・オフ時）は既存レイアウトに
-   一切影響しない。 */
 @media (orientation: landscape){
   body.nav-split-mode #navMiniMapContainer{
     top:0!important; left:0!important; right:auto!important; bottom:0!important;
     width:calc(50vw - 1px)!important; height:100%!important;
     border-radius:0 20px 20px 0!important; border-width:0 2px 0 0!important;
   }
-  body.nav-split-mode .nav-mini-map-resize-handle{ display:none; } /* 2画面中はサイズ固定（ドラッグリサイズ無効） */
+  body.nav-split-mode .nav-mini-map-resize-handle{ display:none; }
   body.nav-split-mode #navShelterSuggestCard{
     left:calc(50vw + 10px + env(safe-area-inset-left,0px))!important;
   }
@@ -671,7 +631,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     right:calc(10px + env(safe-area-inset-right,0px))!important;
   }
 }
-/* ナビ中の「最寄りの避難所」提案カード（ミニマップ＋ここに行くボタン） */
 .nav-shelter-suggest-card{
   position:fixed; top:calc(10px + env(safe-area-inset-top,0px));
   left:calc(10px + env(safe-area-inset-left,0px));
@@ -751,7 +710,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   color:#fff!important; font-weight:800!important;
   text-shadow:0 0 10px #00d4ff, 0 0 20px #00d4ff, 1px 1px 0 #000;
 }
-/* ---- タブ中身（①リスク判定／②高低差／③地形分類／④メッシュ） ---- */
 .tab-content{ display:none; padding:16px; height:100%; overflow:auto; box-sizing: border-box;}
 .tab-content.active{ display:block; }
 #tab1.active{ overflow:hidden; }
@@ -760,10 +718,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 #tab4 .panel-heading-label{ flex-shrink:0; align-self:flex-start; }
 #tab2.active{ display:flex; flex-direction:column; overflow:hidden; }
 #tab2 .panel-heading-label{ flex-shrink:0; }
-/* 標準サイズ = サムネイル感覚／最大化 = 詳細表示、で
-   タブ2・タブ4はサイズに応じてレイアウトと情報量を切り替える。
-   標準時は固定px値に頼らず、tab2内の残り高さいっぱいに自動でフィットさせることで、
-   下に余白を残さずスクロールも発生させない。 */
 #tab2 .panel-row{
   height:auto; flex:1 1 auto; min-height:0; margin-top:6px; flex-wrap:nowrap; align-content:flex-start;
   gap:10px; transition:all .45s cubic-bezier(.4,0,.2,1);
@@ -851,7 +805,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 @media (max-height: 700px){
   #statusPanel[data-size="maximized"]{ height:300px; }
 }
-/* ナビ表示は情報量が少ないので、最大化サイズより低い専用の高さに固定する */
 #statusPanel.nav-mode{ height:190px!important; }
 @media (max-height: 700px){
   #statusPanel.nav-mode{ height:178px!important; }
@@ -1168,6 +1121,71 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 .tap-highlight{ filter:brightness(1.15); }
 #toggleStatusBtn, .legend-item, .landform-legend-item, .popup-action-btn{ position:relative; overflow:hidden; }
 /* ============================================================
+   ◆ ナビ中フローティング方位ボタン（操作パネルから独立）
+   ============================================================ */
+.nav-heading-float-btn{
+  position:fixed; z-index:1650; display:none;
+}
+.nav-heading-float-btn.visible{ display:flex; }
+#navHeadingFloatBtn{
+  right:calc(10px + env(safe-area-inset-right,0px));
+}
+#navMiniHeadingFloatBtn{
+  display:none;
+}
+#navMiniHeadingFloatBtn.visible{
+  display:flex;
+  top:calc(10px + env(safe-area-inset-top,0px));
+  left:calc(10px + env(safe-area-inset-left,0px));
+}
+@media (orientation: landscape){
+  body.nav-split-mode #navHeadingFloatBtn.visible{
+    top:calc(10px + env(safe-area-inset-top,0px))!important;
+    right:calc(10px + env(safe-area-inset-right,0px))!important;
+  }
+}
+/* ============================================================
+   ◆ 横画面2画面表示：比率可変スプリッター
+   ============================================================ */
+.nav-split-divider{
+  display:none; position:fixed; top:0; bottom:0;
+  left:calc(var(--nav-split-pct, 50) * 1%); margin-left:-16px;
+  width:32px; z-index:1400; cursor:ew-resize; touch-action:none;
+  align-items:center; justify-content:center;
+}
+.nav-split-divider .divider-handle{
+  width:26px; height:56px; border-radius:13px;
+  background:rgba(20,30,50,.68); border:1px solid rgba(255,255,255,.35);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.35);
+}
+@media (orientation: landscape){
+  body.nav-split-mode .nav-split-divider{ display:flex; }
+  body.nav-split-mode #navMiniMapContainer{
+    width:calc(var(--nav-split-pct, 50) * 1vw - 1px)!important;
+  }
+  body.nav-split-mode #navShelterSuggestCard{
+    left:calc(var(--nav-split-pct, 50) * 1vw + 10px + env(safe-area-inset-left,0px))!important;
+  }
+  body.nav-split-mode #statusPanel.nav-mode{
+    left:calc(var(--nav-split-pct, 50) * 1vw + 10px + env(safe-area-inset-left,0px))!important;
+    right:calc(10px + env(safe-area-inset-right,0px))!important;
+    top:calc(10px + env(safe-area-inset-top,0px))!important;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    height:auto!important;
+    border-radius:20px!important;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .panel-face-back{
+    flex-direction:column; padding:16px 12px 12px; height:100%; overflow-y:auto; gap:10px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-back-left{ flex:0 0 auto; }
+  body.nav-split-mode #statusPanel.nav-mode .nav-back-right{
+    flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
+    border-left:none; border-top:1px solid rgba(255,255,255,.18);
+  }
+  body.nav-split-mode .nav-split-toggle-btn{ display:none; }
+}
+/* ============================================================
    ◆ レスポンシブ対応（画面幅・高さが小さい機種向けの調整）
    ============================================================ */
 @media (max-width: 380px){
@@ -1264,6 +1282,17 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   <div id="navMiniMapResizeHandle" class="nav-mini-map-resize-handle" title="ドラッグでサイズ変更">
     <span class="material-icons-round">open_in_full</span>
   </div>
+</div>
+
+<button id="navHeadingFloatBtn" class="round-btn nav-heading-float-btn" type="button" aria-label="ヘディングアップ切替（ナビ地図）" title="ヘディングアップ切替（ナビ地図）">
+  <span class="north-indicator" id="navNorthIndicatorFloat">N</span>
+</button>
+<button id="navMiniHeadingFloatBtn" class="round-btn nav-heading-float-btn" type="button" aria-label="ヘディングアップ切替（概況地図）" title="ヘディングアップ切替（概況地図）">
+  <span class="north-indicator" id="navMiniNorthIndicatorFloat">N</span>
+</button>
+
+<div id="navSplitDivider" class="nav-split-divider" title="ドラッグして比率変更">
+  <div class="divider-handle"><span class="material-icons-round">drag_indicator</span></div>
 </div>
 
 <div id="navShelterSuggestCard" class="nav-shelter-suggest-card">
@@ -1482,9 +1511,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     <button id="navMuteBtn" class="nav-side-btn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
       <span class="material-icons-round" id="navMuteIcon">volume_up</span><span class="nav-side-btn-label">音声</span>
     </button>
-    <button id="navHeadingToggleBtn" type="button" class="nav-side-btn" aria-label="ヘディングアップ切替" title="ヘディングアップ切替">
-      <span class="north-indicator" id="navNorthIndicator">N</span><span class="nav-side-btn-label">向き</span>
-    </button>
     <button id="navShelterBtn" class="nav-side-btn" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
       <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">避難所</span>
     </button>
@@ -1503,9 +1529,6 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 <script>
 'use strict';
 
-// 実際に見えているビューポートサイズ（アドレスバーの出入りを含む）をCSS変数へ
-// 反映する。ドラッグやピンチ操作の最中にアドレスバーが出入りしても、dvhの
-// 再計算タイミングに頼らずズレなく追従できるようにするための保険。
 function updateRealViewportSize(){
   const vv = window.visualViewport;
   const h = vv ? vv.height : window.innerHeight;
@@ -1521,9 +1544,6 @@ if (window.visualViewport){
   window.addEventListener('resize', updateRealViewportSize);
 }
 
-/* ============================================================
-   ◆ 認証（パスワード・24時間セッション保持）
-   ============================================================ */
 function checkPassword(){
   const input = document.getElementById('passInput').value;
   if (input === AUTH_CONFIG.password){
@@ -1546,9 +1566,6 @@ function checkPassword(){
   }
 })();
 
-/* ============================================================
-   ◆ 地図初期化・国土地理院タイルレイヤー
-   ============================================================ */
 const map = L.map('map', { zoomControl:false, minZoom:5, tap:true, tapTolerance:30 })
   .setView([34.9756, 138.3828], 13);
 
@@ -1621,9 +1638,6 @@ function changeMap(type){
   mapTypeCard.setAttribute('open-state', 'false');
 }
 
-/* ============================================================
-   ◆ ハザードレイヤー（洪水・土砂・津波）・避難所表示
-   ============================================================ */
 const DISAPORTAL = 'https://disaportaldata.gsi.go.jp/raster';
 const layers = {
   flood: [L.tileLayer(`${DISAPORTAL}/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png`, { opacity:0.6, maxZoom:17 })],
@@ -1736,9 +1750,6 @@ window.triggerRouteToShelter = (lat, lng) => {
   updateDetails(lat, lng);
 };
 
-/* ============================================================
-   ◆ 地形分類（国土地理院ベクトルタイル→Canvas着色）
-   ============================================================ */
 const LANDFORM_MAX_ZOOM = 16;
 const LANDFORM_URLS = {
   natural:    `${GSI}/experimental_landformclassification1/{z}/{x}/{y}.geojson`,
@@ -2020,9 +2031,6 @@ async function maybeHighlightLandformAt(lat, lng){
   } catch { /* ignore */ }
 }
 
-/* ============================================================
-   ◆ 凡例・地図切替アコーディオンの開閉UI
-   ============================================================ */
 const legendCard = document.getElementById('legendAccordion');
 const legendDetails = document.getElementById('legendDetails');
 legendDetails.addEventListener('toggle', () => {
@@ -2067,13 +2075,6 @@ mapTypeDetails.addEventListener('toggle', () => {
   updateMapTypeCardHeight();
 });
 
-/* =========================================================================
-   スクロールヒント：上下にまだ内容がある場合、光る境界ラインと点滅する矢印で
-   さりげなく（限りなく透過して邪魔にならないように）続きの存在を示す。
-   対象要素を「外側(ホスト・非スクロール)」と「内側(実スクロール)」に分割し、
-   ホスト側にヒントバー(上下)を絶対配置することで、スクロールに追従して
-   消えてしまわないようにする。
-   ========================================================================= */
 const scrollHintUpdaters = [];
 
 function attachScrollHint(target){
@@ -2111,7 +2112,7 @@ function attachScrollHint(target){
 
   scrollHintUpdaters.push(update);
   update();
-  setTimeout(update, 350); // レイアウト確定後に再判定
+  setTimeout(update, 350);
 }
 
 function refreshScrollHints(){
@@ -2125,9 +2126,6 @@ function initScrollHints(){
   attachScrollHint(document.querySelector('#legendAccordion .legend-content'));
 }
 
-/* ============================================================
-   ◆ ステータスパネルの開閉・最大化（弾むFLIPアニメーション含む）
-   ============================================================ */
 function toggleStatusPanel(){
   const panel = document.getElementById('statusPanel');
   const icon = document.getElementById('toggleIcon');
@@ -2143,10 +2141,6 @@ function toggleStatusPanel(){
   }, 100);
 }
 
-// 最大化/元に戻す時に「ポヨヨン」と弾むFLIPアニメーションを掛ける対象要素を、
-// 現在アクティブなタブごとに返す。タブ②(高低差)は行→列のレイアウト転換が
-// 起きるため2要素を個別にFLIPし、それ以外のタブは主要な表示ブロックを
-// 1つのまとまりとしてFLIPすることで、同じ弾むような動きを再現する。
 function getMaximizeFlipTargets(){
   const active = document.querySelector('.tab-content.active');
   if (!active) return [];
@@ -2179,9 +2173,6 @@ function togglePanelMaximize(){
 
   const flipEls = getMaximizeFlipTargets();
 
-  // パネルの高さは固定値（通常/最大化 × 画面高さブレークポイント）で決まっているため、
-  // DOM計測を待たずにここで差分を算出し、パネルの高さアニメーション(0.3s)と
-  // 同じタイミング・同じ長さで地図側もパンさせて連動させる。
   const shortScreen = window.matchMedia('(max-height: 700px)').matches;
   const normalPanelH = shortScreen ? 180 : 200;
   const maxPanelH = shortScreen ? 300 : 380;
@@ -2206,9 +2197,6 @@ function togglePanelMaximize(){
   reflowRightControlLayout();
 }
 
-// パネルが下からせり上がって大きくなる/元に戻る分だけ、地図全体を
-// 見えているスペースの中央に収まるようパンする。マーカーやルート等は
-// 動かさず、地図の表示位置だけをパネルの動きに連動させて滑らかに動かす。
 function panMapForPanelResize(heightDelta){
   if (!heightDelta || !map) return;
   try {
@@ -2216,12 +2204,6 @@ function panMapForPanelResize(heightDelta){
   } catch { /* ignore */ }
 }
 
-/* =========================================================================
-   FLIPアニメーション：標準⇔最大化でレイアウト（flex-directionの切替など、
-   本来CSSトランジションが効かない変化）が起きても、動きが目に見えるように
-   見た目だけ「前の位置・サイズ」から「新しい位置・サイズ」へ滑らかに
-   補間して見せる。図面は広がるように、説明欄は右→下／下→右へ滑るように動く。
-   ========================================================================= */
 function animateLayoutFlip(panel, elements, applyChangeFn){
   const prevPanelTransition = panel.style.transition;
   panel.style.transition = 'none';
@@ -2231,7 +2213,7 @@ function animateLayoutFlip(panel, elements, applyChangeFn){
 
   applyChangeFn();
 
-  void panel.offsetHeight; // 強制リフローで新レイアウトを確定
+  void panel.offsetHeight;
   const last = elements.map(el => el.getBoundingClientRect());
 
   elements.forEach((el, i) => {
@@ -2289,9 +2271,6 @@ function switchTab(tabNumber){
   refreshScrollHints();
 }
 
-/* ============================================================
-   ◆ マーカーアイコン生成（ピン・現在地・高低差ポイント等）
-   ============================================================ */
 function createPinIcon(color, letter, scale){
   const s = scale || 1;
   const w = Math.round(36 * s), h = Math.round(48 * s);
@@ -2329,34 +2308,25 @@ let highestPointMarker = null, lowestPointMarker = null;
 
 let terrainMeshLatLng = null;
 let terrainMeshRenderedFor = null;
-let terrainMeshCachedData = null; // { elevGrid, N, centerIdx } 再取得なしで回転・ズーム・上下角度の再描画に使う
-let terrainMeshAzimuth = 0;       // 水平回転角（度）
-let terrainMeshZoom = 1.47;  // ズーム倍率（+ボタン3回分程度の大きさを標準に）
-let terrainMeshTilt = 0.5;   // 上下の見下ろし角度（小さいほど真上から、大きいほど水平に近い視点）
+let terrainMeshCachedData = null;
+let terrainMeshAzimuth = 0;
+let terrainMeshZoom = 1.47;
+let terrainMeshTilt = 0.5;
 
 let currentLocation = null, destination = null, currentMarker = null, destMarker = null, routeLayer = null;
 let greenRouteLayer = null;
 let routeCandidates = [];
-let routeRequestToken = 0; // 新しいルート計算が始まったら古い非同期処理の結果を破棄するためのトークン
+let routeRequestToken = 0;
 let activeRouteIdx = 0;
 let routeLabelMarkers = [];
 
-/* =========================================================================
-   ルートの「光が流れる」演出。①検索→②色付きルート表示→③白〜水色の光が
-   スタートからゴールへ滑らかに流れる→④到着で消える/一定間隔で繰り返す。
-   SVGパス長の計測(getTotalLength)に頼ると計測タイミング次第で表示されない
-   ことがあったため、実際に地図上のマーカーをrequestAnimationFrameで
-   動かす方式に変更。高低差断面図側の光も同じループ・同じ進行度(frac)で
-   動かすことで、確実に連動させている。
-   ========================================================================= */
 let routeFlowRAF = null;
-let routeFlowState = null; // { pts, cum, total, duration, marker, startTime }
+let routeFlowState = null;
 let currentRouteFlowDuration = 4;
-let elevLightDotEl = null;   // 断面図側の光の<circle>要素（再描画のたびに差し替わる）
-let elevLightPathData = null; // { xs, ys, dists, total } 断面図側の位置計算用
+let elevLightDotEl = null;
+let elevLightPathData = null;
 
 function computeFlowDuration(distanceMeters){
-  // 経路が長いほどゆっくり流れるように、3〜7秒の範囲でループ秒数を決める
   const d = typeof distanceMeters === 'number' && !isNaN(distanceMeters) ? distanceMeters : 500;
   return Math.min(7, Math.max(3, d / 220));
 }
@@ -2419,7 +2389,6 @@ function updateElevLightDotPosition(frac){
   elevLightDotEl.setAttribute('cy', y.toFixed(1));
 }
 
-// 地図の光と高低差断面図の光を、同じrAFループ・同じ進行度で同時に動かして連動させる
 function startSyncedRouteLightFlow(){
   if (!routeFlowState) return;
   routeFlowState.startTime = performance.now();
@@ -2504,6 +2473,7 @@ function handleOrientationEvent(event){
   currentHeadingDeg = heading;
   applyHeadingToMarker();
   if (headingUpModeActive) updateMapRotation(heading);
+  if (miniHeadingUpModeActive) applyMiniMapRotation();
 }
 
 function attachCompassListener(){
@@ -2560,7 +2530,7 @@ function updateNorthIndicator(){
   const deg = headingUpModeActive ? mapRotationDeg : 0;
   const el = document.getElementById('northIndicator');
   if (el) el.style.transform = `rotate(${deg}deg)`;
-  const navEl = document.getElementById('navNorthIndicator');
+  const navEl = document.getElementById('navNorthIndicatorFloat');
   if (navEl) navEl.style.transform = `rotate(${deg}deg)`;
 }
 
@@ -2583,7 +2553,7 @@ function setHeadingUpMode(active){
   enableCompass();
   headingUpModeActive = active;
   headingToggleBtn.classList.toggle('active', headingUpModeActive);
-  const navHeadingBtn = document.getElementById('navHeadingToggleBtn');
+  const navHeadingBtn = document.getElementById('navHeadingFloatBtn');
   if (navHeadingBtn) navHeadingBtn.classList.toggle('active', headingUpModeActive);
   const mapEl = map.getContainer();
 
@@ -2618,16 +2588,67 @@ function setHeadingUpMode(active){
 headingToggleBtn.addEventListener('click', () => {
   setHeadingUpMode(!headingUpModeActive);
 });
-const navHeadingToggleBtn = document.getElementById('navHeadingToggleBtn');
-if (navHeadingToggleBtn){
-  navHeadingToggleBtn.addEventListener('click', () => {
+const navHeadingFloatBtn = document.getElementById('navHeadingFloatBtn');
+if (navHeadingFloatBtn){
+  navHeadingFloatBtn.addEventListener('click', () => {
     setHeadingUpMode(!headingUpModeActive);
   });
 }
 
-/* ============================================================
-   ◆ 現在地の継続取得（watchPosition）・マーカーの滑らか移動
-   ============================================================ */
+/* =========================================================================
+   ナビ中の「概況地図（ワイプ）」用ヘディングアップ。メイン地図とは独立した
+   回転状態を持ち、ワイプ地図のコンテナ自体をCSSで回転させることで、
+   Leaflet側の内部座標計算に影響を与えずに見た目だけ回転させる
+   （メイン地図の回転トリックと同じ考え方）。
+   ========================================================================= */
+let miniHeadingUpModeActive = false;
+let miniMapRotationDeg = 0;
+
+function applyMiniMapRotation(){
+  const mapEl = document.getElementById('navMiniMap');
+  const ind = document.getElementById('navMiniNorthIndicatorFloat');
+  if (!mapEl) return;
+  if (miniHeadingUpModeActive && currentHeadingDeg !== null){
+    miniMapRotationDeg = -currentHeadingDeg;
+    mapEl.style.transform = `scale(1.5) rotate(${miniMapRotationDeg}deg)`;
+  } else {
+    miniMapRotationDeg = 0;
+    mapEl.style.transform = '';
+  }
+  if (ind) ind.style.transform = `rotate(${miniHeadingUpModeActive ? miniMapRotationDeg : 0}deg)`;
+}
+
+function setMiniHeadingUpMode(active){
+  enableCompass();
+  miniHeadingUpModeActive = active;
+  const btn = document.getElementById('navMiniHeadingFloatBtn');
+  if (btn) btn.classList.toggle('active', active);
+  applyMiniMapRotation();
+}
+
+const navMiniHeadingFloatBtn = document.getElementById('navMiniHeadingFloatBtn');
+if (navMiniHeadingFloatBtn){
+  navMiniHeadingFloatBtn.addEventListener('click', () => {
+    setMiniHeadingUpMode(!miniHeadingUpModeActive);
+  });
+}
+
+/* ナビ中フローティング方位ボタンの表示位置を、通常時（右下・ワイプの下）と
+   横画面2画面表示時（右上・右ペイン側）とで切り替える */
+function positionNavHeadingFloatButtons(){
+  const btn = document.getElementById('navHeadingFloatBtn');
+  if (!btn) return;
+  const isSplit = document.body.classList.contains('nav-split-mode');
+  if (isSplit){
+    btn.style.top = '';
+  } else {
+    const miniContainer = document.getElementById('navMiniMapContainer');
+    const rect = miniContainer ? miniContainer.getBoundingClientRect() : null;
+    const top = rect && rect.height ? (rect.bottom + 10) : (10 + (document.documentElement.style.getPropertyValue('--real-vh') ? 0 : 0) + 170);
+    btn.style.top = top + 'px';
+  }
+}
+
 let geoWatchId = null;
 let displayedLocation = null;
 let markerAnimFrame = null;
@@ -2673,11 +2694,6 @@ function startContinuousTracking(){
       displayedLocation = newLoc;
       applyHeadingToMarker();
     } else if (navActive){
-      // ナビ中は地図側のpanTo(下記)が中心をこの地点へ合わせにいくため、
-      // マーカー自身は独自のイージングで補間せずそのまま実座標に置く。
-      // 2つの別々のアニメーション（マーカー補間と地図パン）が異なる
-      // イージングで同時に走ると、現在地が画面中央から一瞬ズレて見える
-      // （置き去りにされたように見える）原因になっていたため。
       currentMarker.setLatLng(newLoc);
       displayedLocation = newLoc;
     } else {
@@ -2757,9 +2773,6 @@ document.getElementById('locationBtn').addEventListener('click', () => {
   }
 });
 
-/* ============================================================
-   ◆ ハザード判定（タイル画像のピクセル色から地点・経路の危険度を判定）
-   ============================================================ */
 const hazardTileCache = new Map();
 
 function lonLatToTileFloat(lon, lat, zoom){
@@ -2815,17 +2828,12 @@ async function checkPointHazard(lat, lon){
   return hits;
 }
 
-// 国交省「水害ハザードマップ作成の手引き」で定められた実際の浸水ランク色
-// （タイル画像のピクセル色）を、アプリの凡例スウォッチ色に対応づける。
-// 以前はここがアプリ独自の色（黄・水色など）になっており、実際のタイル色
-// （すべて赤紫〜ピンク系）とかけ離れていたため、常に同じ項目にしか
-// マッチしない不具合があった。
 const FLOOD_RANK_MAP = [
-  { rgb: [220, 122, 220], legend: '#ff5c5c' }, // 20m以上          → 「10.0m以上」扱い
-  { rgb: [242, 133, 201], legend: '#ff5c5c' }, // 10m〜20m         → 「10.0m以上」扱い
-  { rgb: [255, 145, 145], legend: '#ff9e9e' }, // 5m〜10m
-  { rgb: [255, 183, 183], legend: '#f3db52' }, // 3m〜5m
-  { rgb: [255, 216, 192], legend: '#56ccf2' }, // 0.5m〜3m
+  { rgb: [220, 122, 220], legend: '#ff5c5c' },
+  { rgb: [242, 133, 201], legend: '#ff5c5c' },
+  { rgb: [255, 145, 145], legend: '#ff9e9e' },
+  { rgb: [255, 183, 183], legend: '#f3db52' },
+  { rgb: [255, 216, 192], legend: '#56ccf2' },
 ];
 const LANDSLIDE_LEGEND_PALETTE = ['#ff3b30', '#ffcc00'];
 
@@ -2834,8 +2842,6 @@ function hexToRgbArr(hex){
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function nearestLegendColor(r, g, b, palette){
-  // palette は土砂災害用の ['#hex', ...] 単純配列、または
-  // 洪水/津波用の [{rgb:[r,g,b], legend:'#hex'}, ...] のどちらにも対応する
   let best = null, bestDist = Infinity;
   palette.forEach(entry => {
     const isRgbEntry = entry && typeof entry === 'object';
@@ -2939,13 +2945,6 @@ function clearRouteLabels(){
   routeLabelMarkers = [];
 }
 
-/* =========================================================================
-   ルートラベルの配置：往路の出発点(S)〜到着点(G)を結ぶ「軸線」から、
-   各ルートが最も外側へ膨らむ点（＝両ルートを合わせた「レンズ形（オーバル）」
-   の外周にあたる点）を見つけ、そこから軸線に対して垂直・外向きにラベルを
-   押し出す。ラベルは常にオーバルの外側に置かれるため、引き出し線が
-   オーバル内側（相手のルート線やラベル）を横切ることがない。
-   ========================================================================= */
 function computeRouteBulgeAnchor(coords, startLatLng, endLatLng){
   const lat0 = (startLatLng.lat + endLatLng.lat) / 2;
   const cosLat = Math.cos(lat0 * Math.PI / 180) || 1;
@@ -2971,7 +2970,6 @@ function computeRouteBulgeAnchor(coords, startLatLng, endLatLng){
     }
   });
 
-  // 軸線を90°回転させた向き（両方の候補のうち、膨らみのある側を選ぶ）
   let perpX = -dy, perpY = dx;
   const plen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
   perpX /= plen; perpY /= plen;
@@ -3004,10 +3002,8 @@ function computeRouteMidpoint(coords){
   return latlngs[Math.floor(latlngs.length / 2)];
 }
 
-const ROUTE_LABEL_LINE_GAP = 22; // バッジの「端」から経路線までの最小クリアランス(px)
+const ROUTE_LABEL_LINE_GAP = 22;
 
-// ラベルの押し出し方向：ルートが軸線から最も膨らんだ点(anchor)から、
-// 軸線に対して垂直・外向きの固定方向(dir)を、画面ピクセル空間に変換して返す
 function computeLabelDirection(marker){
   if (!marker._anchor || !marker._dir) return { x:0, y:-1 };
   const eps = 0.0006;
@@ -3022,22 +3018,17 @@ function computeLabelDirection(marker){
   return { x: dx / len, y: dy / len };
 }
 
-// 矩形(半幅halfW・半高halfH、中心が原点)の外周に、方向(dirX,dirY)へ進んだときに
-// ぶつかる距離を正確に求める（角ではなく辺上の正確な出口点になる）
 function rectExitDistance(dirX, dirY, halfW, halfH){
   const tx = Math.abs(dirX) > 1e-6 ? halfW / Math.abs(dirX) : Infinity;
   const ty = Math.abs(dirY) > 1e-6 ? halfH / Math.abs(dirY) : Infinity;
   return Math.min(tx, ty);
 }
 
-// バッジ中心(cx,cy)・半径(halfW,halfH)が、表示中の全ルート候補の線からどれだけ
-// 離れているか（最小距離）を調べる。自分自身の経路も含めて全ルートをチェックする
-// ことで、ラベルが「どの経路線にも重ならない」ようにする。
 function minDistanceToAnyRoute(cx, cy, halfW, halfH){
   let minDist = Infinity;
   routeCandidates.forEach(cand => {
     if (!cand || !cand.coords) return;
-    const step = Math.max(1, Math.floor(cand.coords.length / 40)); // 点が多い経路は間引いて負荷を抑える
+    const step = Math.max(1, Math.floor(cand.coords.length / 40));
     for (let i = 0; i < cand.coords.length; i += step){
       const c = cand.coords[i];
       const p = map.latLngToContainerPoint(L.latLng(c[1], c[0]));
@@ -3057,12 +3048,9 @@ function applyRouteLabelOffset(marker, dx, dy){
   const dir = computeLabelDirection(marker);
   const halfW = (badge.offsetWidth || 100) / 2;
   const halfH = (badge.offsetHeight || 40) / 2;
-  // 矩形(バッジ)がオフセット方向にどれだけ張り出すか（サポート関数）を求め、
-  // バッジの端が確実に経路線をクリアする距離だけ中心を押し出す。
   const extent = Math.abs(dir.x) * halfW + Math.abs(dir.y) * halfH;
   let pushDist = extent + ROUTE_LABEL_LINE_GAP;
 
-  // それでもまだ何らかの経路線に近すぎる場合は、同じ方向へさらに押し出す
   const anchorPt = map.latLngToContainerPoint(marker.getLatLng());
   for (let iter = 0; iter < 8; iter++){
     const cx = anchorPt.x + dir.x * pushDist + (dx || 0);
@@ -3076,15 +3064,13 @@ function applyRouteLabelOffset(marker, dx, dy){
   const totalX = baseX + (dx || 0), totalY = baseY + (dy || 0);
   badge.style.transform = `translate(calc(-50% + ${totalX.toFixed(1)}px), calc(-50% + ${totalY.toFixed(1)}px))`;
 
-  // 吹き出しのしっぽ：バッジの「辺上の出口点」を正確に始点にし、そこから
-  // 経路線（アンカー）へ向けて伸ばす。バッジの本体を一切通らないので重ならない。
   const tail = badge.querySelector('.route-label-tail');
   if (tail){
     const dist = Math.hypot(totalX, totalY);
     if (dist < 2){
       tail.style.height = '0px';
     } else {
-      const dirX = -totalX / dist, dirY = -totalY / dist; // バッジ中心→アンカーの単位ベクトル
+      const dirX = -totalX / dist, dirY = -totalY / dist;
       const exitDist = rectExitDistance(dirX, dirY, halfW, halfH);
       const exitX = dirX * exitDist, exitY = dirY * exitDist;
       const remaining = Math.max(0, dist - exitDist);
@@ -3097,14 +3083,12 @@ function applyRouteLabelOffset(marker, dx, dy){
   }
 }
 
-// ルートラベル同士が画面上で近接・重なっていたら、常に両方見えるように引き離す。
-// ズームやパンで画面上の距離が変わるたびに呼び直すことで、どんな状態でも重ならないようにする。
 function separateRouteLabelPositions(){
   if (routeLabelMarkers.length < 2){
     routeLabelMarkers.forEach(m => applyRouteLabelOffset(m, 0, 0));
     return;
   }
-  const minGap = 140; // バッジ同士に確保したい最小距離(px)。バッジ自体が大きい(幅120px前後)ため十分な余白を確保する
+  const minGap = 140;
   for (let i = 0; i < routeLabelMarkers.length; i++){
     for (let j = i + 1; j < routeLabelMarkers.length; j++){
       const a = routeLabelMarkers[i], b = routeLabelMarkers[j];
@@ -3114,7 +3098,6 @@ function separateRouteLabelPositions(){
       const dist = Math.hypot(dx, dy);
       if (dist < minGap){
         const push = (minGap - dist) / 2 + 4;
-        // ほぼ完全に重なっている場合は上下にずらす
         const nx = dist < 0.5 ? 0 : dx / dist;
         const ny = dist < 0.5 ? 1 : dy / dist;
         applyRouteLabelOffset(a, -nx * push, -ny * push);
@@ -3224,9 +3207,6 @@ async function updateElevationExtremes(data){
   }
 }
 
-/* ============================================================
-   ◆ 高低差断面図（タブ②・SVG描画）
-   ============================================================ */
 let lastElevationProfileData = null;
 function renderElevationProfile(data){
   lastElevationProfileData = data || null;
@@ -3288,13 +3268,12 @@ function renderElevationProfile(data){
 
     areaSegmentsHtml += `<polygon points="${x1},${y1} ${x2},${y2} ${x2},${baseY} ${x1},${baseY}" fill="${fillColor}" stroke="none"/>`;
     segmentsHtml += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${lineStroke}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" filter="url(#elevLineGlow)"/>`;
-    // 稜線に細い光沢のハイライトを重ねて、立体的な帯（リボン）に見えるようにする
     segmentsHtml += `<line x1="${x1}" y1="${(Number(y1) - 1.1).toFixed(1)}" x2="${x2}" y2="${(Number(y2) - 1.1).toFixed(1)}" stroke="rgba(255,255,255,.5)" stroke-width="1" stroke-linecap="round"/>`;
   }
 
   const gridDivisions = isDetailed ? 4 : 2;
   const gridStep = rangeE / gridDivisions;
-  const gridDecimals = gridStep < 0.95 ? 1 : 0; // 小さい標高差でもラベルが重複しないように
+  const gridDecimals = gridStep < 0.95 ? 1 : 0;
   let gridHtml = '';
   for (let i = 0; i <= gridDivisions; i++){
     const e = minE + (rangeE * i / gridDivisions);
@@ -3316,8 +3295,6 @@ function renderElevationProfile(data){
   const sx = xAt(start).toFixed(1), sy = yAt(start.elevation).toFixed(1);
   const ex = xAt(end).toFixed(1), ey = yAt(end.elevation).toFixed(1);
 
-  // 「経路上の高低差ポイント」の説明カードと色を揃えたマーカーをグラフ上にも描画し、
-  // 説明とグラフを視覚的にリンクさせる（最大化時はさらに数値ラベルと引き出し線も表示）。
   let highestPt = data[0], lowestPt = data[0];
   data.forEach(p => {
     if (p.elevation > highestPt.elevation) highestPt = p;
@@ -3330,8 +3307,6 @@ function renderElevationProfile(data){
     <circle cx="${lx}" cy="${ly}" r="5.5" fill="#82b1ff" stroke="#06183a" stroke-width="1.6"/>
   `;
 
-  // ラベルは横軸の下にまとめて配置し、実際の丸印まで引き出し線でつなぐ。
-  // 2点のx座標が近いとラベル同士がぶつかるため、その場合は左右に振り分ける。
   let extremeCaptionHtml = '';
   if (isDetailed){
     const capY = Number(baseY) + 30;
@@ -3406,7 +3381,6 @@ function renderElevationProfile(data){
     <circle id="elevLightDot" cx="${sx}" cy="${sy}" r="4.6" class="elev-light-dot-core"/>
   `;
 
-  // 断面図側の光の位置計算用データを記録しておく（地図のrAFループから毎フレーム参照される）
   elevLightDotEl = svg.querySelector('#elevLightDot');
   const lightDists = data.map(d => d.dist);
   elevLightPathData = {
@@ -3417,9 +3391,6 @@ function renderElevationProfile(data){
   };
 }
 
-/* ============================================================
-   ◆ ルート計算・描画（ハザード判定つき色分け・光が流れる演出）
-   ============================================================ */
 async function activateHazardRoute(idx, token){
   const cand = routeCandidates[idx];
   if (!cand) return;
@@ -3431,7 +3402,7 @@ async function activateHazardRoute(idx, token){
   document.getElementById('walkDist').innerText = `(${(route.distance / 1000).toFixed(1)} km)`;
 
   const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
-  if (token !== undefined && token !== routeRequestToken) return; // 新しいルート計算に追い越されていたら破棄
+  if (token !== undefined && token !== routeRequestToken) return;
   cand.pointFlags = pointFlags; cand.foundTypes = foundTypes;
 
   if (routeLayer) map.removeLayer(routeLayer);
@@ -3466,33 +3437,23 @@ async function activateHazardRoute(idx, token){
   updateNavAvailability();
 }
 
-/* =========================================================================
-   音声ナビゲーション（ステータスパネルの水平フリップで裏面に表示）。
-   OSRMのsteps（maneuver.type/modifier）から指示文とアイコンを組み立て、
-   現在地を経路の折れ線に投影(マップマッチング)して進行距離を求めることで、
-   GPSの横ブレに強い形でステップ判定を行う。
-   ========================================================================= */
-let activeNavRouteData = null;   // 現在アクティブな経路のOSRM route(legs/steps)オブジェクト
-let activeNavRouteCoords = null; // 現在アクティブな経路のジオメトリ（[lon,lat]の配列）
+let activeNavRouteData = null;
+let activeNavRouteCoords = null;
 let navActive = false;
-// navStepIndexは「現在歩いている区間(0=出発直後)」を表す。案内すべき指示は
-// 常に「その次」の分岐(navSteps[navStepIndex+1])であり、navSteps[navStepIndex]
-// 自体は既に通過済みの分岐なので表示には使わない（以前はここがズレて
-// 曲がった後に指示が表示される="精度が悪い"状態になっていた）。
 let navSteps = [];
 let navStepIndex = 0;
-let navStepCumDist = [];  // 各ステップ開始時点での、経路全体に対する累積距離(m)
+let navStepCumDist = [];
 let navTotalDist = 0;
-let navRoutePts = null;   // 経路ジオメトリのLatLng配列（進行距離の投影に使用）
-let navRouteCum = null;   // navRoutePtsに対応する累積距離(m)
+let navRoutePts = null;
+let navRouteCum = null;
 let navMuted = false;
-let navPrevHeadingUpState = false; // ナビ開始前のヘッドアップ状態（終了時に復元）
+let navPrevHeadingUpState = false;
 let navStartMarker = null;
-let navWalkedTrail = [];      // ナビ中に実際に歩いた座標の履歴
+let navWalkedTrail = [];
 let navWalkedTrailLine = null;
 let navWalkedTrailLineMini = null;
-let navHiddenGreenLayer = false;    // ナビ中に緑ルートを隠したかどうか
-let navHiddenRouteLabels = [];      // ナビ中に隠したルートラベルマーカー
+let navHiddenGreenLayer = false;
+let navHiddenRouteLabels = [];
 let navRerouting = false;
 let navLastRerouteTime = 0;
 let navMiniMap = null;
@@ -3501,9 +3462,9 @@ let navMiniMapDestMarker = null;
 let navMiniMapRouteLine = null;
 
 const NAV_ARRIVE_THRESHOLD_M = 15;
-const NAV_MAX_ACCURACY_M = 40;      // これより精度が悪いGPS測位はステップ判定に使わない
-const NAV_REROUTE_DISTANCE_M = 40;  // 経路からこれ以上離れたらリルート
-const NAV_REROUTE_COOLDOWN_MS = 20000; // リルートの最短間隔
+const NAV_MAX_ACCURACY_M = 40;
+const NAV_REROUTE_DISTANCE_M = 40;
+const NAV_REROUTE_COOLDOWN_MS = 20000;
 
 function ensureNavMiniMap(){
   if (navMiniMap) return navMiniMap;
@@ -3516,8 +3477,6 @@ function ensureNavMiniMap(){
   return navMiniMap;
 }
 
-// ワイプのサイズをドラッグで自由に変更できるようにする（右上を基点に、
-// 左下のハンドルをドラッグして拡大縮小）。最大は画面の短辺の半分程度まで。
 const NAV_MINI_MAP_MIN_SIZE = 100;
 function getNavMiniMapMaxSize(){
   return Math.round(Math.min(window.innerWidth, window.innerHeight) * 0.5);
@@ -3541,7 +3500,6 @@ function initNavMiniMapResize(){
   }
   function onPointerMove(e){
     if (!dragging) return;
-    // 左下のハンドルなので、左または下にドラッグするほど拡大する
     const dx = startX - e.clientX;
     const dy = e.clientY - startY;
     const growth = (dx + dy) / 2;
@@ -3556,7 +3514,8 @@ function initNavMiniMapResize(){
     dragging = false;
     handle.classList.remove('dragging');
     try { handle.releasePointerCapture(e.pointerId); } catch {}
-    updateNavMiniMap(); // 現在地・ゴールに収まるよう改めてフィットし直す
+    updateNavMiniMap();
+    positionNavHeadingFloatButtons();
   }
 
   handle.addEventListener('pointerdown', onPointerDown);
@@ -3565,24 +3524,26 @@ function initNavMiniMapResize(){
   handle.addEventListener('pointercancel', onPointerUp);
 }
 
-// 横画面時の「2画面表示」：ナビパネルを右側の縦帯レイアウトに切り替える
-// 任意のオン/オフ機能（body.nav-split-modeクラスで制御、CSS側は
-// @media (orientation: landscape) 内でのみ有効）
 function toggleNavSplitMode(){
   const active = document.body.classList.toggle('nav-split-mode');
   const btn = document.getElementById('navSplitToggleBtn');
   if (btn) btn.classList.toggle('active', active);
+  document.documentElement.style.setProperty('--nav-split-pct', '50');
+  if (active){
+    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+    if (miniBtn) miniBtn.classList.add('visible');
+  } else {
+    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+    if (miniBtn) miniBtn.classList.remove('visible');
+    setMiniHeadingUpMode(false);
+  }
+  positionNavHeadingFloatButtons();
   setTimeout(() => {
     map.invalidateSize();
     if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
   }, 350);
 }
 
-// ナビ中の概況ミニマップ（ワイプ）。メイン地図はヘッドアップで回転するため、
-// 常に北が上のまま現在地とゴールの位置関係を把握できるようにする。
-// 歩いた軌跡（パンくずライン）をメイン地図とワイプの両方に表示する。
-// 案内経路そのものではなく実際のGPS軌跡を描くので、ルートから外れて歩いた場合も
-// 「実際にどこを歩いたか」が視覚的にわかる。
 function updateNavWalkedTrail(latlng){
   navWalkedTrail.push(latlng);
   if (navWalkedTrailLine) map.removeLayer(navWalkedTrailLine);
@@ -3596,8 +3557,6 @@ function updateNavWalkedTrail(latlng){
 
 let navWalkedRouteOverlay = null;
 
-// 経路の折れ線のうち、進行距離0〜traveledDistの区間の座標列を取り出す
-// （区間の途中で終わる場合は、その地点をちょうど補間して終端にする）
 function getRoutePointsUpTo(traveledDist){
   if (!navRoutePts || !navRouteCum || navRoutePts.length < 2) return [];
   const pts = [];
@@ -3617,8 +3576,6 @@ function getRoutePointsUpTo(traveledDist){
   return pts;
 }
 
-// 案内経路の線そのものを、実際に歩いた区間だけ半透明の白でなぞって
-// 「透過して薄くなっている＝歩き終えた区間」であることが経路線上でもわかるようにする
 function updateNavWalkedRouteOverlay(traveledDist){
   if (navWalkedRouteOverlay){ map.removeLayer(navWalkedRouteOverlay); navWalkedRouteOverlay = null; }
   const pts = getRoutePointsUpTo(traveledDist);
@@ -3700,7 +3657,6 @@ function buildInstructionText(step){
   return roadName + (NAV_MODIFIER_TEXT[mod] || 'そのまま進んでください');
 }
 
-// 案内すべき「次の分岐」のステップを返す（常にnavStepIndexの1つ先）
 function getUpcomingStep(){
   const idx = Math.min(navStepIndex + 1, navSteps.length - 1);
   return navSteps[idx];
@@ -3787,16 +3743,13 @@ function createNavManeuverMapIcon(iconName){
   return L.divIcon({ className:'nav-map-maneuver-icon-wrap', html, iconSize:[52, 52], iconAnchor:[26, 26] });
 }
 
-// アニメーションを一度リセットしてから再生し直すことで、パネル側と地図側の
-// 点滅アニメーションの位相（タイミング）を揃える
 function restartPulseAnimation(el){
   if (!el) return;
   el.style.animation = 'none';
-  void el.offsetWidth; // 強制リフローでリセットを確定させる
+  void el.offsetWidth;
   el.style.animation = '';
 }
 
-// 案内すべき分岐点（次の曲がり角）に、パネルと同じ標識アイコンを地図上にも表示する
 function updateNavManeuverMapMarker(){
   const step = navActive ? getUpcomingStep() : null;
   const loc = step && step.maneuver && step.maneuver.location;
@@ -3831,8 +3784,6 @@ function updateNavDisplay(){
   updateNavRemaining();
 }
 
-// 通り名や目印など、経路の補足情報があればパネル上部にテロップ表示する。
-// 情報がなければテロップ自体を隠す。
 function updateNavInfoTicker(step){
   const wrap = document.getElementById('navInfoTicker');
   const track = document.getElementById('navInfoTickerTrack');
@@ -3847,8 +3798,6 @@ function updateNavInfoTicker(step){
   restartPulseAnimation(track);
 }
 
-// ナビ中は緑（代替）ルートと、経路切り替え用のラベルバッジ類を非表示にする
-// （ターン・バイ・ターン中は経路変更の必要がなく、地図の見通しを優先する）
 function hideNonEssentialRouteLayersForNav(){
   navHiddenGreenLayer = !!(greenRouteLayer && map.hasLayer(greenRouteLayer));
   if (navHiddenGreenLayer) map.removeLayer(greenRouteLayer);
@@ -3860,7 +3809,7 @@ function restoreNonEssentialRouteLayersAfterNav(){
   navHiddenGreenLayer = false;
   navHiddenRouteLabels.forEach(m => { if (!map.hasLayer(m)) m.addTo(map); });
   navHiddenRouteLabels = [];
-  bringHazardRouteToFront(); // 緑ルートを再追加すると描画順で上に来てしまうため、赤/青を必ず前面に戻す
+  bringHazardRouteToFront();
 }
 
 function buildNavStepTables(routeData, coords){
@@ -3879,7 +3828,7 @@ function startNavigation(){
   if (!navSteps.length) return;
 
   navActive = true;
-  navStepIndex = 0; // 出発直後。案内は常にnavStepIndex+1（＝最初の分岐）を指す
+  navStepIndex = 0;
   navStepCumDist = built.cumDist;
   navTotalDist = built.total;
   navRoutePts = built.pts;
@@ -3887,11 +3836,9 @@ function startNavigation(){
   clearNavWalkedTrail();
   if (currentLocation) navWalkedTrail.push(currentLocation);
 
-  updateNavStartMarker(); // ナビ中はマップ上の「ナビ開始」バッジを消す
+  updateNavStartMarker();
   hideNonEssentialRouteLayersForNav();
 
-  // ナビ中はハザードパネル（検索・ハザードボタン列）と右側ファンクションボタンを隠し、
-  // 代わりに右上へ常に北が上のワイプ（概況ミニマップ）を表示する
   const searchBar = document.getElementById('searchContainer');
   if (searchBar) searchBar.style.display = 'none';
   const rightControls = document.getElementById('rightControlContainer');
@@ -3901,12 +3848,9 @@ function startNavigation(){
   ensureNavMiniMap();
   setTimeout(() => { if (navMiniMap) navMiniMap.invalidateSize(); updateNavMiniMap(); }, 60);
 
-  // ナビ表示は情報量が少ないため、専用の低いパネル高さに固定する
   const panel = document.getElementById('statusPanel');
   if (panel.getAttribute('data-state') === 'minimized') toggleStatusPanel();
   panel.classList.add('nav-mode');
-  // toggleStatusPanel()等が残したtransformが万一残っていても、ナビ開始時は
-  // 必ず最下段の定位置に強制的にリセットする（position:fixed化と合わせた二重の保険）
   panel.style.transform = 'none';
   panel.style.bottom = 'calc(20px + env(safe-area-inset-bottom,0px))';
 
@@ -3915,19 +3859,20 @@ function startNavigation(){
 
   navPrevHeadingUpState = headingUpModeActive;
   if (!headingUpModeActive) setHeadingUpMode(true);
-  // ヘッドアップの回転処理とパン/ズームのアニメーションを同時に走らせると
-  // Leafletの内部座標計算が競合して地図が一瞬乱れることがあったため、
-  // 回転の適用を先に済ませてからズームは即時反映（アニメーションなし）にする。
-  // さらに、開始前に地図をドラッグしていた場合、回転モード用コンテナの
-  // リサイズ(200%拡大)とLeaflet内部のサイズ再計算が同期フレーム内では
-  // 間に合わず、位置がズレて見えることがあったため、1フレーム待ってから
-  // 最終的な中心合わせをやり直す。
   if (currentLocation) map.setView(currentLocation, Math.max(map.getZoom(), 18), { animate:false });
   requestAnimationFrame(() => {
     if (!navActive) return;
     map.invalidateSize({ pan:false });
     if (currentLocation) map.setView(currentLocation, map.getZoom(), { animate:false });
   });
+
+  const navHeadingBtn = document.getElementById('navHeadingFloatBtn');
+  if (navHeadingBtn) navHeadingBtn.classList.add('visible');
+  if (document.body.classList.contains('nav-split-mode')){
+    const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+    if (miniBtn) miniBtn.classList.add('visible');
+  }
+  positionNavHeadingFloatButtons();
 
   updateNavDisplay();
   if (currentLocation) updateNavigationProgress(currentLocation);
@@ -3972,11 +3917,17 @@ function endNavigation(){
   document.body.classList.remove('nav-split-mode');
   const splitBtn = document.getElementById('navSplitToggleBtn');
   if (splitBtn) splitBtn.classList.remove('active');
+
+  const navHeadingBtn = document.getElementById('navHeadingFloatBtn');
+  if (navHeadingBtn) navHeadingBtn.classList.remove('visible');
+  const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
+  if (miniBtn) miniBtn.classList.remove('visible');
+  setMiniHeadingUpMode(false);
+
   syncHeaderOffsets();
 
-  updateNavStartMarker(); // 目的地がまだ設定されていれば「ナビ開始」バッジを再表示
+  updateNavStartMarker();
 
-  // ルート検索直後と同じように、現在地とゴールが1画面に収まるようズームを戻す
   if (currentLocation && destination){
     map.fitBounds(L.latLngBounds([currentLocation, destination]), getRouteFitBoundsOptions());
   }
@@ -3991,9 +3942,6 @@ function toggleNavMute(){
   }
 }
 
-// 現在地を経路の折れ線上に投影し、最も近い区間における進行距離(m)と、
-// 経路からの垂直距離(m)を返す。単純な「次の分岐点までの直線距離」より
-// GPSの横ブレに強く、複数区間先へ一気に進んだ場合も正しく追従できる。
 function projectLatLngToSegment(p, a, b){
   const cosLat = Math.cos(a.lat * Math.PI / 180) || 1;
   const toXY = (ll) => ({ x:(ll.lng - a.lng) * cosLat * 111320, y:(ll.lat - a.lat) * 111320 });
@@ -4018,8 +3966,6 @@ function projectToNavRoute(latlng){
   return best;
 }
 
-// 現在地が経路から大きく外れた場合に、現在地→同じ目的地で経路を再計算する。
-// 連続でリルートし続けないよう、実行中フラグとクールダウンで抑制する。
 async function rerouteNavigation(){
   if (navRerouting || !navActive || !currentLocation || !destination) return;
   const now = Date.now();
@@ -4043,9 +3989,6 @@ async function rerouteNavigation(){
     const latlngs = coords.map(c => [c[1], c[0]]);
     const { pointFlags, foundTypes } = await analyzeRouteHazards(coords);
 
-    // リルート後は経路（と場合によっては目的地そのもの）が変わるため、
-    // 旧ルートに紐づく緑の代替経路・ラベル・候補データは無効。ナビ終了時に
-    // 古いまま復元されて残ってしまわないよう、ここで確実に破棄しておく。
     if (greenRouteLayer){ map.removeLayer(greenRouteLayer); greenRouteLayer = null; }
     navHiddenGreenLayer = false;
     routeLabelMarkers.forEach(m => { if (map.hasLayer(m)) map.removeLayer(m); });
@@ -4094,9 +4037,6 @@ async function rerouteNavigation(){
   }
 }
 
-/* ============================================================
-   ◆ ナビ中の「最寄りの避難所」提案（ナビは継続したまま、ゴールだけ切替）
-   ============================================================ */
 let navShelterMiniMap = null;
 let navShelterSuggestCandidate = null;
 let navShelterMarker = null;
@@ -4113,8 +4053,6 @@ function ensureNavShelterMiniMap(){
   return navShelterMiniMap;
 }
 
-// 現在地から直線距離で最も近い避難所を1件だけ探して提案する
-// （危険区域の回避などは行わない、あくまで「一番近い候補」のシンプルな提案）
 async function findNearestShelterDuringNav(){
   if (!navActive || !currentLocation) return;
   const btn = document.getElementById('navShelterBtn');
@@ -4171,7 +4109,6 @@ function closeNavShelterSuggestion(){
   navShelterSuggestCandidate = null;
 }
 
-// 提案カードの「ここに行く」：ナビを止めずにゴールだけ切り替えて即座にリルートする
 async function confirmNavShelterReroute(){
   if (!navShelterSuggestCandidate || !navActive) return;
   const candidate = navShelterSuggestCandidate;
@@ -4181,7 +4118,7 @@ async function confirmNavShelterReroute(){
   if (destMarker){ map.removeLayer(destMarker); destMarker = null; }
   destMarker = L.marker(destination, { icon: destinationIcon }).addTo(map);
 
-  navLastRerouteTime = 0; // ユーザーの明示操作なので、クールダウンを待たず即リルートする
+  navLastRerouteTime = 0;
   await rerouteNavigation();
 }
 
@@ -4196,8 +4133,6 @@ function updateNavigationProgress(latlng, accuracy){
     rerouteNavigation();
   }
 
-  // 進行距離から該当ステップを特定。GPSのジャンプで複数ステップ分
-  // 進んでいた場合も追従できるよう、条件を満たす限り前方へ進める（後退はしない）。
   let idx = navStepIndex;
   while (idx < navSteps.length - 1 && proj.cumDist >= navStepCumDist[idx + 1] - NAV_ARRIVE_THRESHOLD_M) idx++;
   if (idx > navStepIndex){
@@ -4239,7 +4174,6 @@ function drawGreenRoute(idx){
   if (greenRouteLayer) map.removeLayer(greenRouteLayer);
   const hit = L.polyline(latlngs, { color:'#000000', weight:28, opacity:0.01 })
     .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
-  // 輪郭は今までの緑、内側はより薄く透明感のある緑にして二層で描画する
   const outline = L.polyline(latlngs, { color:'#27ae60', weight:9, opacity:0.85 })
     .on('click', e => { L.DomEvent.stopPropagation(e); onRouteTapped(idx); });
   const inner = L.polyline(latlngs, { color:'#a9ecc4', weight:4.5, opacity:0.8 })
@@ -4264,7 +4198,7 @@ function onRouteTapped(tappedIdx){
 async function drawRoute(){
   if (!currentLocation || !destination) return;
   clearRouteLayers();
-  const myToken = routeRequestToken; // clearRouteLayers()が採番した最新トークンを使う
+  const myToken = routeRequestToken;
 
   const hazardStatusEl = document.getElementById('routeHazardStatus');
   hazardStatusEl.innerHTML = '<span style="color:#dfe6f0;">ルートを計算中...</span>';
@@ -4277,7 +4211,7 @@ async function drawRoute(){
   try {
     const footRes = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from};${to}?overview=full&geometries=geojson&alternatives=true&steps=true`)
       .then(r => r.json()).catch(() => null);
-    if (myToken !== routeRequestToken) return; // その間に新しいルート計算が始まっていたら破棄
+    if (myToken !== routeRequestToken) return;
 
     const routes = footRes?.routes;
     if (!routes?.length){
@@ -4309,9 +4243,6 @@ async function drawRoute(){
     await activateHazardRoute(hazardCandIdx, myToken);
     if (myToken !== routeRequestToken) return;
 
-    // 実際のルート形状（ジグザグ含む）全体が収まるよう、始点・終点だけでなく
-    // 経路上の全座標を使ってfitBoundsし直す（迂回が大きいと直線距離基準では
-    // ルートの一部が画面外に出てしまうため）
     const allRoutePts = routeCandidates.flatMap(c => c.coords.map(pt => [pt[1], pt[0]]));
     if (allRoutePts.length){
       map.fitBounds(L.latLngBounds(allRoutePts), getRouteFitBoundsOptions());
@@ -4322,16 +4253,10 @@ async function drawRoute(){
   }
 }
 
-// 現在地/ゴールを収める際、機種による画面サイズ差を吸収するため、実際に
-// 表示されているハザードパネル（検索バー）とステータスパネルの高さを実測して
-// パディングに反映する（それらに隠れない範囲の中央に表示されるようにする）
 function getRouteFitBoundsOptions(){
   const searchBar = document.getElementById('searchContainer');
   const panel = document.getElementById('statusPanel');
   const searchVisible = searchBar && getComputedStyle(searchBar).display !== 'none';
-  // 「ナビ開始」バッジはゴールのピンよりさらに上(約110px)に浮かぶため、
-  // ピン自体がハザードパネルの下に収まっていてもバッジだけがかぶることが
-  // あった。その分の余白も見込んでおく。
   const topPad = (searchVisible ? searchBar.getBoundingClientRect().height : 0) + 30 + 110;
   const bottomPad = (panel ? panel.getBoundingClientRect().height : 0) + 40;
   return {
@@ -4391,12 +4316,6 @@ function metersToDegOffsets(lat, meters){
   return { dLat, dLng };
 }
 
-/* 地点リスク判定（窪地・冠水）
-   ステージA: 精密5x5グリッド・間隔12m（約48m四方、DEM5相当の解像度）
-   ステージB: 広域8方向リング・120m先（局所の凹みが本当に閉じた盆地か検証）
-   「中心の周囲で最も低い抜け口の標高 − 中心標高」＝推定たまり水深として
-   算出する（水文学のポアポイント/ため池モデル）。単純な周囲平均差より、
-   実際に水が抜けずに溜まるかどうかを直接的に判定できる。 */
 async function checkInundationRisk(lat, lng){
   const { dLat: fLat, dLng: fLng } = metersToDegOffsets(lat, 12);
   const offsets = [-2, -1, 0, 1, 2];
@@ -4449,17 +4368,12 @@ async function checkInundationRisk(lat, lng){
   };
 }
 
-/* =========================================================================
-   F-3. 周辺地形メッシュの3D可視化（広域グリッド・等高線バンドで滑らかに表示）
-   ========================================================================= */
-const TERRAIN_MESH_N = 9;       // 取得グリッド 9x9 = 81点
-const TERRAIN_MESH_STEP_M = 45; // 間隔45m → 約360m四方をカバー（周辺との高低差比較をしやすくするため拡大）
-const TERRAIN_MESH_UPSCALE = 3; // バイリニア補間でグリッドをきめ細かくする倍率
+const TERRAIN_MESH_N = 9;
+const TERRAIN_MESH_STEP_M = 45;
+const TERRAIN_MESH_UPSCALE = 3;
 
-// 標高帯ごとの塗り分けカラー（低→高で 緑→黄→橙→赤褐色 に変化する直感的な色相ランプ）
 const CONTOUR_PALETTE = ['#1f6f43','#3d8b52','#6ba644','#a3c93b','#d9df4c','#f0c33e','#e89a3c','#d9703c','#b84a3a','#8a2f35'];
 
-// 疑似陰影用：16進カラーを明るく/暗くする（amountは-1〜1、正で明るく・負で暗く）
 function shadeHexColor(hex, amount){
   const n = parseInt(hex.slice(1), 16);
   let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -4486,7 +4400,6 @@ async function fetchTerrainMeshGrid(lat, lng){
   const elevGrid = Array.from({ length: N }, () => new Array(N).fill(NaN));
   points.forEach((p, idx) => { elevGrid[p.i][p.j] = results[idx].elevation; });
 
-  // 海上や取得範囲外などで欠損した値は近傍9マスの平均で補完（形状の破綻を防ぐ）
   for (let i = 0; i < N; i++){
     for (let j = 0; j < N; j++){
       if (isNaN(elevGrid[i][j])){
@@ -4502,7 +4415,6 @@ async function fetchTerrainMeshGrid(lat, lng){
   return { elevGrid, N, centerIdx: half };
 }
 
-// バイリニア補間で粗いグリッドを滑らかな連続サーフェスへアップサンプリング
 function bilinearUpsampleGrid(elevGrid, n, factor){
   const outN = (n - 1) * factor + 1;
   const out = [];
@@ -4526,10 +4438,6 @@ function bilinearUpsampleGrid(elevGrid, n, factor){
   return out;
 }
 
-// 補間済みグリッドを、より横から見下ろすアングルの等角投影で描画。
-// 奥行き方向(緯度方向)の縦方向への影響とheightScaleを強めに取ることで、
-// 従来のほぼ真上からの表示より起伏（高低差）が視覚的に分かりやすくなる。
-// 標高帯ごとに色を変えることで等高線のような立体感も出す。
 function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltVal){
   const fine = bilinearUpsampleGrid(elevGrid, N, TERRAIN_MESH_UPSCALE);
   const fineN = fine.length;
@@ -4540,19 +4448,13 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
   const bandCount = 10;
   const bandHeight = range / bandCount;
 
-  // ドラッグで水平方向に360度回転、ピンチでズームできるようにする。
-  // 選択地点（グリッド中央）を回転・ズームの中心に固定し、
-  // 中心からの相対位置(di,dj)を方位角(theta)で回転させてから画面座標へ投影する。
   const theta = (azimuthDeg || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
   const planeStep = 13, tiltFactor = (tiltVal || 0.5), heightScale = 90;
   const z = zoom || 1;
   const centerFineIdx = centerIdx * TERRAIN_MESH_UPSCALE;
-  const viewCX = 200, viewCY = 140; // viewBox(400x280、横長)の中心
+  const viewCX = 200, viewCY = 140;
 
-  // 標高を含めない「素の」投影座標。選択地点自身の標高でズーム時にずれないよう、
-  // 選択地点の素の投影座標を求めてから、それがちょうどviewBox中心に来るように
-  // 原点(originX, originY)を毎回逆算する。
   const rawProject = (i, j, e) => {
     const di = i - centerFineIdx, dj = j - centerFineIdx;
     const rotX = dj * cosT - di * sinT;
@@ -4567,7 +4469,6 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
     return { x: r.x + originX, y: r.y + originY };
   };
 
-  // 各格子点の投影座標を先に計算しておく
   const pts = [];
   for (let i = 0; i < fineN; i++){
     const row = [];
@@ -4579,7 +4480,6 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
   for (let i = 0; i < fineN - 1; i++){
     for (let j = 0; j < fineN - 1; j++) cells.push([i, j]);
   }
-  // 回転中もカメラから遠い側から手前へ塗るよう、中心からの距離（画面奥行き方向）でソートする
   cells.sort((a, b) => {
     const da = (a[0] - centerFineIdx) * cosT + (a[1] - centerFineIdx) * sinT;
     const db = (b[0] - centerFineIdx) * cosT + (b[1] - centerFineIdx) * sinT;
@@ -4588,8 +4488,6 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
 
   const WIREFRAME_STROKE = 'rgba(6,20,42,.6)';
 
-  // 選択地点はグリッド中央の「格子点」にあたるため、その点を含む1マス（南東側）を
-  // 「自分がいるパネル」として点滅表示する
   const currentCellI = Math.min(centerFineIdx, fineN - 2);
   const currentCellJ = Math.min(centerFineIdx, fineN - 2);
 
@@ -4608,27 +4506,19 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
     const band = Math.min(bandCount - 1, Math.max(0, Math.floor((avgE - minE) / bandHeight)));
     const baseColor = CONTOUR_PALETTE[band % CONTOUR_PALETTE.length];
 
-    // 疑似陰影：地形（緯度・経度）に固定した光源を想定し、斜面の向きに応じて明暗を付ける
-    // （視点を回転させても、太陽の向きが動かないのと同じように陰影は地形側に固定される）
-    const slopeJ = ((e01 + e11) - (e00 + e10)) / 2; // 東方向の高さ変化
-    const slopeI = ((e10 + e11) - (e00 + e01)) / 2; // 北方向の高さ変化
+    const slopeJ = ((e01 + e11) - (e00 + e10)) / 2;
+    const slopeI = ((e10 + e11) - (e00 + e01)) / 2;
     const shadeAmount = Math.max(-0.45, Math.min(0.45, -(slopeI + slopeJ) / (range * 0.4 || 1)));
     const color = shadeHexColor(baseColor, shadeAmount);
 
-    // 四角形（1マス）のまま、稜線が見えるワイヤーフレームとして描画
     const quadPoints = `${p00.x.toFixed(1)},${p00.y.toFixed(1)} ${p10.x.toFixed(1)},${p10.y.toFixed(1)} ${p11.x.toFixed(1)},${p11.y.toFixed(1)} ${p01.x.toFixed(1)},${p01.y.toFixed(1)}`;
     polys += `<polygon points="${quadPoints}" fill="${color}" stroke="${WIREFRAME_STROKE}" stroke-width="1.1" stroke-linejoin="round"/>`;
 
     if (i === currentCellI && j === currentCellJ){
-      // 自分がいるパネルを点滅させて「いまここ」を強調（角度によってドロップが見づらい時の保険）
       polys += `<polygon class="current-location-cell" points="${quadPoints}" stroke="#ff3b30" stroke-width="3"/>`;
     }
   });
 
-  // 選択地点：どの角度から見ても地形に隠れて見えなくならないよう、
-  // 半透明のドロップ（ピン）を常に最前面に描画し、上下にバウンスさせる。
-  // 影は地点に固定したままにし、ピン本体だけを動かすことで、
-  // バウンスの最下点でピンの先端がちょうど地点（点滅パネル）に触れるようにする。
   const centerP = pts[centerFineIdx][centerFineIdx];
   const tipX = centerP.x, tipY = centerP.y;
   const headCY = tipY - 30, headR = 11;
@@ -4646,9 +4536,6 @@ function buildTerrainMeshSVGFull(elevGrid, N, centerIdx, azimuthDeg, zoom, tiltV
   return { svgMarkup, bandHeight, centerE, minE, maxE, heightLabel };
 }
 
-// 方位ウィジェット（見出し左下に固定表示）の矢印を回転角(azimuth)に合わせて回す。
-// SVGの中に埋め込まず独立したDOM要素にすることで、メッシュの再描画や
-// ズーム・回転の状態に関わらず常に画面に表示され続けるようにする。
 function updateTerrainMeshCompass(){
   const rotor = document.getElementById('terrainMeshCompassRotor');
   if (!rotor) return;
@@ -4660,13 +4547,10 @@ function updateTerrainMeshCompass(){
   updateTerrainMeshDirLabelPositions();
 }
 
-// 東西南北ラベルを、メッシュの回転(方位)に合わせて周囲を移動させる。
-// コンパスの矢印と同じ回転計算を使いつつ、ラベル自体（文字）は一切回転させない
-// ことで、位置だけが回転に連動し、文字が反転して読めなくなるのを防いでいる。
 function updateTerrainMeshDirLabelPositions(){
   const theta = (terrainMeshAzimuth || 0) * Math.PI / 180;
   const cosT = Math.cos(theta), sinT = Math.sin(theta);
-  const Rx = 38, Ry = 38; // 中心からの配置半径（コンテナに対する%）東西南北とも同じ半径に統一
+  const Rx = 38, Ry = 38;
   const dirVectors = { N:[1, 0], E:[0, 1], S:[-1, 0], W:[0, -1] };
   Object.entries(dirVectors).forEach(([dir, [di, dj]]) => {
     const rotX = dj * cosT - di * sinT;
@@ -4710,8 +4594,6 @@ function getShortAreaName(lat, lng){
   return promise;
 }
 
-// 最大化時のみ表示する、東西南北の町名ラベル。指定地点から約300m先の
-// 地名を逆ジオコーディングして取得し、メッシュ周囲に重ねて表示する。
 async function updateTerrainMeshDirLabels(lat, lng){
   const dist = 300;
   const { dLat, dLng } = metersToDegOffsets(lat, dist);
@@ -4728,7 +4610,7 @@ async function updateTerrainMeshDirLabels(lat, lng){
     const name = await getShortAreaName(plat, plng);
     return [dir, name];
   }));
-  if (terrainMeshLatLng !== requestedFor) return; // 途中で地点が変わっていたら破棄
+  if (terrainMeshLatLng !== requestedFor) return;
 
   entries.forEach(([dir, name]) => {
     const el = document.getElementById('dirLabel' + dir);
@@ -4775,7 +4657,6 @@ function renderTerrainMeshFromCache(){
   if (infoEl){
     const diffToMax = maxE - centerE;
     const diffToMin = centerE - minE;
-    // 図面の縦スペースを確保するため、下の説明は1行に収まる簡潔な形にまとめる
     infoEl.innerHTML = `
       <div class="mesh-detail-compact">
         <span><span class="mesh-detail-dot" style="background:#ff8a80;"></span>周辺差+${Math.round(diffToMax)}m</span>
@@ -4795,26 +4676,25 @@ async function generateFullTerrainMesh(){
     return;
   }
   const target = terrainMeshLatLng;
-  if (terrainMeshRenderedFor === target) return; // 既に同じ地点を表示済み
+  if (terrainMeshRenderedFor === target) return;
 
   showTerrainMeshLoading();
   try {
     const { elevGrid, N, centerIdx } = await fetchTerrainMeshGrid(target.lat, target.lng);
-    if (terrainMeshLatLng !== target) return; // 途中で選択地点が変わっていたら破棄
+    if (terrainMeshLatLng !== target) return;
 
     terrainMeshCachedData = { elevGrid, N, centerIdx };
-    terrainMeshAzimuth = 0; // 新しい地点を表示するときは向き・ズーム・角度をリセット
+    terrainMeshAzimuth = 0;
     terrainMeshZoom = 1.47;
     terrainMeshTilt = 0.5;
     renderTerrainMeshFromCache();
     terrainMeshRenderedFor = target;
-    updateTerrainMeshDirLabels(target.lat, target.lng); // 最大化時にのみ表示されるが、先読みしておく
+    updateTerrainMeshDirLabels(target.lat, target.lng);
   } catch {
     if (terrainMeshLatLng === target) showTerrainMeshPlaceholder('地形メッシュの取得に失敗しました');
   }
 }
 
-// ドラッグ・ピンチは動きが重くなりがちなため廃止し、ボタンで回転・拡大縮小・上下角度を操作する
 function terrainMeshRotateBy(deg){
   if (!terrainMeshCachedData) return;
   terrainMeshAzimuth = (terrainMeshAzimuth + deg + 360) % 360;
@@ -4833,7 +4713,6 @@ function terrainMeshTiltBy(delta){
   renderTerrainMeshFromCache();
 }
 
-// D-pad中央のCボタン：回転・ズーム・上下角度をすべて初期状態に戻す
 function terrainMeshResetView(){
   if (!terrainMeshCachedData) return;
   terrainMeshAzimuth = 0;
@@ -4843,15 +4722,9 @@ function terrainMeshResetView(){
   resetTerrainMeshPanelPosition();
 }
 
-/* =========================================================================
-   操作パネル（ズーム＋D-pad）のドラッグ移動。上部のつまみ（ハンドル）だけを
-   ドラッグ対象にすることで、ボタン操作と競合しないようにしている。
-   ドロップ時は指定グリッド単位にスナップし、コンテナ内に収まるよう制限する。
-   Cボタンでは表示状態だけでなく、パネルの位置も初期（右下）に戻す。
-   ========================================================================= */
 let terrainMeshPanelDragging = false;
 let terrainMeshPanelDragStart = null;
-const TERRAIN_MESH_PANEL_GRID = 20; // スナップ先のグリッド単位(px)
+const TERRAIN_MESH_PANEL_GRID = 20;
 
 function resetTerrainMeshPanelPosition(){
   const panel = document.getElementById('terrainMeshControls');
@@ -5018,9 +4891,6 @@ map.on('click', e => {
   if (shelterActive) fetchAndShowShelters(L.latLng(lat, lng));
 });
 
-/* ============================================================
-   ◆ 施設・住所検索（国土地理院＋OSM ハイブリッド検索）
-   ============================================================ */
 let searchMarkers = [];
 let isSearching = false;
 
@@ -5200,9 +5070,6 @@ fullscreenBtn.addEventListener('click', () => {
   setTimeout(() => map.invalidateSize(), 400);
 });
 
-/* ============================================================
-   ◆ 緊急避難モード（最寄りの安全な避難所へ自動ルート案内）
-   ============================================================ */
 const emergencyBtn = document.getElementById('emergencyBtn');
 let emergencyModeActive = false;
 let emergencyRouteLayer = null;
@@ -5501,9 +5368,6 @@ emergencyBtn.addEventListener('click', () => {
   }
 });
 
-/* ============================================================
-   ◆ タップ演出（波紋リップル・触覚フィードバック）共通ユーティリティ
-   ============================================================ */
 function hapticTap(ms = 8){
   if (navigator.vibrate) { try { navigator.vibrate(ms); } catch {} }
 }
@@ -5542,22 +5406,10 @@ document.addEventListener('pointercancel', e => {
 
 document.addEventListener('touchstart', () => {}, true);
 
-// Safariのピンチズーム（2本指ジェスチャー）はtouch-action/viewportメタだけでは
-// 完全に防げないことがあり、地図をピンチ操作した後にページ全体が拡大されたままになって
-// 固定配置のパネル類がズレて見える不具合の原因になっていた。gesture系イベントを
-// 明示的に無効化し、ページ自体の拡大縮小を確実に抑止する。
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
   document.addEventListener(evt, e => e.preventDefault());
 });
 
-/* =========================================================================
-   検索/ハザードバーの実際の高さを毎回測って、凡例などの右側フローティング群の
-   位置に反映する。固定pxの当て推量だと機種ごとのフォント表示差でズレて
-   重なってしまうことがあるため、実測値を使うことで確実にズレを防ぐ。
-   同時に、検索バー右端の緊急避難ボタンとファンクションボタン群
-   (rightControlToggle以下)が画面上で同じ縦のライン（中心のX座標）に
-   揃うよう、rightControlContainerのright位置を実測して補正する。
-   ========================================================================= */
 function syncHeaderOffsets(){
   const bar = document.getElementById('searchContainer');
   const volcano = document.getElementById('volcanoCoverageNotice');
@@ -5576,24 +5428,21 @@ function syncRightControlAlignment(){
   if (!emergencyBtnEl || !rightControls || !toggleBtn) return;
 
   const emergencyRect = emergencyBtnEl.getBoundingClientRect();
-  if (!emergencyRect.width) return; // 非表示中などは補正しない
+  if (!emergencyRect.width) return;
   const emergencyCenterX = emergencyRect.left + emergencyRect.width / 2;
 
-  // rightControlContainer内のボタン群はalign-items:flex-endで右揃えされているため、
-  // トグルボタン自身の実測幅を使って、その中心が緊急避難ボタンの中心と一致する
-  // ような right(px) を逆算する。
   const toggleWidth = toggleBtn.getBoundingClientRect().width || 56;
   const desiredRight = window.innerWidth - (emergencyCenterX + toggleWidth / 2);
   rightControls.style.right = Math.max(0, desiredRight) + 'px';
 }
-window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); });
+window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); positionNavHeadingFloatButtons(); });
 if (window.visualViewport){
   window.visualViewport.addEventListener('resize', () => {
     map.invalidateSize();
     if (navMiniMap) navMiniMap.invalidateSize();
   });
 }
-window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); }, 200));
+window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); positionNavHeadingFloatButtons(); }, 200));
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 attachScrollHint(document.getElementById('landformLegendContent'));
@@ -5601,13 +5450,7 @@ initScrollHints();
 renderElevationProfile(null);
 updateTerrainMeshCompass();
 setupTerrainMeshLegendBar();
-/* =========================================================================
-   右側フローティング群（凡例・地図切替・方位・現在地・更新・全画面）を
-   まとめて格納する「ファンクションボタン」。初期は格納状態で、タップすると
-   下方向へ順番に展開する。ステータスパネルとの間に十分な縦スペースが
-   無い機種では、代わりに左方向へ展開する。
-   ========================================================================= */
-// 展開時に、下方向のスペースが十分か判定してtrue=左展開が必要かを返す
+
 function shouldRightControlsExpandLeft(){
   const toggle = document.getElementById('rightControlToggle');
   const items = document.getElementById('rightControlItems');
@@ -5616,7 +5459,7 @@ function shouldRightControlsExpandLeft(){
   const panel = document.getElementById('statusPanel');
   const panelTop = panel ? panel.getBoundingClientRect().top : window.innerHeight;
   const availableDown = panelTop - toggleRect.bottom - 12;
-  const neededDown = items.children.length * 66; // ボタン6個分の目安
+  const neededDown = items.children.length * 66;
   return availableDown < neededDown;
 }
 
@@ -5634,14 +5477,11 @@ function initRightControlToggle(){
     toggle.classList.toggle('active', !isExpanded);
   });
 
-  // 初期状態では展開しておく（下方向のスペースが足りない機種は左展開にする）
   items.classList.toggle('expand-left', shouldRightControlsExpandLeft());
   items.classList.add('expanded');
   toggle.classList.add('active');
 }
 
-// ステータスパネルの最大化などで下方向のスペースが変わったとき、展開中の
-// メニューと重なりそうなら「収納→左展開」の動きを見せてから向きを切り替える
 function reflowRightControlLayout(){
   const toggle = document.getElementById('rightControlToggle');
   const items = document.getElementById('rightControlItems');
@@ -5660,16 +5500,49 @@ function reflowRightControlLayout(){
   }, 260);
 }
 
-/* ============================================================
-   ◆ 起動時の初期化呼び出し
-   ============================================================ */
+/* =========================================================================
+   横画面2画面表示の左右比率スプリッター（ドラッグで可変）
+   ========================================================================= */
+function initNavSplitDivider(){
+  const divider = document.getElementById('navSplitDivider');
+  if (!divider || divider.dataset.dragInit) return;
+  divider.dataset.dragInit = '1';
+  let dragging = false;
+
+  function setPct(pct){
+    pct = Math.max(25, Math.min(75, pct));
+    document.documentElement.style.setProperty('--nav-split-pct', pct.toFixed(1));
+    if (navMiniMap) navMiniMap.invalidateSize();
+    map.invalidateSize();
+  }
+  function onDown(e){
+    dragging = true;
+    try { divider.setPointerCapture(e.pointerId); } catch {}
+    e.preventDefault();
+  }
+  function onMove(e){
+    if (!dragging) return;
+    const pct = (e.clientX / window.innerWidth) * 100;
+    setPct(pct);
+  }
+  function onUp(e){
+    dragging = false;
+    try { divider.releasePointerCapture(e.pointerId); } catch {}
+  }
+  divider.addEventListener('pointerdown', onDown);
+  divider.addEventListener('pointermove', onMove);
+  divider.addEventListener('pointerup', onUp);
+  divider.addEventListener('pointercancel', onUp);
+}
+
 initTerrainMeshPanelDrag();
 initNavMiniMapResize();
+initNavSplitDivider();
 syncHeaderOffsets();
 initRightControlToggle();
 attachCompassListener();
 updateCurrentLocation(true);
-setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); }, 300); // フォント読み込み等で高さが変わる場合の再計算
+setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); }, 300);
 </script>
 </body>
 </html>
