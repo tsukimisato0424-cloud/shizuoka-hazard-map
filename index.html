@@ -35,10 +35,10 @@
   --bubble-shadow-active: 0 2px 4px rgba(70,130,180,.3), 0 1px 0 rgba(255,255,255,.5) inset,
                           0 4px 8px rgba(90,150,190,.35) inset;
   --ink: #2c6690;
-  --nav-panel-width: 300px;
+  --nav-panel-width: 130px;
 }
 @media (max-width: 820px) and (orientation: landscape){
-  :root{ --nav-panel-width: 250px; }
+  :root{ --nav-panel-width: 110px; }
 }
 /* ============================================================
    ◆ 基本レイアウト（html/body/地図コンテナ）
@@ -1167,12 +1167,46 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
     border-radius:20px!important;
   }
   body.nav-split-mode #statusPanel.nav-mode .panel-face-back{
-    flex-direction:column; padding:16px 12px 12px; height:100%; overflow-y:auto; gap:10px;
+    flex-direction:column; padding:10px 6px 8px; height:100%; overflow-y:auto; gap:8px;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-back-left{ flex:0 0 auto; }
   body.nav-split-mode #statusPanel.nav-mode .nav-back-right{
     flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
     border-left:none; border-top:1px solid rgba(255,255,255,.18);
+    grid-template-columns:1fr; gap:8px; padding:8px 6px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-side-btn{
+    max-width:100%; aspect-ratio:1/1;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-side-btn-label{
+    display:none;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-side-btn-wide{
+    grid-column:span 1;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-back-top-row{
+    flex-direction:column; gap:4px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-maneuver-icon{
+    width:42px; height:42px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-maneuver-icon .material-icons-round{
+    font-size:22px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode #navDistanceToStep{
+    font-size:19px!important;
+  }
+  body.nav-split-mode #statusPanel.nav-mode #navInstructionText{
+    white-space:normal; max-width:100%; font-size:12px!important; line-height:1.25;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-sub-row{
+    flex-direction:column; gap:2px; font-size:10.5px;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-progress-bar{
+    width:100%; max-width:none;
+  }
+  body.nav-split-mode #statusPanel.nav-mode .nav-info-ticker{
+    display:none!important;
   }
 }
 /* ============================================================
