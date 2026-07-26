@@ -1137,10 +1137,10 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   box-shadow:0 4px 12px rgba(0,0,0,.35);
 }
 @media (orientation: landscape){
-  body.nav-split-mode{
-    --nav-maps-available: calc(100vw - var(--nav-panel-width) - env(safe-area-inset-right,0px));
-  }
-  body.nav-split-mode .nav-split-divider{ display:flex; }
+body.nav-split-mode{
+    --nav-maps-available: calc(100vw - var(--nav-panel-width));
+}
+   body.nav-split-mode .nav-split-divider{ display:flex; }
   body.nav-split-mode #mapClip{
     left:0; right:auto;
     width:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100);
@@ -1175,7 +1175,8 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   body.nav-split-mode #statusPanel.nav-mode .nav-back-right{
     flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
     border-left:none; border-top:1px solid rgba(255,255,255,.18);
-    grid-template-columns:1fr; gap:8px; padding:8px 6px;
+    grid-template-columns:1fr 1fr; gap:6px; padding:8px 6px;
+    overflow-y:auto;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-side-btn{
     max-width:100%; aspect-ratio:1/1;
@@ -2669,12 +2670,12 @@ function positionNavHeadingFloatButtons(){
       btn.style.top = 'calc(10px + env(safe-area-inset-top,0px))';
     }
     if (miniBtn){
-      const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
-      const available = window.innerWidth - panelWidthPx;
-      const pctVal = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-split-pct')) || 55;
-      const leftPx = (available * pctVal / 100) + 20;
-      miniBtn.style.left = leftPx + 'px';
-      miniBtn.style.top = 'calc(10px + env(safe-area-inset-top,0px))';
+      const miniContainer = document.getElementById('navMiniMapContainer');
+      if (miniContainer){
+        const rect = miniContainer.getBoundingClientRect();
+        miniBtn.style.left = (rect.left + 10) + 'px';
+        miniBtn.style.top = (rect.top + 10) + 'px';
+      }
     }
   } else {
     if (btn){
