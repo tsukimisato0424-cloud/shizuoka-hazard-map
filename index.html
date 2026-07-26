@@ -59,15 +59,9 @@ body::before, body::after{
 }
 body::before{ top:0; height:env(safe-area-inset-top,0px); }
 body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
-#map{ height:100%; width:100%; position:fixed; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear; }
-#map.heading-rotate-mode{ height:200vh; width:200vw; top:50%; left:50%; }
-@supports (height: 100dvh){
-  #map.heading-rotate-mode{ height:200dvh; width:200dvw; }
-}
-#map.heading-rotate-mode{
-  height:calc(var(--real-vh, 100vh) * 2);
-  width:calc(var(--real-vw, 100vw) * 2);
-}
+#mapClip{ position:fixed; inset:0; overflow:hidden; z-index:1; }
+#map{ height:100%; width:100%; position:absolute; top:0; left:0; z-index:1; transform-origin:center center; transition:transform .25s linear, width .3s ease, height .3s ease, left .3s ease, top .3s ease; }
+#map.heading-rotate-mode{ width:200%; height:200%; top:-50%; left:-50%; }
 .glass-panel {
   position:relative; overflow:hidden;
   background: linear-gradient(135deg, rgba(30,60,114,.85), rgba(40,50,80,.9)) !important;
@@ -1144,27 +1138,35 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
 }
 @media (orientation: landscape){
   body.nav-split-mode{
-    --nav-maps-available: calc(100vw - var(--nav-panel-width) - 30px);
+    --nav-maps-available: calc(100vw - var(--nav-panel-width) - env(safe-area-inset-right,0px));
   }
   body.nav-split-mode .nav-split-divider{ display:flex; }
+  body.nav-split-mode #mapClip{
+    left:0; right:auto;
+    width:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100);
+  }
   body.nav-split-mode #navMiniMapContainer{
-    top:calc(10px + env(safe-area-inset-top,0px))!important;
-    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
-    left:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100 + 10px + env(safe-area-inset-left,0px))!important;
+    top:0!important;
+    bottom:0!important;
+    left:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100)!important;
     right:auto!important;
-    width:calc(var(--nav-maps-available) * (100 - var(--nav-split-pct, 55)) / 100 - 10px)!important;
+    width:calc(var(--nav-maps-available) * (100 - var(--nav-split-pct, 55)) / 100)!important;
     height:auto!important;
-    border-radius:20px!important; border-width:2px!important;
+    border-radius:0!important; border-width:0!important; border:none!important; box-shadow:none!important;
   }
   body.nav-split-mode .nav-mini-map-resize-handle{ display:none; }
   body.nav-split-mode #statusPanel.nav-mode{
     left:auto!important;
-    right:calc(10px + env(safe-area-inset-right,0px))!important;
+    right:0!important;
     width:var(--nav-panel-width)!important;
-    top:calc(10px + env(safe-area-inset-top,0px))!important;
-    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    top:0!important;
+    bottom:0!important;
     height:auto!important;
-    border-radius:20px!important;
+    border-radius:0!important;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    padding-right:env(safe-area-inset-right,0px);
+    box-sizing:border-box;
   }
   body.nav-split-mode #statusPanel.nav-mode .panel-face-back{
     flex-direction:column; padding:10px 6px 8px; height:100%; overflow-y:auto; gap:8px;
@@ -1264,7 +1266,7 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   </div>
 </div>
 
-<div id="map"></div>
+<div id="mapClip"><div id="map"></div></div>
 
 <div id="searchContainer" class="glass-panel top-bar">
   <div class="top-bar-row">
@@ -2539,7 +2541,7 @@ function updateMapRotation(heading){
 function applyMapRotationTransform(){
   const mapEl = map.getContainer();
   if (headingUpModeActive){
-    mapEl.style.transform = `translate(-50%,-50%) rotate(${mapRotationDeg}deg)`;
+    mapEl.style.transform = `rotate(${mapRotationDeg}deg)`;
   } else {
     mapEl.style.transform = '';
   }
@@ -2617,8 +2619,8 @@ if (navHeadingFloatBtn){
 }
 
 /* =========================================================================
-   ナビ中の「概況地図（ワイプ）」用ヘディングアップ。メイン地図とは独立した
-   回転状態を持ち、ワイプ地図のコンテナ自体をCSSで回転させることで、
+   ナビ中の「概況地図」用ヘディングアップ。メイン地図とは独立した
+   回転状態を持ち、概況地図のコンテナ自体をCSSで回転させることで、
    Leaflet側の内部座標計算に影響を与えずに見た目だけ回転させる
    （メイン地図の回転トリックと同じ考え方）。
    ========================================================================= */
@@ -2654,7 +2656,7 @@ if (navMiniHeadingFloatBtn){
   });
 }
 
-/* ナビ中フローティング方位ボタンの表示位置を、通常時（右下・ワイプの下）と
+/* ナビ中フローティング方位ボタンの表示位置を、通常時（右下・概況地図の下）と
    横画面2画面表示時（右上・右ペイン側）とで切り替える */
 function positionNavHeadingFloatButtons(){
   const btn = document.getElementById('navHeadingFloatBtn');
@@ -2668,7 +2670,7 @@ function positionNavHeadingFloatButtons(){
     }
     if (miniBtn){
       const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
-      const available = window.innerWidth - panelWidthPx - 30;
+      const available = window.innerWidth - panelWidthPx;
       const pctVal = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-split-pct')) || 55;
       const leftPx = (available * pctVal / 100) + 20;
       miniBtn.style.left = leftPx + 'px';
@@ -5552,7 +5554,7 @@ function initNavSplitDivider(){
 
   function setPct(pct){
     const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
-    const available = window.innerWidth - panelWidthPx - 30;
+    const available = window.innerWidth - panelWidthPx;
     const minMiniPx = 120;
     const minMainPx = Math.max(120, available * 0.25);
     let minPct = (minMainPx / available) * 100;
@@ -5572,7 +5574,7 @@ function initNavSplitDivider(){
   function onMove(e){
     if (!dragging) return;
     const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
-    const available = window.innerWidth - panelWidthPx - 30;
+    const available = window.innerWidth - panelWidthPx;
     const pct = (e.clientX / available) * 100;
     setPct(pct);
   }
