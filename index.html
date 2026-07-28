@@ -1176,10 +1176,10 @@ body.nav-split-mode{
     flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
     border-left:none; border-top:1px solid rgba(255,255,255,.18);
     grid-template-columns:1fr 1fr; gap:6px; padding:8px 6px;
-    overflow-y:auto;
+    overflow-y:auto; overflow-x:hidden; box-sizing:border-box;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-side-btn{
-    max-width:100%; aspect-ratio:1/1;
+    max-width:100%; min-width:0; aspect-ratio:1/1;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-side-btn-label{
     display:none;
@@ -3591,7 +3591,7 @@ function updateNavLandscapeLayout(){
       if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
     }, 350);
   }
-  positionNavHeadingFloatButtons();
+  requestAnimationFrame(() => requestAnimationFrame(positionNavHeadingFloatButtons));
 }
 
 function updateNavWalkedTrail(latlng){
