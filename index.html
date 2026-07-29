@@ -1173,7 +1173,7 @@ body.nav-split-mode{
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-back-left{ flex:0 0 auto; }
   body.nav-split-mode #statusPanel.nav-mode .nav-back-right{
-    flex:1 1 auto; max-width:none; width:100%; margin-left:0; margin-top:4px;
+    flex:1 1 auto; min-width:0; max-width:none; width:100%; margin-left:0; margin-top:4px;
     border-left:none; border-top:1px solid rgba(255,255,255,.18);
     grid-template-columns:repeat(2, minmax(0, 1fr)); gap:6px; padding:8px 6px;
     overflow-y:auto; overflow-x:hidden; box-sizing:border-box;
@@ -2549,6 +2549,22 @@ function applyMapRotationTransform(){
   updateNorthIndicator();
 }
 
+/* heading-upモード時、地図コンテナを回転させても四隅に隙間ができないよう
+   実際のビュー(mapClip)の対角線長を基準とした正方形サイズを都度計算して
+   inlineスタイルで適用する（縦横比が偏った画面でも隙間なく回転できる） */
+function updateHeadingRotateBounds(){
+  const mapEl = map.getContainer();
+  if (!mapEl.classList.contains('heading-rotate-mode')) return;
+  const clip = document.getElementById('mapClip');
+  const w = clip.clientWidth, h = clip.clientHeight;
+  if (!w || !h) return;
+  const size = Math.ceil(Math.sqrt(w * w + h * h)) + 8;
+  mapEl.style.width = size + 'px';
+  mapEl.style.height = size + 'px';
+  mapEl.style.left = ((w - size) / 2) + 'px';
+  mapEl.style.top = ((h - size) / 2) + 'px';
+}
+
 function updateNorthIndicator(){
   const deg = headingUpModeActive ? mapRotationDeg : 0;
   const el = document.getElementById('northIndicator');
@@ -2589,6 +2605,7 @@ function setHeadingUpMode(active){
       mapRotationDeg = 0;
     }
     mapEl.classList.add('heading-rotate-mode');
+    updateHeadingRotateBounds();
     applyMapRotationTransform();
     map.invalidateSize({ pan:false });
     map.dragging.disable();
@@ -2599,6 +2616,10 @@ function setHeadingUpMode(active){
     lastRotationHeading = null;
     mapEl.style.transform = '';
     mapEl.classList.remove('heading-rotate-mode');
+    mapEl.style.width = '';
+    mapEl.style.height = '';
+    mapEl.style.left = '';
+    mapEl.style.top = '';
     document.documentElement.style.setProperty('--map-counter-rotation', '0deg');
     updateNorthIndicator();
     map.invalidateSize({ pan:false });
@@ -3577,6 +3598,7 @@ function updateNavLandscapeLayout(){
       setMiniHeadingUpMode(false);
     }
     setTimeout(() => {
+      if (headingUpModeActive) updateHeadingRotateBounds();
       map.invalidateSize();
       if (navMiniMap){ navMiniMap.invalidateSize(); updateNavMiniMap(); }
     }, 350);
@@ -5469,14 +5491,20 @@ function syncRightControlAlignment(){
   const desiredRight = window.innerWidth - (emergencyCenterX + toggleWidth / 2);
   rightControls.style.right = Math.max(0, desiredRight) + 'px';
 }
-window.addEventListener('resize', () => { syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout(); });
+window.addEventListener('resize', () => {
+  syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout();
+  if (headingUpModeActive){ updateHeadingRotateBounds(); map.invalidateSize({ pan:false }); }
+});
 if (window.visualViewport){
   window.visualViewport.addEventListener('resize', () => {
     map.invalidateSize();
     if (navMiniMap) navMiniMap.invalidateSize();
   });
 }
-window.addEventListener('orientationchange', () => setTimeout(() => { syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout(); }, 200));
+window.addEventListener('orientationchange', () => setTimeout(() => {
+  syncHeaderOffsets(); reflowRightControlLayout(); updateNavLandscapeLayout();
+  if (headingUpModeActive){ updateHeadingRotateBounds(); map.invalidateSize({ pan:false }); }
+}, 200));
 
 document.getElementById('landformLegendContent').innerHTML = buildLandformLegendHtml();
 attachScrollHint(document.getElementById('landformLegendContent'));
