@@ -2551,7 +2551,20 @@ function applyMapRotationTransform(){
 
 /* heading-upモード時、地図コンテナを回転させても四隅に隙間ができないよう
    実際のビュー(mapClip)の対角線長を基準とした正方形サイズを都度計算して
-   inlineスタイルで適用する（縦横比が偏った画面でも隙間なく回転できる） */
+   inlineスタイルで適用する（縦横比が偏った画面でも隙間なく回転できる）
+   ※ #map には width/height/left/top に .3s の CSS transition が設定されているため、
+   ここで即座に invalidateSize/setView しても実際の描画サイズはまだ遷移中で
+   ズレた値になる（＝現在地が中心にならない原因）。一時的に transition を
+   無効化し、リフローを強制してから元に戻すことで、この関数の呼び出し直後には
+   常に最終サイズが確定した状態にする。 */
+function setMapGeometryInstant(mapEl, apply){
+  const prevTransition = mapEl.style.transition;
+  mapEl.style.transition = 'none';
+  apply();
+  void mapEl.offsetWidth; // force synchronous reflow so the new geometry is committed now
+  mapEl.style.transition = prevTransition;
+}
+
 function updateHeadingRotateBounds(){
   const mapEl = map.getContainer();
   if (!mapEl.classList.contains('heading-rotate-mode')) return;
@@ -2559,10 +2572,12 @@ function updateHeadingRotateBounds(){
   const w = clip.clientWidth, h = clip.clientHeight;
   if (!w || !h) return;
   const size = Math.ceil(Math.sqrt(w * w + h * h)) + 8;
-  mapEl.style.width = size + 'px';
-  mapEl.style.height = size + 'px';
-  mapEl.style.left = ((w - size) / 2) + 'px';
-  mapEl.style.top = ((h - size) / 2) + 'px';
+  setMapGeometryInstant(mapEl, () => {
+    mapEl.style.width = size + 'px';
+    mapEl.style.height = size + 'px';
+    mapEl.style.left = ((w - size) / 2) + 'px';
+    mapEl.style.top = ((h - size) / 2) + 'px';
+  });
 }
 
 function updateNorthIndicator(){
@@ -2610,22 +2625,24 @@ function setHeadingUpMode(active){
     map.invalidateSize({ pan:false });
     map.dragging.disable();
     applyHeadingToMarker();
-    if (currentLocation) map.panTo(currentLocation, { animate:true });
+    if (currentLocation) map.setView(currentLocation, map.getZoom(), { animate:false });
   } else {
     mapRotationDeg = 0;
     lastRotationHeading = null;
     mapEl.style.transform = '';
-    mapEl.classList.remove('heading-rotate-mode');
-    mapEl.style.width = '';
-    mapEl.style.height = '';
-    mapEl.style.left = '';
-    mapEl.style.top = '';
+    setMapGeometryInstant(mapEl, () => {
+      mapEl.classList.remove('heading-rotate-mode');
+      mapEl.style.width = '';
+      mapEl.style.height = '';
+      mapEl.style.left = '';
+      mapEl.style.top = '';
+    });
     document.documentElement.style.setProperty('--map-counter-rotation', '0deg');
     updateNorthIndicator();
     map.invalidateSize({ pan:false });
     if (!navActive) map.dragging.enable();
     applyHeadingToMarker();
-    if (currentLocation) map.panTo(currentLocation, { animate:true });
+    if (currentLocation) map.setView(currentLocation, map.getZoom(), { animate:false });
   }
 }
 
