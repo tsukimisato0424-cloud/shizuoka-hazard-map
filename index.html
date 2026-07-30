@@ -1141,6 +1141,7 @@ body.nav-split-mode .nav-mini-map-container.active .nav-heading-float-btn-anchor
 }
 @media (orientation: landscape){
 body.nav-split-mode{
+    --nav-panel-width: 210px;
     --nav-maps-available: calc(100vw - var(--nav-panel-width));
 }
    body.nav-split-mode .nav-split-divider{ display:flex; }
@@ -1182,7 +1183,7 @@ body.nav-split-mode{
     overflow-y:auto; overflow-x:hidden; box-sizing:border-box;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-side-btn{
-    max-width:100%; min-width:0; aspect-ratio:1/1;
+    max-width:54px; min-width:0; aspect-ratio:1/1;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-side-btn-label{
     display:none;
@@ -1194,19 +1195,19 @@ body.nav-split-mode{
     flex-direction:column; gap:4px;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-maneuver-icon{
-    width:42px; height:42px;
+    width:60px; height:60px;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-maneuver-icon .material-icons-round{
-    font-size:22px;
+    font-size:34px;
   }
   body.nav-split-mode #statusPanel.nav-mode #navDistanceToStep{
-    font-size:19px!important;
+    font-size:34px!important;
   }
   body.nav-split-mode #statusPanel.nav-mode #navInstructionText{
-    white-space:normal; max-width:100%; font-size:12px!important; line-height:1.25;
+    white-space:normal; max-width:100%; font-size:15px!important; line-height:1.25;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-sub-row{
-    flex-direction:column; gap:2px; font-size:10.5px;
+    flex-direction:column; gap:2px; font-size:12.5px;
   }
   body.nav-split-mode #statusPanel.nav-mode .nav-progress-bar{
     width:100%; max-width:none;
@@ -1534,7 +1535,7 @@ body.nav-split-mode{
       <span class="material-icons-round" id="navMuteIcon">volume_up</span><span class="nav-side-btn-label">音声</span>
     </button>
     <button id="navShelterBtn" class="nav-side-btn nav-side-btn-shelter" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
-      <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">避難所</span>
+      <span class="material-icons-round">home</span><span class="nav-side-btn-label">避難所</span>
     </button>
     <button id="navHeadingFloatBtn" class="round-btn nav-heading-float-btn" type="button" aria-label="ヘディングアップ切替（ナビ地図）" title="ヘディングアップ切替（ナビ地図）">
       <span class="north-indicator" id="navNorthIndicatorFloat">N</span>
@@ -1567,10 +1568,12 @@ if (window.visualViewport){
 }
 
 function checkPassword(){
-  const input = document.getElementById('passInput').value;
+  const passInputEl = document.getElementById('passInput');
+  const input = passInputEl.value;
   if (input === AUTH_CONFIG.password){
     localStorage.setItem('isAuthenticated', 'true');
     localStorage.setItem('loginTime', Date.now());
+    passInputEl.blur();
     document.getElementById('authOverlay').style.display = 'none';
   } else {
     document.getElementById('errorMsg').innerText = 'パスワードが違います';
@@ -5577,6 +5580,7 @@ function initNavSplitDivider(){
   function recenterAfterSplitChange(){
     recenterQueued = false;
     if (navMiniMap) navMiniMap.invalidateSize();
+    if (headingUpModeActive) updateHeadingRotateBounds();
     map.invalidateSize({ pan:false });
     const center = currentLocation || map.getCenter();
     map.setView(center, map.getZoom(), { animate:false });
@@ -5584,13 +5588,12 @@ function initNavSplitDivider(){
   }
 
   function setPct(pct){
-    const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
+    const panelWidthPx = parseFloat(getComputedStyle(document.body).getPropertyValue('--nav-panel-width')) || 300;
     const available = window.innerWidth - panelWidthPx;
-    const minMiniPx = 120;
     const minMainPx = Math.max(120, available * 0.25);
     let minPct = (minMainPx / available) * 100;
-    let maxPct = 100 - (minMiniPx / available) * 100;
-    if (maxPct < minPct){ minPct = 30; maxPct = 70; }
+    let maxPct = 100;
+    if (maxPct < minPct){ minPct = 30; maxPct = 100; }
     pct = Math.max(minPct, Math.min(maxPct, pct));
     document.documentElement.style.setProperty('--nav-split-pct', pct.toFixed(1));
     /* CSS変数の反映（レイアウト確定）を待ってから地図の再計測・再センタリングを
@@ -5608,7 +5611,7 @@ function initNavSplitDivider(){
   }
   function onMove(e){
     if (!dragging) return;
-    const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
+    const panelWidthPx = parseFloat(getComputedStyle(document.body).getPropertyValue('--nav-panel-width')) || 300;
     const available = window.innerWidth - panelWidthPx;
     const pct = (e.clientX / available) * 100;
     setPct(pct);
