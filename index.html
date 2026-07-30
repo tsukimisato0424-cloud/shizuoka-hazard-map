@@ -522,6 +522,20 @@ body::after{ bottom:0; height:env(safe-area-inset-bottom,0px); }
   background:linear-gradient(160deg, #ff9a90, #e53935); border-color:rgba(255,255,255,.55);
 }
 .nav-side-btn-danger .material-icons-round, .nav-side-btn-danger .nav-side-btn-label{ color:#fff; }
+.nav-side-btn-shelter{
+  background:linear-gradient(160deg, #6fe3a4, #1e8449); border-color:rgba(255,255,255,.55);
+}
+.nav-side-btn-shelter .material-icons-round, .nav-side-btn-shelter .nav-side-btn-label{ color:#fff; }
+/* パネル内ボタングリッドの並び順（既定＝縦画面：中止/拡大/縮小/音声/避難所/方位） */
+#navCancelBtn{ order:1; }
+#navZoomInBtn{ order:2; }
+#navZoomOutBtn{ order:3; }
+#navMuteBtn{ order:4; }
+#navShelterBtn{ order:5; }
+#navHeadingFloatBtn{ order:6; }
+/* 横画面（分割表示）では音声ボタンと拡大ボタンの位置を入れ替え */
+body.nav-split-mode #navZoomInBtn{ order:4; }
+body.nav-split-mode #navMuteBtn{ order:2; }
 .nav-side-btn-wide{
   grid-column:span 3; width:100%; max-width:none; aspect-ratio:auto; height:34px;
   flex-direction:row; gap:6px; border-radius:12px;
@@ -1098,34 +1112,23 @@ body.nav-split-mode .nav-mini-map-container.active .nav-heading-float-btn-anchor
 /* ============================================================
    ◆ ナビ中フローティング方位ボタン（操作パネルから独立）
    ============================================================ */
+/* 方位ボタンはナビパネル（nav-back-right グリッド）の空きセルに常駐する
+   ボタンとなったため、フローティング配置は廃止。丸ボタンの形はそのまま維持。 */
 .nav-heading-float-btn{
-  position:fixed; z-index:1650; display:none;
+  position:static; z-index:auto; display:none;
+  width:100%; max-width:54px; height:auto; aspect-ratio:1/1;
+  margin:0 auto; justify-self:stretch;
 }
 .nav-heading-float-btn.visible{ display:flex; }
-#navHeadingFloatBtn{
-  right:calc(10px + env(safe-area-inset-right,0px));
-}
-#navMiniHeadingFloatBtn{
-  display:none;
-}
-#navMiniHeadingFloatBtn.visible{
-  display:flex;
-  top:calc(10px + env(safe-area-inset-top,0px));
-  left:calc(10px + env(safe-area-inset-left,0px));
-}
-@media (orientation: landscape){
-  body.nav-split-mode #navHeadingFloatBtn.visible{
-    top:calc(10px + env(safe-area-inset-top,0px))!important;
-    left:calc(10px + env(safe-area-inset-left,0px))!important;
-    right:auto!important;
-  }
-}
+.nav-heading-float-btn .north-indicator{ pointer-events:none; }
+/* 概況地図（ミニマップ）側の方位ボタンは廃止し、常時Nアップ固定とする */
+#navMiniHeadingFloatBtn{ display:none!important; }
 /* ============================================================
    ◆ 横画面ナビ：右端固定パネル＋左側2画面（本図/概況図）
    ============================================================ */
 .nav-split-divider{
   display:none; position:fixed; top:0; bottom:0;
-  left:calc(var(--nav-maps-available, 60vw) * var(--nav-split-pct, 55) / 100);
+  left:calc(var(--nav-maps-available, 60vw) * var(--nav-split-pct, 70) / 100);
   margin-left:-16px;
   width:32px; z-index:1400; cursor:ew-resize; touch-action:none;
   align-items:center; justify-content:center;
@@ -1143,14 +1146,14 @@ body.nav-split-mode{
    body.nav-split-mode .nav-split-divider{ display:flex; }
   body.nav-split-mode #mapClip{
     left:0; right:auto;
-    width:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100);
+    width:calc(var(--nav-maps-available) * var(--nav-split-pct, 70) / 100);
   }
   body.nav-split-mode #navMiniMapContainer{
     top:0!important;
     bottom:0!important;
-    left:calc(var(--nav-maps-available) * var(--nav-split-pct, 55) / 100)!important;
+    left:calc(var(--nav-maps-available) * var(--nav-split-pct, 70) / 100)!important;
     right:auto!important;
-    width:calc(var(--nav-maps-available) * (100 - var(--nav-split-pct, 55)) / 100)!important;
+    width:calc(var(--nav-maps-available) * (100 - var(--nav-split-pct, 70)) / 100)!important;
     height:auto!important;
     border-radius:0!important; border-width:0!important; border:none!important; box-shadow:none!important;
   }
@@ -1305,17 +1308,10 @@ body.nav-split-mode{
 
 <div id="navMiniMapContainer" class="nav-mini-map-container">
   <div id="navMiniMap"></div>
-  <button id="navMiniHeadingFloatBtn" class="round-btn nav-heading-float-btn-anchored" type="button" aria-label="ヘディングアップ切替（概況地図）" title="ヘディングアップ切替（概況地図）">
-    <span class="north-indicator" id="navMiniNorthIndicatorFloat">N</span>
-  </button>
   <div id="navMiniMapResizeHandle" class="nav-mini-map-resize-handle" title="ドラッグでサイズ変更">
     <span class="material-icons-round">open_in_full</span>
   </div>
 </div>
-
-<button id="navHeadingFloatBtn" class="round-btn nav-heading-float-btn" type="button" aria-label="ヘディングアップ切替（ナビ地図）" title="ヘディングアップ切替（ナビ地図）">
-  <span class="north-indicator" id="navNorthIndicatorFloat">N</span>
-</button>
 
 <div id="navSplitDivider" class="nav-split-divider" title="ドラッグして比率変更">
   <div class="divider-handle"><span class="material-icons-round">drag_indicator</span></div>
@@ -1528,17 +1524,20 @@ body.nav-split-mode{
     <button id="navCancelBtn" class="nav-side-btn nav-side-btn-danger" onclick="endNavigation()" title="案内を中止してパネルに戻る">
       <span class="material-icons-round">close</span><span class="nav-side-btn-label">中止</span>
     </button>
-    <button type="button" class="nav-side-btn" onclick="map.zoomIn()" title="拡大">
+    <button id="navZoomInBtn" type="button" class="nav-side-btn" onclick="map.zoomIn()" title="拡大">
       <span class="material-icons-round">add</span><span class="nav-side-btn-label">拡大</span>
     </button>
-    <button type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
+    <button id="navZoomOutBtn" type="button" class="nav-side-btn" onclick="map.zoomOut()" title="縮小">
       <span class="material-icons-round">remove</span><span class="nav-side-btn-label">縮小</span>
     </button>
     <button id="navMuteBtn" class="nav-side-btn" onclick="toggleNavMute()" title="音声案内のオン/オフ">
       <span class="material-icons-round" id="navMuteIcon">volume_up</span><span class="nav-side-btn-label">音声</span>
     </button>
-    <button id="navShelterBtn" class="nav-side-btn" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
+    <button id="navShelterBtn" class="nav-side-btn nav-side-btn-shelter" onclick="findNearestShelterDuringNav()" title="最寄りの避難所を提案">
       <span class="material-icons-round">home_pin</span><span class="nav-side-btn-label">避難所</span>
+    </button>
+    <button id="navHeadingFloatBtn" class="round-btn nav-heading-float-btn" type="button" aria-label="ヘディングアップ切替（ナビ地図）" title="ヘディングアップ切替（ナビ地図）">
+      <span class="north-indicator" id="navNorthIndicatorFloat">N</span>
     </button>
   </div>
 </div>
@@ -2694,28 +2693,9 @@ if (navMiniHeadingFloatBtn){
   });
 }
 
-/* ナビ中フローティング方位ボタンの表示位置を、通常時（右下・概況地図の下）と
-   横画面2画面表示時（右上・右ペイン側）とで切り替える */
-function positionNavHeadingFloatButtons(){
-  /* 概況地図側のNボタンは #navMiniMapContainer の子要素としてCSSで
-     常時アンカー（top:10px; left:10px）されているため、ここでの位置計算は不要。
-     メイン地図側のNボタンのみ、通常時/分割表示時で位置を切り替える。 */
-  const btn = document.getElementById('navHeadingFloatBtn');
-  if (!btn) return;
-  const isSplit = document.body.classList.contains('nav-split-mode');
-  if (isSplit){
-    btn.style.left = 'calc(10px + env(safe-area-inset-left,0px))';
-    btn.style.right = 'auto';
-    btn.style.top = 'calc(10px + env(safe-area-inset-top,0px))';
-  } else {
-    btn.style.left = '';
-    btn.style.right = 'calc(10px + env(safe-area-inset-right,0px))';
-    const miniContainer = document.getElementById('navMiniMapContainer');
-    const rect = miniContainer ? miniContainer.getBoundingClientRect() : null;
-    const top = rect && rect.height ? (rect.bottom + 10) : (10 + (document.documentElement.style.getPropertyValue('--real-vh') ? 0 : 0) + 170);
-    btn.style.top = top + 'px';
-  }
-}
+/* 方位ボタンはナビパネルのボタングリッド内に常駐する丸ボタンになったため、
+   フローティング位置の再計算は不要（呼び出し元を壊さないよう関数自体は残す）。 */
+function positionNavHeadingFloatButtons(){}
 
 let geoWatchId = null;
 let displayedLocation = null;
@@ -3605,7 +3585,7 @@ function updateNavLandscapeLayout(){
     body.classList.toggle('nav-split-mode', shouldSplit);
     if (shouldSplit){
       if (!document.documentElement.style.getPropertyValue('--nav-split-pct')){
-        document.documentElement.style.setProperty('--nav-split-pct', '55');
+        document.documentElement.style.setProperty('--nav-split-pct', '70');
       }
       const miniBtn = document.getElementById('navMiniHeadingFloatBtn');
       if (miniBtn) miniBtn.classList.add('visible');
@@ -3904,6 +3884,9 @@ function buildNavStepTables(routeData, coords){
 
 function startNavigation(){
   if (!activeNavRouteData || !activeNavRouteData.legs || !activeNavRouteCoords) return;
+  if (document.activeElement && typeof document.activeElement.blur === 'function'){
+    document.activeElement.blur();
+  }
   const built = buildNavStepTables(activeNavRouteData, activeNavRouteCoords);
   navSteps = built.steps;
   if (!navSteps.length) return;
@@ -5589,6 +5572,16 @@ function initNavSplitDivider(){
   if (!divider || divider.dataset.dragInit) return;
   divider.dataset.dragInit = '1';
   let dragging = false;
+  let recenterQueued = false;
+
+  function recenterAfterSplitChange(){
+    recenterQueued = false;
+    if (navMiniMap) navMiniMap.invalidateSize();
+    map.invalidateSize({ pan:false });
+    const center = currentLocation || map.getCenter();
+    map.setView(center, map.getZoom(), { animate:false });
+    positionNavHeadingFloatButtons();
+  }
 
   function setPct(pct){
     const panelWidthPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-panel-width')) || 300;
@@ -5600,11 +5593,13 @@ function initNavSplitDivider(){
     if (maxPct < minPct){ minPct = 30; maxPct = 70; }
     pct = Math.max(minPct, Math.min(maxPct, pct));
     document.documentElement.style.setProperty('--nav-split-pct', pct.toFixed(1));
-    if (navMiniMap) navMiniMap.invalidateSize();
-    const centerBeforeResize = currentLocation || map.getCenter();
-    map.invalidateSize({ pan:false });
-    map.setView(centerBeforeResize, map.getZoom(), { animate:false });
-    positionNavHeadingFloatButtons();
+    /* CSS変数の反映（レイアウト確定）を待ってから地図の再計測・再センタリングを
+       行う。pointermove毎に同期実行すると、リサイズ直後の古いサイズを
+       Leafletが読んでしまい、現在地が中央からズレたまま追従しなくなるため。 */
+    if (!recenterQueued){
+      recenterQueued = true;
+      requestAnimationFrame(recenterAfterSplitChange);
+    }
   }
   function onDown(e){
     dragging = true;
@@ -5621,6 +5616,7 @@ function initNavSplitDivider(){
   function onUp(e){
     dragging = false;
     try { divider.releasePointerCapture(e.pointerId); } catch {}
+    recenterAfterSplitChange();
   }
   divider.addEventListener('pointerdown', onDown);
   divider.addEventListener('pointermove', onMove);
